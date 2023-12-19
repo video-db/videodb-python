@@ -1,0 +1,17 @@
+__pycache__
+__pycache__/*
+*/__pycache__
+*.pyc
+*.log
+.DS_Store
+log/
+*.out
+*.zip
+.idea/*
+.env
+build/*
+dist/*
+*.egg-info/*
+venv/
+.vscode/*
+example.ipynb
