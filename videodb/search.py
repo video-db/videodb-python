@@ -1,3 +1,5 @@
+import webbrowser as web
+
 from abc import ABC, abstractmethod
 from videodb._constants import (
     SearchType,
@@ -15,8 +17,8 @@ class SearchResult:
     def __init__(self, _connection, **kwargs):
         self._connection = _connection
         self.shots = []
-        self.text_summary = None
-        self.stream = None
+        self.stream_url = None
+        self.player_url = None
         self.collection_id = "default"
         self._results = kwargs.get("results", [])
         self._format_results()
@@ -38,18 +40,27 @@ class SearchResult:
                     )
                 )
 
+    def __repr__(self) -> str:
+        return (
+            f"SearchResult("
+            f"collection_id={self.collection_id}, "
+            f"stream_url={self.stream_url}, "
+            f"player_url={self.player_url}, "
+            f"shots={self.shots})"
+        )
+
     def get_shots(self) -> List[Shot]:
         return self.shots
 
     def compile(self) -> str:
-        """Compile the search result shots into a stream link
+        """Compile the search result shots into a stream url
 
         :raises SearchError: If no shots are found in the search results
-        :return: The stream link
+        :return: The stream url
         :rtype: str
         """
-        if self.stream:
-            return self.stream
+        if self.stream_url:
+            return self.stream_url
         elif self.shots:
             compile_data = self._connection.post(
                 path=f"{ApiPath.compile}",
@@ -62,11 +73,22 @@ class SearchResult:
                     for shot in self.shots
                 ],
             )
-            self.stream = compile_data.get("stream_link")
-            return self.stream
+            self.stream_url = compile_data.get("stream_link")
+            self.player_url = compile_data.get("player_link")
+            return self.stream_url
 
         else:
             raise SearchError("No shots found in search results to compile")
+
+    def play(self) -> str:
+        """Generate a stream url for the shot and open it in the default browser
+
+        :return: The stream url
+        :rtype: str
+        """
+        self.compile()
+        web.open(self.player_url)
+        return self.player_url
 
 
 class Search(ABC):

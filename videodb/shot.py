@@ -1,6 +1,6 @@
 """This module contains the shot class"""
 
-
+import webbrowser as web
 from typing import Optional
 from videodb._constants import (
     ApiPath,
@@ -29,7 +29,8 @@ class Shot:
         self.end = end
         self.text = text
         self.search_score = search_score
-        self.stream = None
+        self.stream_url = None
+        self.player_url = None
 
     def __repr__(self) -> str:
         return (
@@ -40,22 +41,23 @@ class Shot:
             f"end={self.end}, "
             f"text={self.text}, "
             f"search_score={self.search_score}, "
-            f"stream={self.stream})"
+            f"stream_url={self.stream_url}, "
+            f"player_url={self.player_url})"
         )
 
     def __getitem__(self, key):
         """Get an item from the shot object"""
         return self.__dict__[key]
 
-    def get_stream(self) -> str:
-        """Get the shot into a stream link
+    def generate_stream(self) -> str:
+        """Generate a stream url for the shot
 
-        :return: The stream link
+        :return: The stream url
         :rtype: str
         """
 
-        if self.stream:
-            return self.stream
+        if self.stream_url:
+            return self.stream_url
         else:
             stream_data = self._connection.post(
                 path=f"{ApiPath.video}/{self.video_id}/{ApiPath.stream}",
@@ -64,5 +66,16 @@ class Shot:
                     "length": self.video_length,
                 },
             )
-            self.stream = stream_data.get("stream_link")
-            return self.stream
+            self.stream_url = stream_data.get("stream_link")
+            self.player_url = stream_data.get("player_link")
+            return self.stream_url
+
+    def play(self) -> str:
+        """Generate a stream url for the shot and open it in the default browser
+
+        :return: The stream url
+        :rtype: str
+        """
+        self.generate_stream()
+        web.open(self.player_url)
+        return self.player_url
