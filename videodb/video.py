@@ -1,4 +1,5 @@
-import webbrowser as web
+from typing import Optional
+from videodb._utils.video import play_url
 from videodb._constants import (
     ApiPath,
     SearchType,
@@ -7,7 +8,6 @@ from videodb._constants import (
 )
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
-from typing import Optional
 
 
 class Video:
@@ -15,11 +15,11 @@ class Video:
         self._connection = _connection
         self.id = id
         self.collection_id = collection_id
-        self.stream_url = kwargs.get("stream_link", None)
-        self.player_url = kwargs.get("player_link", None)
+        self.stream_url = kwargs.get("stream_url", None)
+        self.player_url = kwargs.get("player_url", None)
         self.name = kwargs.get("name", None)
         self.description = kwargs.get("description", None)
-        self.thumbnail_url = kwargs.get("thumbnail", None)
+        self.thumbnail_url = kwargs.get("thumbnail_url", None)
         self.length = float(kwargs.get("length", 0.0))
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
@@ -84,8 +84,8 @@ class Video:
                 "length": self.length,
             },
         )
-        self.stream_url = stream_data.get("stream_link")
-        self.player_url = stream_data.get("player_link")
+        self.stream_url = stream_data.get("stream_url")
+        self.player_url = stream_data.get("player_url")
         return self.stream_url
 
     def generate_thumbnail(self):
@@ -94,7 +94,7 @@ class Video:
         thumbnail_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.thumbnail}"
         )
-        self.thumbnail_url = thumbnail_data.get("thumbnail")
+        self.thumbnail_url = thumbnail_data.get("thumbnail_url")
         return self.thumbnail_url
 
     def _fetch_transcript(self, force: bool = False) -> None:
@@ -137,8 +137,8 @@ class Video:
                 "type": Workflows.add_subtitles,
             },
         )
-        self.stream_url = subtitle_data.get("stream_link")
-        self.player_url = subtitle_data.get("player_link")
+        self.stream_url = subtitle_data.get("stream_url")
+        self.player_url = subtitle_data.get("player_url")
         return self.stream_url
 
     def insert_video(self, video, timestamp: float) -> str:
@@ -178,16 +178,15 @@ class Video:
                 for shot in all_shots
             ],
         )
-        self.stream_url = compile_data.get("stream_link")
-        self.player_url = compile_data.get("player_link")
+        self.stream_url = compile_data.get("stream_url")
+        self.player_url = compile_data.get("player_url")
         return self.stream_url
 
     def play(self) -> str:
-        """Generate a stream url for the shot and open it in the default browser
+        """Open the player url in the browser/iframe and return the stream url
 
         :return: The stream url
         :rtype: str
         """
-        self.generate_stream()
-        web.open(self.player_url)
+        play_url(self.player_url)
         return self.player_url

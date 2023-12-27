@@ -1,7 +1,8 @@
 """This module contains the shot class"""
 
-import webbrowser as web
+
 from typing import Optional
+from videodb._utils.video import play_url
 from videodb._constants import (
     ApiPath,
 )
@@ -66,8 +67,8 @@ class Shot:
                     "length": self.video_length,
                 },
             )
-            self.stream_url = stream_data.get("stream_link")
-            self.player_url = stream_data.get("player_link")
+            self.stream_url = stream_data.get("stream_url")
+            self.player_url = stream_data.get("player_url")
             return self.stream_url
 
     def play(self) -> str:
@@ -77,5 +78,5 @@ class Shot:
         :rtype: str
         """
         self.generate_stream()
-        web.open(self.player_url)
+        play_url(self.player_url)
         return self.player_url

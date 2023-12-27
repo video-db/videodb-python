@@ -1,6 +1,5 @@
-import webbrowser as web
-
 from abc import ABC, abstractmethod
+from videodb._utils.video import play_url
 from videodb._constants import (
     SearchType,
     ApiPath,
@@ -73,8 +72,8 @@ class SearchResult:
                     for shot in self.shots
                 ],
             )
-            self.stream_url = compile_data.get("stream_link")
-            self.player_url = compile_data.get("player_link")
+            self.stream_url = compile_data.get("stream_url")
+            self.player_url = compile_data.get("player_url")
             return self.stream_url
 
         else:
@@ -87,7 +86,7 @@ class SearchResult:
         :rtype: str
         """
         self.compile()
-        web.open(self.player_url)
+        play_url(self.player_url)
         return self.player_url
 
 
