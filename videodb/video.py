@@ -1,5 +1,5 @@
 from typing import Optional
-from videodb._utils._video import play_hls
+from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     SearchType,
@@ -182,4 +182,4 @@ class Video:
         :return: The stream url
         :rtype: str
         """
-        return play_hls(self.stream_url)
+        return play_stream(self.stream_url)

@@ -3,10 +3,10 @@ import webbrowser as web
 from videodb._constants import PLAYER_URL
 
 
-def play_hls(url: str):
-    """Play a hls stream url in the browser/ notebook
+def play_stream(url: str):
+    """Play a stream url in the browser/ notebook
 
-    :param str url: The url of the hls stream
+    :param str url: The url of the stream
     :return: The player url if the stream is opened in the browser or the iframe if the stream is opened in the notebook
     """
     player = f"{PLAYER_URL}?url={url}"

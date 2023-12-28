@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from videodb._utils._video import play_hls
+from videodb._utils._video import play_stream
 from videodb._constants import (
     SearchType,
     ApiPath,
@@ -86,7 +86,7 @@ class SearchResult:
         :rtype: str
         """
         self.compile()
-        return play_hls(self.stream_url)
+        return play_stream(self.stream_url)
 
 
 class Search(ABC):
