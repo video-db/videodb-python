@@ -113,7 +113,7 @@ collection = conn.get_collection()
 # get the video from the collection
 video = collection.get_video("video_id")
 
-# index the video for symantic search
+# index the video for semantic search
 video.index_spoken_words()
 
 # search relevant moment in video and stream resultant video clip instantly.

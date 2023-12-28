@@ -1,5 +1,5 @@
 from typing import Optional
-from videodb._utils.video import play_hls
+from videodb._utils._video import play_hls
 from videodb._constants import (
     ApiPath,
     SearchType,
@@ -114,7 +114,7 @@ class Video:
         return self.transcript_text
 
     def index_spoken_words(self) -> None:
-        """Symantic indexing of spoken words in the video
+        """Semantic indexing of spoken words in the video
 
         :raises InvalidRequestError: If the video is already indexed
         :return: None if the indexing is successful
@@ -182,4 +182,4 @@ class Video:
         :return: The stream url
         :rtype: str
         """
-        return play_hls(self.player_url)
+        return play_hls(self.stream_url)

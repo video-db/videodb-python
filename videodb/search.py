@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from videodb._utils.video import play_hls
+from videodb._utils._video import play_hls
 from videodb._constants import (
     SearchType,
     ApiPath,

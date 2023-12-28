@@ -4,7 +4,7 @@ import os
 import logging
 
 from typing import Optional
-from videodb._utils.video import play_hls
+from videodb._utils._video import play_hls
 from videodb._constants import VIDEO_DB_API
 from videodb.client import Connection
 from videodb.exceptions import (

@@ -2,7 +2,7 @@
 
 
 from typing import Optional
-from videodb._utils.video import play_hls
+from videodb._utils._video import play_hls
 from videodb._constants import (
     ApiPath,
 )
@@ -72,7 +72,7 @@ class Shot:
             return self.stream_url
 
     def play(self) -> str:
-        """Generate a stream url for the shot and open it in the default browser
+        """Generate a stream url for the shot and open it in the default browser/ notebook
 
         :return: The stream url
         :rtype: str
