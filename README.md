@@ -17,7 +17,7 @@
     <img src="https://codaio.imgix.net/docs/_s5lUnUCIU/blobs/bl-RgjcFrrJjj/d3cbc44f8584ecd42f2a97d981a144dce6a66d83ddd5864f723b7808c7d1dfbc25034f2f25e1b2188e78f78f37bcb79d3c34ca937cbb08ca8b3da1526c29da9a897ab38eb39d084fd715028b7cc60eb595c68ecfa6fa0bb125ec2b09da65664a4f172c2f" alt="Logo" width="300" height="">
   </a>
 
-  <h3 align="center">VideoDB Python Client</h3>
+  <h3 align="center">VideoDB Python SDK</h3>
 
   <p align="center">
     Video Database for your AI Applications
@@ -34,8 +34,8 @@
 </p>
 
 <!-- ABOUT THE PROJECT -->
-# VideoDB Python Client
-The VideoDB Python client is a python package that allows you to interact with the VideoDB which is a serverless database that lets you manage video as intelligent data, not files. It is secure, scalable & optimized for AI- applications and LLM integrations.
+# VideoDB Python SDK
+VideoDB Python SDK allows you to interact with the VideoDB serverless database. Manage videos as intelligent data, not files. It's scalable, cost efficient & optimized for AI applications and LLM integration.
 
 <!-- Documentation -->
 <!-- ## Documentation
@@ -52,138 +52,158 @@ pip install videodb
 <!-- USAGE EXAMPLES -->
 ## Quick Start
 ### Creating a Connection
-To create a new connection you need to get API key from [VideoDB console](https://console.videodb.io). You can directly upload from youtube, any public url, S3 bucket or local file path. A default collection is created when you create a new connection.
+Get API key from [VideoDB console](https://console.videodb.io).  Free for first 50 uploads. _(No credit card required)_
 
 ```python
 import videodb
-
-# create a new connection to the VideoDB
 conn = videodb.connect(api_key="YOUR_API_KEY")
+```
+## Working with a single Video
 
-# upload to the default collection using the video url returns a Video object
-video = conn.upload(url="https://www.youtube.com/")
+---
 
-# upload to the default collection using the local file path returns a Video object
-video = conn.upload(file_path="path/to/video.mp4")
+⬆️ **Uploading a Video**
 
-# get the stream url for the video
-stream_url = video.generate_stream()
+Now that you have established a connection to VideoDB, you can upload your videos using `conn.upload()`
+You can directly upload from `youtube`, `any public url`, `S3 bucket` or `local file path`. A default collection is created when you create a new connection.
+
+`upload` method returns a `Video` object.
+
+```python
+# Upload a video by url
+video = conn.upload(url="https://www.youtube.com/watch?v=WDv4AWk0J3U")
+
+# Upload a video from file system
+video_f = conn.upload(file_path="./my_video.mp4")
 
 ```
 
-### Getting a Collection
-To get a collection, use the `get_collection` method on the established database connection object. This method returns a `Collection` object.
+### 📺 Viewing your video
+
+Your video is instantly available for viewing 720p resolution ⚡️
+
+* Generate a streamable url for video using video.generate_stream() 
+* Preview the video using video.play(). This will open the video in your default browser/notebook
 
 ```python
-import videodb
-
-# create a connection to the VideoDB
-conn = videodb.connect(api_key="YOUR_API_KEY")
-
-# get the default collection
-collection = conn.get_collection()
-
-# Upload a video to the collection returns a Video object
-video = collection.upload(url="https://www.youtube.com/")
-
-# async upload
-collection.upload(url="https://www.youtube.com/", callback_url="https://yourdomain.com/callback")
-
-# get all the videos in the collection returns a list of Video objects
-videos = collection.get_videos()
-
-# get a video from the collection returns a Video object
-video = collection.get_video("video_id")
-
-# delete the video from the collection
-collection.delete_video("video_id")
-
+video.generate_stream()
+video.play()
 ```
 
-### Multi Modal Indexing
+### ⛓️ Stream Sections of videos
 
-#### Spoken words indexing
+You can easily clip specific sections of a video by passing timeline  of start and end sections. 
+It accepts seconds. For example, Here’s we are streaming only first `10 seconds` and then `120` to `140 second` of a video 
+
 ```python
-import videodb
+stream_link = video.generate_stream(timeline=[[0,10], [120,140]]) 
+play_stream(stream_link)
+```
 
-# create a connection to the VideoDB and get the default collection
-conn = videodb.connect(api_key="YOUR_API_KEY")
-collection = conn.get_collection()
+### 🔍 Searching inside a video
 
-# get the video from the collection
-video = collection.get_video("video_id")
-
-# index the video for semantic search
+To search bits inside a video — you  have to index the video first. This can be done by a simple command.
+_Indexing may take some time for longer videos._ 
+```python
 video.index_spoken_words()
-
-# search relevant moment in video and stream resultant video clip instantly.
-# returns a SearchResults object
-# for searching the video, the video must be indexed please use index_spoken_words() before searching
-# optional parameters:
-#   - type: Optional[str] to specify the type of search. default is "semantic"
-#   - result_threshold: Optional[int] to specify the number of results to return. default is 5
-#   - score_threshold: Optional[float] to specify the score threshold for the results. default is 0.2
-result = video.search("what is videodb?")
-# get stream url of the result
-stream_url = result.compile()
-# get shots of the result returns a list of Shot objects
-shots = result.get_shots()
-# get stream url of the shot
-short_stream_url = shots[0].compile()
-
-# search relevant moment in collections and stream resultant video clip instantly.
-# returns a SearchResults object
-result = collection.search("what is videodb?")
-# get stream url of the result
-stream_url = result.compile()
-# get shots of the result returns a list of Shot objects
-shots = result.get_shots()
-# get stream url of the shot
-short_stream_url = shots[0].generate_stream()
-
+result = video.search("Morning Sunlight")
+result.play()
+video.get_transcript()
 ```
+`Videodb` is launching more indexes in upcoming versions.
+Currently it offers semantic index - Index by spoken words. 
 
-### Video Object Methods
+In future you can also index videos using:
+1. **Scene** - Visual concepts and events. 
+2. **Faces**.
+3. **Specific domain Index** like Football, Baseball, Drone footage, Cricket etc. 
+
+### Viewing Search Results :
+
+`video.search()` will return a `SearchResults` object, which contains the sections/shots of videos which semantically match your search query
+
+* `result.get_shots()`  Returns a list of Shot that matched search query
+* `result.play()`  Returns a playable url for video (similar to video.play()  you can open this link in browser, or embed it into your website using iframe)
+
+## RAG: Search inside Multiple Videos
+
+---
+
+`VideoDB` can store and search inside multiple videos with ease.  By default, videos are uploaded to your default collection.
+
+### 🔄 Using Collection to upload multiple Videos
+
 ```python
-import videodb
+# Get the default collection
+coll = conn.get_collection()
 
-# create a connection to the VideoDB, get the default collection and get a video
-conn = videodb.connect(api_key="YOUR_API_KEY")
-collection = conn.get_collection()
-video = collection.get_video("video_id")
+# Upload Videos to a collection
+coll.upload(url="https://www.youtube.com/watch?v=lsODSDmY4CY")
+coll.upload(url="https://www.youtube.com/watch?v=vZ4kOr38JhY")
+coll.upload(url="https://www.youtube.com/watch?v=uak_dXHh6s4")
+```
+* `conn.get_collection()` : Returns Collection object, the default collection
+* `coll.get_videos()` : Returns list of Video, all videos in collections
+* `coll.get_video(video_id)`: Returns Video, respective video object from given `video_id`
+* `coll.delete_video(video_id)`: Deletes the video from Collection
 
-# get the stream url of the dynamically curated video based on the given timeline sequence
-# optional parameters:
-#   - timeline: Optional[list[tuple[int, int]] to specify the start and end time of the video
-stream_url = video.generate_stream(timeline=[(0, 10), (30, 40)])
+### 📂 Search inside collection
 
-# get thumbnail url of the video
-thumbnail_url = video.generate_thumbnail()
+You can simply Index all the videos in a collection and use 
+search method on collection to find relevant results. 
+Here we are indexing spoken content of a 
+collection and performing semantic search. 
+```python
+# Index all videos in collection
+for video in coll.get_videos():
+    video.index_spoken_words()
 
-# get transcript of the video
-# optional parameters:
-#  - force: Optional[bool] to force get the transcript. default is False
-transcript = video.get_transcript()
+# search in the collection of videos
+results = coll.search(query = "What is Dopamine?")
+results.play()
+```
+The result here has all the matching bits in a single stream from your collection. You can use these results in your application right away. 
 
-# get transcript text of the video
-# optional parameters:
-#  - force: Optional[bool] to force get the transcript text. default is False
-transcript_text = video.get_transcript_text()
+### 🌟 Explore the Video object
 
-# add subtitle to the video and get the stream url of the video with subtitle
-stream_url = video.add_subtitle()
+There are multiple methods available on a Video Object, that can be helpful for your use-case.
 
-# delete the video from the collection
-video.delete()
-
+**Access Transcript**
+```python
+# words with timestamps
+text_json = video.get_transcript()
+text = video.get_transcript_text()
+print(text)
 ```
 
+**Add Subtitle to a video** 
+
+It returns a new stream instantly with subtitle added into the video. 
+```python
+new_stream = video.add_subtitle()
+play_stream(new_stream)
+```
+**Get Thumbnail of Video:**
+
+`video.generate_thumbnail()`: Returns a thumbnail image of video.
+
+**Delete a video:**
+
+`video.delete()`: Delete a video.
+
+Checkout more examples and tutorials 👉 [Build with VideoDB](https://docs.videodb.io/build-with-videodb-35)  to explore what you can 
+build with `VideoDB`
+
+---
 <!-- ROADMAP -->
 ## Roadmap
+- Adding More Indexes : `Face`, `Scene`, `Security`, `Events`, and `Sports`
+- Give prompt support to generate thumbnails using GenAI.
+- Give prompt support to access content.
+- Give prompt support to edit videos. 
+- See the [open issues](https://github.com/video-db/videodb-python/issues) for a list of proposed features (and known issues).
 
-See the [open issues](https://github.com/video-db/videodb-python/issues) for a list of proposed features (and known issues).
-
-
+---
 <!-- CONTRIBUTING -->
 ## Contributing
 
@@ -195,11 +215,7 @@ Contributions are what make the open source community such an amazing place to b
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
+---
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
