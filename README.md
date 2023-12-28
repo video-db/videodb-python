@@ -67,7 +67,7 @@ video = conn.upload(url="https://www.youtube.com/")
 video = conn.upload(file_path="path/to/video.mp4")
 
 # get the stream url for the video
-stream_url = video.get_stream()
+stream_url = video.generate_stream()
 
 ```
 
@@ -113,7 +113,7 @@ collection = conn.get_collection()
 # get the video from the collection
 video = collection.get_video("video_id")
 
-# index the video for symantic search
+# index the video for semantic search
 video.index_spoken_words()
 
 # search relevant moment in video and stream resultant video clip instantly.
@@ -139,7 +139,7 @@ stream_url = result.compile()
 # get shots of the result returns a list of Shot objects
 shots = result.get_shots()
 # get stream url of the shot
-short_stream_url = shots[0].get_stream()
+short_stream_url = shots[0].generate_stream()
 
 ```
 
@@ -155,10 +155,10 @@ video = collection.get_video("video_id")
 # get the stream url of the dynamically curated video based on the given timeline sequence
 # optional parameters:
 #   - timeline: Optional[list[tuple[int, int]] to specify the start and end time of the video
-stream_url = video.get_stream(timeline=[(0, 10), (30, 40)])
+stream_url = video.generate_stream(timeline=[(0, 10), (30, 40)])
 
-# get thumbnail of the video
-thumbnail = video.get_thumbnail()
+# get thumbnail url of the video
+thumbnail_url = video.generate_thumbnail()
 
 # get transcript of the video
 # optional parameters:

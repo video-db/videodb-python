@@ -1,3 +1,5 @@
+from typing import Optional
+from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     SearchType,
@@ -6,7 +8,6 @@ from videodb._constants import (
 )
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
-from typing import Optional
 
 
 class Video:
@@ -14,10 +15,11 @@ class Video:
         self._connection = _connection
         self.id = id
         self.collection_id = collection_id
-        self.stream_link = kwargs.get("stream_link", None)
+        self.stream_url = kwargs.get("stream_url", None)
+        self.player_url = kwargs.get("player_url", None)
         self.name = kwargs.get("name", None)
         self.description = kwargs.get("description", None)
-        self.thumbnail = kwargs.get("thumbnail", None)
+        self.thumbnail_url = kwargs.get("thumbnail_url", None)
         self.length = float(kwargs.get("length", 0.0))
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
@@ -27,10 +29,11 @@ class Video:
             f"Video("
             f"id={self.id}, "
             f"collection_id={self.collection_id}, "
-            f"stream_link={self.stream_link}, "
+            f"stream_url={self.stream_url}, "
+            f"player_url={self.player_url}, "
             f"name={self.name}, "
             f"description={self.description}, "
-            f"thumbnail={self.thumbnail}, "
+            f"thumbnail_url={self.thumbnail_url}, "
             f"length={self.length})"
         )
 
@@ -63,16 +66,16 @@ class Video:
         """
         self._connection.delete(path=f"{ApiPath.video}/{self.id}")
 
-    def get_stream(self, timeline: Optional[list[tuple[int, int]]] = None) -> str:
-        """Get the stream link of the video
+    def generate_stream(self, timeline: Optional[list[tuple[int, int]]] = None) -> str:
+        """Generate the stream url of the video
 
         :param list timeline: The timeline of the video to be streamed. Defaults to None.
         :raises InvalidRequestError: If the get_stream fails
-        :return: The stream link of the video
+        :return: The stream url of the video
         :rtype: str
         """
-        if not timeline and self.stream_link:
-            return self.stream_link
+        if not timeline and self.stream_url:
+            return self.stream_url
 
         stream_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.stream}",
@@ -81,16 +84,16 @@ class Video:
                 "length": self.length,
             },
         )
-        return stream_data.get("stream_link")
+        return stream_data.get("stream_url", None)
 
-    def get_thumbnail(self):
-        if self.thumbnail:
-            return self.thumbnail
+    def generate_thumbnail(self):
+        if self.thumbnail_url:
+            return self.thumbnail_url
         thumbnail_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.thumbnail}"
         )
-        self.thumbnail = thumbnail_data.get("thumbnail")
-        return self.thumbnail
+        self.thumbnail_url = thumbnail_data.get("thumbnail_url")
+        return self.thumbnail_url
 
     def _fetch_transcript(self, force: bool = False) -> None:
         if self.transcript and not force:
@@ -111,7 +114,7 @@ class Video:
         return self.transcript_text
 
     def index_spoken_words(self) -> None:
-        """Symantic indexing of spoken words in the video
+        """Semantic indexing of spoken words in the video
 
         :raises InvalidRequestError: If the video is already indexed
         :return: None if the indexing is successful
@@ -132,7 +135,7 @@ class Video:
                 "type": Workflows.add_subtitles,
             },
         )
-        return subtitle_data.get("stream_link")
+        return subtitle_data.get("stream_url", None)
 
     def insert_video(self, video, timestamp: float) -> str:
         """Insert a video into another video
@@ -140,7 +143,7 @@ class Video:
         :param Video video: The video to be inserted
         :param float timestamp: The timestamp where the video should be inserted
         :raises InvalidRequestError: If the insert fails
-        :return: The stream link of the inserted video
+        :return: The stream url of the inserted video
         :rtype: str
         """
         if timestamp > float(self.length):
@@ -171,5 +174,12 @@ class Video:
                 for shot in all_shots
             ],
         )
-        stream_link = compile_data.get("stream_link")
-        return stream_link
+        return compile_data.get("stream_url", None)
+
+    def play(self) -> str:
+        """Open the player url in the browser/iframe and return the stream url
+
+        :return: The stream url
+        :rtype: str
+        """
+        return play_stream(self.stream_url)

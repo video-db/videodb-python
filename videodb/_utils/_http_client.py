@@ -120,7 +120,7 @@ class HttpClient:
                 f"Invalid request: {str(e)}", e.response
             ) from None
 
-    @backoff.on_exception(backoff.expo, Exception, max_time=500)
+    @backoff.on_exception(backoff.expo, Exception, max_time=500, logger=None)
     def _get_output(self, url: str):
         """Get the output from an async request"""
         response_json = self.session.get(url).json()

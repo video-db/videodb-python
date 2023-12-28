@@ -4,6 +4,7 @@ import os
 import logging
 
 from typing import Optional
+from videodb._utils._video import play_stream
 from videodb._constants import VIDEO_DB_API
 from videodb.client import Connection
 from videodb.exceptions import (
@@ -23,6 +24,7 @@ __all__ = [
     "AuthenticationError",
     "InvalidRequestError",
     "SearchError",
+    "play_stream",
 ]
 
 
