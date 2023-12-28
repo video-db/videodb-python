@@ -147,7 +147,7 @@ coll.upload(url="https://www.youtube.com/watch?v=uak_dXHh6s4")
 * `coll.get_video(video_id)`: Returns Video, respective video object from given `video_id`
 * `coll.delete_video(video_id)`: Deletes the video from Collection
 
-### 📂 Search inside multiple videos in a collection
+### 📂 Search inside collection
 
 You can simply Index all the videos in a collection and use 
 search method on collection to find relevant results. 
@@ -164,11 +164,11 @@ results.play()
 ```
 The result here has all the matching bits in a single stream from your collection. You can use these results in your application right away. 
 
-## 🌟 Explore more with Video object
+### 🌟 Explore the Video object
 
 There are multiple methods available on a Video Object, that can be helpful for your use-case.
 
-### Access Transcript
+**Access Transcript**
 ```python
 # words with timestamps
 text_json = video.get_transcript()
@@ -176,7 +176,7 @@ text = video.get_transcript_text()
 print(text)
 ```
 
-### Add Subtitle to a video 
+**Add Subtitle to a video** 
 
 It returns a new stream instantly with subtitle added into the video. 
 ```python
@@ -185,7 +185,7 @@ play_stream(new_stream)
 ```
 **Get Thumbnail of Video:**
 
-`video.get_thumbnail()`: Returns a thumbnail image of video.
+`video.generate_thumbnail()`: Returns a thumbnail image of video.
 
 **Delete a video:**
 
@@ -216,12 +216,6 @@ Contributions are what make the open source community such an amazing place to b
 5. Open a Pull Request
 
 ---
-
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->

@@ -21,9 +21,9 @@ long_description = open(os.path.join(ROOT, "README.md"), "r", encoding="utf-8").
 setup(
     name="videodb",
     version=get_version(),
-    author="Videodb",
+    author="videodb",
     author_email="contact@videodb.io",
-    description="Videodb Python client",
+    description="VideoDB Python SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/video-db/videodb-python",
@@ -33,5 +33,9 @@ setup(
         "requests>=2.25.1",
         "backoff>=2.2.1",
     ],
-    
+    classifiers=[
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.9",
+    ],
 )

@@ -1,6 +1,5 @@
 import webbrowser as web
-
-from videodb._constants import PLAYER_URL
+PLAYER_URL: str = "https://console.videodb.io/player"
 
 
 def play_stream(url: str):

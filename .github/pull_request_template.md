@@ -20,5 +20,5 @@ Make sure to take in account any existing code change that require some feature 
 - [ ] Code follows project coding standards
 - [ ] Tests have been added or updated
 - [ ] Code Review
-- [ ] Manual test after Merge
+- [ ] Manual test after merge
 - [ ] All checks passed
