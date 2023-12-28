@@ -2,7 +2,7 @@
 
 
 from typing import Optional
-from videodb._utils.video import play_url
+from videodb._utils.video import play_hls
 from videodb._constants import (
     ApiPath,
 )
@@ -78,5 +78,4 @@ class Shot:
         :rtype: str
         """
         self.generate_stream()
-        play_url(self.player_url)
-        return self.player_url
+        return play_hls(self.stream_url)

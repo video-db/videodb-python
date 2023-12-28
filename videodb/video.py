@@ -1,5 +1,5 @@
 from typing import Optional
-from videodb._utils.video import play_url
+from videodb._utils.video import play_hls
 from videodb._constants import (
     ApiPath,
     SearchType,
@@ -84,9 +84,7 @@ class Video:
                 "length": self.length,
             },
         )
-        self.stream_url = stream_data.get("stream_url")
-        self.player_url = stream_data.get("player_url")
-        return self.stream_url
+        return stream_data.get("stream_url", None)
 
     def generate_thumbnail(self):
         if self.thumbnail_url:
@@ -137,9 +135,7 @@ class Video:
                 "type": Workflows.add_subtitles,
             },
         )
-        self.stream_url = subtitle_data.get("stream_url")
-        self.player_url = subtitle_data.get("player_url")
-        return self.stream_url
+        return subtitle_data.get("stream_url", None)
 
     def insert_video(self, video, timestamp: float) -> str:
         """Insert a video into another video
@@ -178,9 +174,7 @@ class Video:
                 for shot in all_shots
             ],
         )
-        self.stream_url = compile_data.get("stream_url")
-        self.player_url = compile_data.get("player_url")
-        return self.stream_url
+        return compile_data.get("stream_url", None)
 
     def play(self) -> str:
         """Open the player url in the browser/iframe and return the stream url
@@ -188,5 +182,4 @@ class Video:
         :return: The stream url
         :rtype: str
         """
-        play_url(self.player_url)
-        return self.player_url
+        return play_hls(self.player_url)

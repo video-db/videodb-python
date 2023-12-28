@@ -2,6 +2,7 @@
 
 
 VIDEO_DB_API: str = "https://api.videodb.io"
+PLAYER_URL: str = "https://console.videodb.io/player"
 
 
 class SearchType:
