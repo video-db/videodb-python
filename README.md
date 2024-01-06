@@ -132,7 +132,7 @@ In the future you'll be able to index videos using:
 `video.search()` returns a `SearchResults` object, which contains the sections or as we call them, `shots` of videos which semantically match your search query.
 
 - `result.get_shots()` Returns a list of Shot(s) that matched the search query.
-- `result.play()` Returns a playable url for the video (similar to video.play()) you can open this link in the browser, or embed it into your website using an iframe.
+- `result.play()` Returns a playable url for the video (similar to video.play(); you can open this link in the browser, or embed it into your website using an iframe).
 
 ## RAG: Search inside Multiple Videos
 
