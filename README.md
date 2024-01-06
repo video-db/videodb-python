@@ -87,7 +87,7 @@ video_f = conn.upload(file_path="./my_video.mp4")
 
 ### 📺 Viewing your video
 
-Your video is available instantly for viewing in 720p resolution ⚡️
+Your video is instantly available for viewing in 720p resolution ⚡️
 
 - Generate a streamable url for the video using video.generate_stream()
 - Preview the video using video.play(). This will open the video in your default browser/notebook
