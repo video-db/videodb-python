@@ -65,11 +65,11 @@ import videodb
 conn = videodb.connect(api_key="YOUR_API_KEY")
 ```
 
-## Working with a single Video
+## Working with a Single Video
 
 ---
 
-⬆️ **Uploading a Video**
+### ⬆️ Uploading a Video
 
 Now that you have established a connection to VideoDB, you can upload your videos using `conn.upload()`.
 You can directly upload from `youtube`, `any public url`, `S3 bucket` or a `local file path`. A default collection is created when you create your first connection.
@@ -85,9 +85,9 @@ video_f = conn.upload(file_path="./my_video.mp4")
 
 ```
 
-### 📺 Viewing your video
+### 📺 View your Video
 
-Your video is instantly available for viewing in 720p resolution ⚡️
+Once uploaded, your video is immediately available for viewing in 720p resolution. ⚡️
 
 - Generate a streamable url for the video using video.generate_stream()
 - Preview the video using video.play(). This will open the video in your default browser/notebook
@@ -97,17 +97,17 @@ video.generate_stream()
 video.play()
 ```
 
-### ⛓️ Stream Sections of videos
+### ⛓️ Stream Specific Sections of Videos
 
 You can easily clip specific sections of a video by passing a timeline of the start and end timestamps (in seconds) as a parameter.
-For example, this will generate and play a compilation of the fist `10 seconds` and the clip between the `120th` and the `140th` second.
+For example, this will generate and play a compilation of the first `10 seconds` and the clip between the `120th` and the `140th` second.
 
 ```python
 stream_link = video.generate_stream(timeline=[[0,10], [120,140]])
 play_stream(stream_link)
 ```
 
-### 🔍 Searching inside a video
+### 🔍 Search Inside a Video
 
 To search bits inside a video, you have to `index` the video first. This can be done by a simple command.
 _P.S. Indexing may take some time for longer videos._
@@ -127,9 +127,9 @@ In the future you'll be able to index videos using:
 2. **Faces**.
 3. **Specific domain Index** like Football, Baseball, Drone footage, Cricket etc.
 
-### Viewing Search Results :
+### Viewing Search Results
 
-`video.search()` will return a `SearchResults` object, which contains the sections or as we call them, `shots` of videos which semantically match your search query.
+`video.search()` returns a `SearchResults` object, which contains the sections or as we call them, `shots` of videos which semantically match your search query.
 
 - `result.get_shots()` Returns a list of Shot(s) that matched the search query.
 - `result.play()` Returns a playable url for the video (similar to video.play()) you can open this link in the browser, or embed it into your website using an iframe.
@@ -140,7 +140,7 @@ In the future you'll be able to index videos using:
 
 `VideoDB` can store and search inside multiple videos with ease. By default, videos are uploaded to your default collection.
 
-### 🔄 Using Collection to upload multiple Videos
+### 🔄 Using Collection to Upload Multiple Videos
 
 ```python
 # Get the default collection
@@ -157,7 +157,7 @@ coll.upload(url="https://www.youtube.com/watch?v=uak_dXHh6s4")
 - `coll.get_video(video_id)`: Returns a Video object, corresponding video from the provided `video_id`.
 - `coll.delete_video(video_id)`: Deletes the video from the Collection.
 
-### 📂 Search inside Collection
+### 📂 Search Inside Collection
 
 You can simply Index all the videos in a collection and use the search method to find relevant results.
 Here we are indexing the spoken content of a collection and performing semantic search.
