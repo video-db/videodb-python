@@ -2,6 +2,7 @@ import logging
 
 from typing import (
     Optional,
+    Union,
 )
 
 from videodb._constants import (
@@ -11,6 +12,7 @@ from videodb._constants import (
 from videodb.collection import Collection
 from videodb._utils._http_client import HttpClient
 from videodb.video import Video
+from videodb.audio import Audio
 
 from videodb._upload import (
     upload,
@@ -40,16 +42,21 @@ class Connection(HttpClient):
         self,
         file_path: str = None,
         url: str = None,
+        media_type: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
-    ) -> Video:
+    ) -> Union[Video, Audio, None]:
         upload_data = upload(
             self,
             file_path,
             url,
+            media_type,
             name,
             description,
             callback_url,
         )
-        return Video(self, **upload_data) if upload_data else None
+        if upload_data.get("id").startswith("m-"):
+            return Video(self, **upload_data) if upload_data else None
+        elif upload_data.get("id").startswith("a-"):
+            return Audio(self, **upload_data) if upload_data else None

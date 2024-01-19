@@ -17,7 +17,7 @@ body:
         - label: Potential new bug in VideoDB API
           required: false
         - label: I've checked the current issues, and there's no record of this bug
-          required: true
+          required: false
   - type: textarea
     attributes:
       label: Current Behavior

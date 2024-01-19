@@ -4,7 +4,6 @@
 VIDEO_DB_API: str = "https://api.videodb.io"
 
 
-
 class SearchType:
     semantic = "semantic"
 
@@ -26,6 +25,7 @@ class ApiPath:
     collection = "collection"
     upload = "upload"
     video = "video"
+    audio = "audio"
     stream = "stream"
     thumbnail = "thumbnail"
     upload_url = "upload_url"
@@ -34,6 +34,7 @@ class ApiPath:
     search = "search"
     compile = "compile"
     workflow = "workflow"
+    timeline = "timeline"
 
 
 class Status:
@@ -46,3 +47,7 @@ class HttpClientDefaultValues:
     timeout = 30
     backoff_factor = 0.1
     status_forcelist = [502, 503, 504]
+
+
+class MaxSupported:
+    fade_duration = 5
