@@ -142,6 +142,8 @@ class HttpClient:
             raise Exception("Stuck on processing status") from None
         if self.show_progress and self.progress_bar:
             self.progress_bar.n = 100
+            self.progress_bar.update(0)
+            self.progress_bar.close()
         return response_json.get("response") or response_json
 
     def _parse_response(self, response: requests.Response):
@@ -158,7 +160,12 @@ class HttpClient:
                 and response_json.get("request_type", "sync") == "sync"
             ):
                 if self.show_progress:
-                    self.progress_bar = tqdm(total=100, position=0, leave=True)
+                    self.progress_bar = tqdm(
+                        total=100,
+                        position=0,
+                        leave=True,
+                        bar_format="{l_bar}{bar:100}{r_bar}{bar:-100b}",
+                    )
                 response_json = self._get_output(
                     response_json.get("data").get("output_url")
                 )
