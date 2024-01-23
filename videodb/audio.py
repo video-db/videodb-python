@@ -1,3 +1,8 @@
+from videodb._constants import (
+    ApiPath,
+)
+
+
 class Audio:
     def __init__(self, _connection, id: str, collection_id: str, **kwargs) -> None:
         self._connection = _connection
@@ -14,3 +19,6 @@ class Audio:
             f"name={self.name}, "
             f"length={self.length})"
         )
+
+    def delete(self) -> None:
+        self._connection.delete(f"{ApiPath.AUDIO}/{self.id}")
