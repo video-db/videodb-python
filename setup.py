@@ -32,6 +32,7 @@ setup(
     install_requires=[
         "requests>=2.25.1",
         "backoff>=2.2.1",
+        "tqdm>=4.66.1",
     ],
     classifiers=[
         "Intended Audience :: Developers",
