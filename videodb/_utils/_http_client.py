@@ -144,6 +144,8 @@ class HttpClient:
             self.progress_bar.n = 100
             self.progress_bar.update(0)
             self.progress_bar.close()
+            self.progress_bar = None
+            self.show_progress = False
         return response_json.get("response") or response_json
 
     def _parse_response(self, response: requests.Response):
