@@ -21,4 +21,4 @@ class Audio:
         )
 
     def delete(self) -> None:
-        self._connection.delete(f"{ApiPath.AUDIO}/{self.id}")
+        self._connection.delete(f"{ApiPath.audio}/{self.id}")

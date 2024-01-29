@@ -4,6 +4,11 @@
 VIDEO_DB_API: str = "https://api.videodb.io"
 
 
+class MediaType:
+    video = "video"
+    audio = "audio"
+
+
 class SearchType:
     semantic = "semantic"
 
