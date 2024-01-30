@@ -17,7 +17,7 @@ body:
         - label: Potential new feature in VideoDB API
           required: false
         - label: I've checked the current issues, and there's no record of this feature request
-          required: true
+          required: false
   - type: textarea
     attributes:
       label: Describe the feature

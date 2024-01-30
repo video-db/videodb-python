@@ -4,6 +4,7 @@ import logging
 import requests
 import backoff
 
+from tqdm import tqdm
 from typing import (
     Callable,
     Optional,
@@ -52,6 +53,8 @@ class HttpClient:
             {"x-access-token": api_key, "Content-Type": "application/json"}
         )
         self.base_url = base_url
+        self.show_progress = False
+        self.progress_bar = None
         logger.debug(f"Initialized http client with base url: {self.base_url}")
 
     def _make_request(
@@ -120,7 +123,9 @@ class HttpClient:
                 f"Invalid request: {str(e)}", e.response
             ) from None
 
-    @backoff.on_exception(backoff.expo, Exception, max_time=500, logger=None)
+    @backoff.on_exception(
+        backoff.constant, Exception, max_time=500, interval=5, logger=None, jitter=None
+    )
     def _get_output(self, url: str):
         """Get the output from an async request"""
         response_json = self.session.get(url).json()
@@ -128,8 +133,19 @@ class HttpClient:
             response_json.get("status") == Status.in_progress
             or response_json.get("status") == Status.processing
         ):
+            percentage = response_json.get("data").get("percentage")
+            if percentage and self.show_progress and self.progress_bar:
+                self.progress_bar.n = int(percentage)
+                self.progress_bar.update(0)
+
             logger.debug("Waiting for processing to complete")
             raise Exception("Stuck on processing status") from None
+        if self.show_progress and self.progress_bar:
+            self.progress_bar.n = 100
+            self.progress_bar.update(0)
+            self.progress_bar.close()
+            self.progress_bar = None
+            self.show_progress = False
         return response_json.get("response") or response_json
 
     def _parse_response(self, response: requests.Response):
@@ -145,6 +161,13 @@ class HttpClient:
                 response_json.get("status") == Status.processing
                 and response_json.get("request_type", "sync") == "sync"
             ):
+                if self.show_progress:
+                    self.progress_bar = tqdm(
+                        total=100,
+                        position=0,
+                        leave=True,
+                        bar_format="{l_bar}{bar:100}{r_bar}{bar:-100b}",
+                    )
                 response_json = self._get_output(
                     response_json.get("data").get("output_url")
                 )
@@ -168,9 +191,12 @@ class HttpClient:
                 f"Invalid request: {response.text}", response
             ) from None
 
-    def get(self, path: str, **kwargs) -> requests.Response:
+    def get(
+        self, path: str, show_progress: Optional[bool] = False, **kwargs
+    ) -> requests.Response:
         """Make a get request"""
-        return self._make_request(self.session.get, path, **kwargs)
+        self.show_progress = show_progress
+        return self._make_request(method=self.session.get, path=path, **kwargs)
 
     def post(self, path: str, data=None, **kwargs) -> requests.Response:
         """Make a post request"""

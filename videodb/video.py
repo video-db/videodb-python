@@ -101,6 +101,7 @@ class Video:
         transcript_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
             params={"force": "true" if force else "false"},
+            show_progress=True,
         )
         self.transcript = transcript_data.get("word_timestamps", [])
         self.transcript_text = transcript_data.get("text", "")

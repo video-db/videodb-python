@@ -17,6 +17,7 @@ def upload(
     _connection,
     file_path: str = None,
     url: str = None,
+    media_type: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     callback_url: Optional[str] = None,
@@ -53,6 +54,7 @@ def upload(
             "name": name,
             "description": description,
             "callback_url": callback_url,
+            "media_type": media_type,
         },
     )
     return upload_data
