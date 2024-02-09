@@ -7,6 +7,7 @@ VIDEO_DB_API: str = "https://api.videodb.io"
 class MediaType:
     video = "video"
     audio = "audio"
+    image = "image"
 
 
 class SearchType:
@@ -31,6 +32,7 @@ class ApiPath:
     upload = "upload"
     video = "video"
     audio = "audio"
+    image = "image"
     stream = "stream"
     thumbnail = "thumbnail"
     upload_url = "upload_url"

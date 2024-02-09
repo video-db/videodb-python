@@ -13,6 +13,7 @@ from videodb.collection import Collection
 from videodb._utils._http_client import HttpClient
 from videodb.video import Video
 from videodb.audio import Audio
+from videodb.image import Image
 
 from videodb._upload import (
     upload,
@@ -46,7 +47,7 @@ class Connection(HttpClient):
         name: Optional[str] = None,
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
-    ) -> Union[Video, Audio, None]:
+    ) -> Union[Video, Audio, Image, None]:
         upload_data = upload(
             self,
             file_path,
@@ -60,3 +61,5 @@ class Connection(HttpClient):
             return Video(self, **upload_data) if upload_data else None
         elif upload_data.get("id").startswith("a-"):
             return Audio(self, **upload_data) if upload_data else None
+        elif upload_data.get("id").startswith("i-"):
+            return Image(self, **upload_data) if upload_data else None

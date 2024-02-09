@@ -85,3 +85,35 @@ class AudioAsset(MediaAsset):
             f"fade_in_duration={self.fade_in_duration}, "
             f"fade_out_duration={self.fade_out_duration})"
         )
+
+
+class ImageAsset(MediaAsset):
+    def __init__(
+        self,
+        asset_id: str,
+        width: Optional[int] = 100,
+        height: Optional[int] = 100,
+        position_x: Optional[int] = 80,
+        position_y: Optional[int] = 20,
+        end: Optional[Union[int, None]] = None,
+    ) -> None:
+        super().__init__(asset_id)
+        self.width = width
+        self.height = height
+        self.position_x = position_x
+        self.position_y = position_y
+        self.end = end
+
+    def to_json(self) -> dict:
+        return copy.deepcopy(self.__dict__)
+
+    def __repr__(self) -> str:
+        return (
+            f"ImageAsset("
+            f"asset_id={self.asset_id}, "
+            f"width={self.width}, "
+            f"height={self.height}, "
+            f"position_x={self.position_x}, "
+            f"position_y={self.position_y}, "
+            f"end={self.end})"
+        )
