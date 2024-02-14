@@ -5,6 +5,7 @@ from videodb._constants import (
     SearchType,
     IndexType,
     Workflows,
+    SubtitleStyleDefaultValues,
 )
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
@@ -129,11 +130,57 @@ class Video:
             },
         )
 
-    def add_subtitle(self) -> str:
+    def add_subtitle(
+        self,
+        font_name: str = SubtitleStyleDefaultValues.font_name,
+        font_size: float = SubtitleStyleDefaultValues.font_size,
+        primary_colour: str = SubtitleStyleDefaultValues.primary_colour,
+        secondary_colour: str = SubtitleStyleDefaultValues.secondary_colour,
+        outline_colour: str = SubtitleStyleDefaultValues.outline_colour,
+        back_colour: str = SubtitleStyleDefaultValues.back_colour,
+        bold: bool = SubtitleStyleDefaultValues.bold,
+        italic: bool = SubtitleStyleDefaultValues.italic,
+        underline: bool = SubtitleStyleDefaultValues.underline,
+        strike_out: bool = SubtitleStyleDefaultValues.strike_out,
+        scale_x: float = SubtitleStyleDefaultValues.scale_x,
+        scale_y: float = SubtitleStyleDefaultValues.scale_x,
+        spacing: float = SubtitleStyleDefaultValues.spacing,
+        angle: float = SubtitleStyleDefaultValues.angle,
+        border_style: int = SubtitleStyleDefaultValues.border_style,
+        outline: float = SubtitleStyleDefaultValues.outline,
+        shadow: float = SubtitleStyleDefaultValues.shadow,
+        alignment: int = SubtitleStyleDefaultValues.alignment,
+        margin_l: int = SubtitleStyleDefaultValues.margin_l,
+        margin_r: int = SubtitleStyleDefaultValues.margin_r,
+        margin_v: int = SubtitleStyleDefaultValues.margin_v,
+    ) -> str:
         subtitle_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.workflow}",
             data={
                 "type": Workflows.add_subtitles,
+                "subtitle_style": {
+                    "font_name": font_name,
+                    "font_size": font_size,
+                    "primary_colour": primary_colour,
+                    "secondary_colour": secondary_colour,
+                    "outline_colour": outline_colour,
+                    "back_colour": back_colour,
+                    "bold": bold,
+                    "italic": italic,
+                    "underline": underline,
+                    "strike_out": strike_out,
+                    "scale_x": scale_x,
+                    "scale_y": scale_y,
+                    "spacing": spacing,
+                    "angle": angle,
+                    "border_style": border_style,
+                    "outline": outline,
+                    "shadow": shadow,
+                    "alignment": alignment,
+                    "margin_l": margin_l,
+                    "margin_r": margin_r,
+                    "margin_v": margin_v,
+                },
             },
         )
         return subtitle_data.get("stream_url", None)
