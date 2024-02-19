@@ -101,9 +101,9 @@ class Collection:
             description,
             callback_url,
         )
-        if upload_data.get("id").startswith("m-"):
+        if upload_data.get("id", "").startswith("m-"):
             return Video(self._connection, **upload_data) if upload_data else None
-        elif upload_data.get("id").startswith("a-"):
+        elif upload_data.get("id", "").startswith("a-"):
             return Audio(self._connection, **upload_data) if upload_data else None
-        elif upload_data.get("id").startswith("i-"):
+        elif upload_data.get("id", "").startswith("i-"):
             return Image(self._connection, **upload_data) if upload_data else None

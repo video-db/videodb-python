@@ -57,9 +57,9 @@ class Connection(HttpClient):
             description,
             callback_url,
         )
-        if upload_data.get("id").startswith("m-"):
+        if upload_data.get("id", "").startswith("m-"):
             return Video(self, **upload_data) if upload_data else None
-        elif upload_data.get("id").startswith("a-"):
+        elif upload_data.get("id", "").startswith("a-"):
             return Audio(self, **upload_data) if upload_data else None
-        elif upload_data.get("id").startswith("i-"):
+        elif upload_data.get("id", "").startswith("i-"):
             return Image(self, **upload_data) if upload_data else None
