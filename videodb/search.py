@@ -116,7 +116,7 @@ class SemanticSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
             data={
-                "type": SearchType.semantic,
+                "index_type": SearchType.semantic,
                 "query": query,
                 "score_threshold": score_threshold
                 or SemanticSearchDefaultValues.score_threshold,
@@ -137,7 +137,7 @@ class SemanticSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.collection}/{collection_id}/{ApiPath.search}",
             data={
-                "type": SearchType.semantic,
+                "index_type": SearchType.semantic,
                 "query": query,
                 "score_threshold": score_threshold
                 or SemanticSearchDefaultValues.score_threshold,
@@ -164,7 +164,7 @@ class KeywordSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
             data={
-                "type": SearchType.keyword,
+                "index_type": SearchType.keyword,
                 "query": query,
                 "score_threshold": score_threshold,
                 "result_threshold": result_threshold,
