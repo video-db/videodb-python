@@ -148,7 +148,35 @@ class SemanticSearch(Search):
         return SearchResult(self._connection, **search_data)
 
 
-search_type = {SearchType.semantic: SemanticSearch}
+class KeywordSearch(Search):
+    def __init__(self, _connection):
+        self._connection = _connection
+
+    def search_inside_video(
+        self,
+        video_id: str,
+        query: str,
+        result_threshold: Optional[int] = None,
+        score_threshold: Optional[int] = None,
+        dynamic_score_percentage: Optional[int] = None,
+        **kwargs,
+    ):
+        search_data = self._connection.post(
+            path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
+            data={
+                "type": SearchType.keyword,
+                "query": query,
+                "score_threshold": score_threshold,
+                "result_threshold": result_threshold,
+            },
+        )
+        return SearchResult(self._connection, **search_data)
+
+    def search_inside_collection(**kwargs):
+        raise NotImplementedError("Keyword search will be implemented in the future")
+
+
+search_type = {SearchType.semantic: SemanticSearch, SearchType.keyword: KeywordSearch}
 
 
 class SearchFactory:
