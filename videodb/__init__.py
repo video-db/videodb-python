@@ -8,6 +8,7 @@ from videodb._utils._video import play_stream
 from videodb._constants import (
     VIDEO_DB_API,
     MediaType,
+    SearchType,
     SubtitleAlignment,
     SubtitleBorderStyle,
     SubtitleStyle,
@@ -32,6 +33,7 @@ __all__ = [
     "SearchError",
     "play_stream",
     "MediaType",
+    "SearchType",
     "SubtitleAlignment",
     "SubtitleBorderStyle",
     "SubtitleStyle",

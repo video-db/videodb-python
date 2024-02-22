@@ -13,6 +13,7 @@ class MediaType:
 
 class SearchType:
     semantic = "semantic"
+    keyword = "keyword"
 
 
 class IndexType:
