@@ -1,9 +1,10 @@
 import copy
 import logging
+import uuid
 
 from typing import Optional, Union
 
-from videodb._constants import MaxSupported
+from videodb._constants import MaxSupported, TextStyle
 
 logger = logging.getLogger(__name__)
 
@@ -116,4 +117,30 @@ class ImageAsset(MediaAsset):
             f"x={self.x}, "
             f"y={self.y}, "
             f"duration={self.duration})"
+        )
+
+
+class TextAsset(MediaAsset):
+    def __init__(
+        self,
+        duration: Optional[int] = None,
+        style: TextStyle = TextStyle(),
+    ) -> None:
+        super().__init__(f"t-{str(uuid.uuid4())}")
+        self.duration = duration
+        self.style: TextStyle = style
+
+    def to_json(self) -> dict:
+        return {
+            "asset_id": copy.deepcopy(self.asset_id),
+            "duration": copy.deepcopy(self.duration),
+            "style": copy.deepcopy(self.style.__dict__),
+        }
+
+    def __repr__(self) -> str:
+        return (
+            f"TextAsset("
+            f"asset_id={self.asset_id}, "
+            f"duration={self.duration}, "
+            f"style={self.style})"
         )
