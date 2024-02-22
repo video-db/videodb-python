@@ -5,7 +5,7 @@ import logging
 
 from typing import Optional
 from videodb._utils._video import play_stream
-from videodb._constants import VIDEO_DB_API, MediaType
+from videodb._constants import VIDEO_DB_API, MediaType, SearchType
 from videodb.client import Connection
 from videodb.exceptions import (
     VideodbError,
@@ -16,7 +16,7 @@ from videodb.exceptions import (
 
 logger: logging.Logger = logging.getLogger("videodb")
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __author__ = "videodb"
 
 __all__ = [
@@ -26,6 +26,7 @@ __all__ = [
     "SearchError",
     "play_stream",
     "MediaType",
+    "SearchType",
 ]
 
 
