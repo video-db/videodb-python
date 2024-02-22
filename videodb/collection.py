@@ -103,8 +103,8 @@ class Collection:
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):
-            return Video(self, **upload_data)
+            return Video(self._connection, **upload_data)
         elif media_id.startswith("a-"):
-            return Audio(self, **upload_data)
+            return Audio(self._connection, **upload_data)
         elif media_id.startswith("img-"):
-            return Image(self, **upload_data)
+            return Image(self._connection, **upload_data)
