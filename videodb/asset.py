@@ -91,11 +91,11 @@ class ImageAsset(MediaAsset):
     def __init__(
         self,
         asset_id: str,
-        width: Optional[int] = 100,
-        height: Optional[int] = 100,
-        x: Optional[int] = 80,
-        y: Optional[int] = 20,
-        duration: Optional[Union[int, None]] = None,
+        width: Union[int, str] = 100,
+        height: Union[int, str] = 100,
+        x: Union[int, str] = 80,
+        y: Union[int, str] = 20,
+        duration: Optional[int] = None,
     ) -> None:
         super().__init__(asset_id)
         self.width = width
