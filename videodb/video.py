@@ -5,6 +5,7 @@ from videodb._constants import (
     SearchType,
     IndexType,
     Workflows,
+    SubtitleStyle,
 )
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
@@ -129,11 +130,14 @@ class Video:
             },
         )
 
-    def add_subtitle(self) -> str:
+    def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:
+        if not isinstance(style, SubtitleStyle):
+            raise ValueError("style must be of type SubtitleStyle")
         subtitle_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.workflow}",
             data={
                 "type": Workflows.add_subtitles,
+                "subtitle_style": style.__dict__,
             },
         )
         return subtitle_data.get("stream_url", None)

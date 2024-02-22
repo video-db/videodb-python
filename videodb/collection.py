@@ -13,6 +13,7 @@ from videodb._constants import (
 )
 from videodb.video import Video
 from videodb.audio import Audio
+from videodb.image import Image
 from videodb.search import SearchFactory, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,17 @@ class Collection:
     def delete_audio(self, audio_id: str) -> None:
         return self._connection.delete(path=f"{ApiPath.audio}/{audio_id}")
 
+    def get_images(self) -> list[Image]:
+        images_data = self._connection.get(path=f"{ApiPath.image}")
+        return [Image(self._connection, **image) for image in images_data.get("images")]
+
+    def get_image(self, image_id: str) -> Image:
+        image_data = self._connection.get(path=f"{ApiPath.image}/{image_id}")
+        return Image(self._connection, **image_data)
+
+    def delete_image(self, image_id: str) -> None:
+        return self._connection.delete(path=f"{ApiPath.image}/{image_id}")
+
     def search(
         self,
         query: str,
@@ -79,7 +91,7 @@ class Collection:
         name: Optional[str] = None,
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
-    ) -> Union[Video, Audio, None]:
+    ) -> Union[Video, Audio, Image, None]:
         upload_data = upload(
             self._connection,
             file_path,
@@ -89,7 +101,10 @@ class Collection:
             description,
             callback_url,
         )
-        if upload_data.get("id").startswith("m-"):
-            return Video(self._connection, **upload_data) if upload_data else None
-        elif upload_data.get("id").startswith("a-"):
-            return Audio(self._connection, **upload_data) if upload_data else None
+        media_id = upload_data.get("id", "")
+        if media_id.startswith("m-"):
+            return Video(self, **upload_data)
+        elif media_id.startswith("a-"):
+            return Audio(self, **upload_data)
+        elif media_id.startswith("img-"):
+            return Image(self, **upload_data)

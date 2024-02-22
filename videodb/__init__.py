@@ -5,7 +5,14 @@ import logging
 
 from typing import Optional
 from videodb._utils._video import play_stream
-from videodb._constants import VIDEO_DB_API, MediaType, SearchType
+from videodb._constants import (
+    VIDEO_DB_API,
+    MediaType,
+    SearchType,
+    SubtitleAlignment,
+    SubtitleBorderStyle,
+    SubtitleStyle,
+)
 from videodb.client import Connection
 from videodb.exceptions import (
     VideodbError,
@@ -27,6 +34,9 @@ __all__ = [
     "play_stream",
     "MediaType",
     "SearchType",
+    "SubtitleAlignment",
+    "SubtitleBorderStyle",
+    "SubtitleStyle",
 ]
 
 
