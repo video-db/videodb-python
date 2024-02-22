@@ -1,5 +1,6 @@
 """Constants used in the videodb package."""
 
+from dataclasses import dataclass
 
 VIDEO_DB_API: str = "https://api.videodb.io"
 
@@ -78,7 +79,8 @@ class SubtitleAlignment:
     top_right = 9
 
 
-class SubtitleStyleDefaultValues:
+@dataclass
+class SubtitleStyle:
     font_name: str = "Arial"
     font_size: float = 18
     primary_colour: str = "&H00FFFFFF"  # white
