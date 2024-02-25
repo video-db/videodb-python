@@ -174,7 +174,7 @@ class KeywordSearch(Search):
         )
         return SearchResult(self._connection, **search_data)
 
-    def search_inside_collection(**kwargs):
+    def search_inside_collection(self, **kwargs):
         raise NotImplementedError("Keyword search will be implemented in the future")
 
 
@@ -202,10 +202,9 @@ class SceneSearch(Search):
                 "result_threshold": result_threshold,
             },
         )
-        print(search_data)
         return SearchResult(self._connection, **search_data)
 
-    def search_inside_collection(**kwargs):
+    def search_inside_collection(self, **kwargs):
         raise NotImplementedError("Scene search will be implemented in the future")
 
 
