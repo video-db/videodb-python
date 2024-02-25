@@ -14,10 +14,18 @@ class MediaType:
 class SearchType:
     semantic = "semantic"
     keyword = "keyword"
+    scene = "scene"
 
 
 class IndexType:
     semantic = "semantic"
+    scene = "scene"
+
+
+class SceneModels:
+    gemini_vision: str = "gemini-vision"
+    gpt4_vision: str = "gpt4-v"
+    all: str = "all"
 
 
 class Workflows:
@@ -44,6 +52,7 @@ class ApiPath:
     compile = "compile"
     workflow = "workflow"
     timeline = "timeline"
+    delete = "delete"
 
 
 class Status:
