@@ -175,6 +175,7 @@ class Video:
                 "model_name": scene_model,
             },
         )
+        self.scenes = None
 
     def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:
         if not isinstance(style, SubtitleStyle):
