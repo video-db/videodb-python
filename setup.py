@@ -28,7 +28,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/video-db/videodb-python",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    python_requires=">=3.9",
+    python_requires=">=3.8.1",
     install_requires=[
         "requests>=2.25.1",
         "backoff>=2.2.1",

@@ -172,7 +172,7 @@ class KeywordSearch(Search):
         )
         return SearchResult(self._connection, **search_data)
 
-    def search_inside_collection(**kwargs):
+    def search_inside_collection(self, **kwargs):
         raise NotImplementedError("Keyword search will be implemented in the future")
 
 
