@@ -12,6 +12,7 @@ from videodb._constants import (
     SubtitleAlignment,
     SubtitleBorderStyle,
     SubtitleStyle,
+    TextStyle,
 )
 from videodb.client import Connection
 from videodb.exceptions import (
@@ -37,6 +38,7 @@ __all__ = [
     "SubtitleAlignment",
     "SubtitleBorderStyle",
     "SubtitleStyle",
+    "TextStyle",
 ]
 
 

@@ -123,15 +123,18 @@ class ImageAsset(MediaAsset):
 class TextAsset(MediaAsset):
     def __init__(
         self,
+        text: str,
         duration: Optional[int] = None,
         style: TextStyle = TextStyle(),
     ) -> None:
-        super().__init__(f"t-{str(uuid.uuid4())}")
+        super().__init__(f"txt-{str(uuid.uuid4())}")
+        self.text = text
         self.duration = duration
         self.style: TextStyle = style
 
     def to_json(self) -> dict:
         return {
+            "text": copy.deepcopy(self.text),
             "asset_id": copy.deepcopy(self.asset_id),
             "duration": copy.deepcopy(self.duration),
             "style": copy.deepcopy(self.style.__dict__),
@@ -140,6 +143,7 @@ class TextAsset(MediaAsset):
     def __repr__(self) -> str:
         return (
             f"TextAsset("
+            f"text={self.text}, "
             f"asset_id={self.asset_id}, "
             f"duration={self.duration}, "
             f"style={self.style})"
