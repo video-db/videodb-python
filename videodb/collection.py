@@ -69,12 +69,12 @@ class Collection:
     def search(
         self,
         query: str,
-        type: Optional[str] = SearchType.semantic,
+        search_type: Optional[str] = SearchType.semantic,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[int] = None,
         dynamic_score_percentage: Optional[int] = None,
     ) -> SearchResult:
-        search = SearchFactory(self._connection).get_search(type)
+        search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
             self.id,
             query,
