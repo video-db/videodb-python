@@ -28,7 +28,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/video-db/videodb-python",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    python_requires=">=3.8.1",
+    python_requires=">=3.8",
     install_requires=[
         "requests>=2.25.1",
         "backoff>=2.2.1",
@@ -37,7 +37,7 @@ setup(
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8.1",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
