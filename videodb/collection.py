@@ -4,7 +4,6 @@ from typing import (
     Optional,
     Union,
     List,
-    Dict
 )
 from videodb._upload import (
     upload,
