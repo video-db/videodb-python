@@ -24,7 +24,7 @@ from videodb.exceptions import (
 
 logger: logging.Logger = logging.getLogger("videodb")
 
-__version__ = "0.0.5a1"
+__version__ = "0.0.5"
 __author__ = "videodb"
 
 __all__ = [

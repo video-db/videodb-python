@@ -3,6 +3,7 @@ import logging
 from typing import (
     Optional,
     Union,
+    List,
 )
 from videodb._upload import (
     upload,
@@ -26,7 +27,7 @@ class Collection:
         self.name = name
         self.description = description
 
-    def get_videos(self) -> list[Video]:
+    def get_videos(self) -> List[Video]:
         videos_data = self._connection.get(path=f"{ApiPath.video}")
         return [Video(self._connection, **video) for video in videos_data.get("videos")]
 
@@ -44,7 +45,7 @@ class Collection:
         """
         return self._connection.delete(path=f"{ApiPath.video}/{video_id}")
 
-    def get_audios(self) -> list[Audio]:
+    def get_audios(self) -> List[Audio]:
         audios_data = self._connection.get(path=f"{ApiPath.audio}")
         return [Audio(self._connection, **audio) for audio in audios_data.get("audios")]
 
@@ -55,7 +56,7 @@ class Collection:
     def delete_audio(self, audio_id: str) -> None:
         return self._connection.delete(path=f"{ApiPath.audio}/{audio_id}")
 
-    def get_images(self) -> list[Image]:
+    def get_images(self) -> List[Image]:
         images_data = self._connection.get(path=f"{ApiPath.image}")
         return [Image(self._connection, **image) for image in images_data.get("images")]
 
