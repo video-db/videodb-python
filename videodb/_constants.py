@@ -115,7 +115,6 @@ class TextStyle:
     fontcolor_expr: str = ""
     alpha: float = 1.0
     font: str = "Sans"
-    ft_load_flags: str = "default"
     box: bool = True
     boxcolor: str = "white"
     boxborderw: str = "10"

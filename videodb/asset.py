@@ -33,8 +33,8 @@ class VideoAsset(MediaAsset):
     def __init__(
         self,
         asset_id: str,
-        start: Optional[int] = 0,
-        end: Optional[Union[int, None]] = None,
+        start: Optional[float] = 0,
+        end: Optional[float] = None,
     ) -> None:
         super().__init__(asset_id)
         self.start: int = start
@@ -56,8 +56,8 @@ class AudioAsset(MediaAsset):
     def __init__(
         self,
         asset_id: str,
-        start: Optional[int] = 0,
-        end: Optional[Union[int, None]] = None,
+        start: Optional[float] = 0,
+        end: Optional[float] = None,
         disable_other_tracks: Optional[bool] = True,
         fade_in_duration: Optional[Union[int, float]] = 0,
         fade_out_duration: Optional[Union[int, float]] = 0,
