@@ -1,11 +1,11 @@
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, Union, List, Dict, Tuple
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
-    SearchType,
     IndexType,
-    Workflows,
+    SearchType,
     SubtitleStyle,
+    Workflows,
 )
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
@@ -24,6 +24,7 @@ class Video:
         self.length = float(kwargs.get("length", 0.0))
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
+        self.scenes = kwargs.get("scenes", None)
 
     def __repr__(self) -> str:
         return (
@@ -51,11 +52,11 @@ class Video:
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_video(
-            self.id,
-            query,
-            result_threshold,
-            score_threshold,
-            dynamic_score_percentage,
+            video_id=self.id,
+            query=query,
+            result_threshold=result_threshold,
+            score_threshold=score_threshold,
+            dynamic_score_percentage=dynamic_score_percentage,
         )
 
     def delete(self) -> None:
@@ -129,6 +130,43 @@ class Video:
                 "index_type": IndexType.semantic,
             },
         )
+
+    def index_scenes(
+        self,
+        force: bool = False,
+        prompt: str = None,
+        callback_url: str = None,
+    ) -> None:
+        self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
+            data={
+                "index_type": IndexType.scene,
+                "force": force,
+                "prompt": prompt,
+                "callback_url": callback_url,
+            },
+        )
+
+    def get_scenes(self) -> Union[list, None]:
+        if self.scenes:
+            return self.scenes
+        scene_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
+            params={
+                "index_type": IndexType.scene,
+            },
+        )
+        self.scenes = scene_data
+        return scene_data if scene_data else None
+
+    def delete_scene_index(self) -> None:
+        self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.delete}",
+            data={
+                "index_type": IndexType.scene,
+            },
+        )
+        self.scenes = None
 
     def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:
         if not isinstance(style, SubtitleStyle):

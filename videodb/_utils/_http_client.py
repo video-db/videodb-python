@@ -133,7 +133,7 @@ class HttpClient:
             response_json.get("status") == Status.in_progress
             or response_json.get("status") == Status.processing
         ):
-            percentage = response_json.get("data").get("percentage")
+            percentage = response_json.get("data", {}).get("percentage")
             if percentage and self.show_progress and self.progress_bar:
                 self.progress_bar.n = int(percentage)
                 self.progress_bar.update(0)
@@ -169,7 +169,7 @@ class HttpClient:
                         bar_format="{l_bar}{bar:100}{r_bar}{bar:-100b}",
                     )
                 response_json = self._get_output(
-                    response_json.get("data").get("output_url")
+                    response_json.get("data", {}).get("output_url")
                 )
                 if response_json.get("success"):
                     return response_json.get("data")
