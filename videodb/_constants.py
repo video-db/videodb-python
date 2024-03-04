@@ -14,10 +14,12 @@ class MediaType:
 class SearchType:
     semantic = "semantic"
     keyword = "keyword"
+    scene = "scene"
 
 
 class IndexType:
     semantic = "semantic"
+    scene = "scene"
 
 
 class Workflows:
@@ -44,6 +46,7 @@ class ApiPath:
     compile = "compile"
     workflow = "workflow"
     timeline = "timeline"
+    delete = "delete"
 
 
 class Status:

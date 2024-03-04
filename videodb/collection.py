@@ -77,11 +77,11 @@ class Collection:
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
-            self.id,
-            query,
-            result_threshold,
-            score_threshold,
-            dynamic_score_percentage,
+            collection_id=self.id,
+            query=query,
+            result_threshold=result_threshold,
+            score_threshold=score_threshold,
+            dynamic_score_percentage=dynamic_score_percentage,
         )
 
     def upload(

@@ -112,6 +112,7 @@ class SemanticSearch(Search):
         result_threshold: Optional[int] = None,
         score_threshold: Optional[int] = None,
         dynamic_score_percentage: Optional[int] = None,
+        **kwargs,
     ):
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
@@ -133,6 +134,7 @@ class SemanticSearch(Search):
         result_threshold: Optional[int] = None,
         score_threshold: Optional[int] = None,
         dynamic_score_percentage: Optional[int] = None,
+        **kwargs,
     ):
         search_data = self._connection.post(
             path=f"{ApiPath.collection}/{collection_id}/{ApiPath.search}",
@@ -176,7 +178,39 @@ class KeywordSearch(Search):
         raise NotImplementedError("Keyword search will be implemented in the future")
 
 
-search_type = {SearchType.semantic: SemanticSearch, SearchType.keyword: KeywordSearch}
+class SceneSearch(Search):
+    def __init__(self, _connection):
+        self._connection = _connection
+
+    def search_inside_video(
+        self,
+        video_id: str,
+        query: str,
+        result_threshold: Optional[int] = None,
+        score_threshold: Optional[int] = None,
+        dynamic_score_percentage: Optional[int] = None,
+        **kwargs,
+    ):
+        search_data = self._connection.post(
+            path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
+            data={
+                "index_type": SearchType.scene,
+                "query": query,
+                "score_threshold": score_threshold,
+                "result_threshold": result_threshold,
+            },
+        )
+        return SearchResult(self._connection, **search_data)
+
+    def search_inside_collection(self, **kwargs):
+        raise NotImplementedError("Scene search will be implemented in the future")
+
+
+search_type = {
+    SearchType.semantic: SemanticSearch,
+    SearchType.keyword: KeywordSearch,
+    SearchType.scene: SceneSearch,
+}
 
 
 class SearchFactory:
