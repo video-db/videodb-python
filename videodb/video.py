@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, Union, List, Dict, Tuple
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
