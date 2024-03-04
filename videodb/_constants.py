@@ -22,12 +22,6 @@ class IndexType:
     scene = "scene"
 
 
-class SceneModels:
-    gemini_vision: str = "gemini-vision"
-    gpt4_vision: str = "gpt4-v"
-    all: str = "all"
-
-
 class Workflows:
     add_subtitles = "add_subtitles"
 

@@ -3,7 +3,6 @@ from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     IndexType,
-    SceneModels,
     SearchType,
     SubtitleStyle,
     Workflows,
@@ -47,7 +46,6 @@ class Video:
         self,
         query: str,
         search_type: Optional[str] = SearchType.semantic,
-        scene_model: Optional[str] = SceneModels.gemini_vision,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[int] = None,
         dynamic_score_percentage: Optional[int] = None,
@@ -59,7 +57,6 @@ class Video:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
-            scene_model=scene_model,
         )
 
     def delete(self) -> None:
@@ -136,7 +133,6 @@ class Video:
 
     def index_scenes(
         self,
-        scene_model: str = SceneModels.gemini_vision,
         force: bool = False,
         prompt: str = None,
         callback_url: str = None,
@@ -145,34 +141,29 @@ class Video:
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             data={
                 "index_type": IndexType.scene,
-                "model_name": scene_model,
                 "force": force,
                 "prompt": prompt,
                 "callback_url": callback_url,
             },
         )
 
-    def get_scenes(
-        self, scene_model: str = SceneModels.gemini_vision
-    ) -> Union[list, None]:
+    def get_scenes(self) -> Union[list, None]:
         if self.scenes:
             return self.scenes
         scene_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             params={
                 "index_type": IndexType.scene,
-                "model_name": scene_model,
             },
         )
         self.scenes = scene_data
         return scene_data if scene_data else None
 
-    def delete_scene_index(self, scene_model: str = SceneModels.gemini_vision) -> None:
+    def delete_scene_index(self) -> None:
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.delete}",
             data={
                 "index_type": IndexType.scene,
-                "model_name": scene_model,
             },
         )
         self.scenes = None

@@ -186,7 +186,6 @@ class SceneSearch(Search):
         self,
         video_id: str,
         query: str,
-        scene_model: Optional[str] = None,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[int] = None,
         dynamic_score_percentage: Optional[int] = None,
@@ -197,7 +196,6 @@ class SceneSearch(Search):
             data={
                 "index_type": SearchType.scene,
                 "query": query,
-                "model_name": scene_model,
                 "score_threshold": score_threshold,
                 "result_threshold": result_threshold,
             },
