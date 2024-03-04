@@ -12,6 +12,7 @@ from videodb._constants import (
     SubtitleAlignment,
     SubtitleBorderStyle,
     SubtitleStyle,
+    TextStyle,
 )
 from videodb.client import Connection
 from videodb.exceptions import (
@@ -23,7 +24,7 @@ from videodb.exceptions import (
 
 logger: logging.Logger = logging.getLogger("videodb")
 
-__version__ = "0.0.5"
+__version__ = "0.1.0"
 __author__ = "videodb"
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "SubtitleAlignment",
     "SubtitleBorderStyle",
     "SubtitleStyle",
+    "TextStyle",
 ]
 
 

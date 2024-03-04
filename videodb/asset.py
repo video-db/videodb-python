@@ -1,9 +1,10 @@
 import copy
 import logging
+import uuid
 
 from typing import Optional, Union
 
-from videodb._constants import MaxSupported
+from videodb._constants import MaxSupported, TextStyle
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +33,8 @@ class VideoAsset(MediaAsset):
     def __init__(
         self,
         asset_id: str,
-        start: Optional[int] = 0,
-        end: Optional[Union[int, None]] = None,
+        start: Optional[float] = 0,
+        end: Optional[float] = None,
     ) -> None:
         super().__init__(asset_id)
         self.start: int = start
@@ -55,8 +56,8 @@ class AudioAsset(MediaAsset):
     def __init__(
         self,
         asset_id: str,
-        start: Optional[int] = 0,
-        end: Optional[Union[int, None]] = None,
+        start: Optional[float] = 0,
+        end: Optional[float] = None,
         disable_other_tracks: Optional[bool] = True,
         fade_in_duration: Optional[Union[int, float]] = 0,
         fade_out_duration: Optional[Union[int, float]] = 0,
@@ -116,4 +117,34 @@ class ImageAsset(MediaAsset):
             f"x={self.x}, "
             f"y={self.y}, "
             f"duration={self.duration})"
+        )
+
+
+class TextAsset(MediaAsset):
+    def __init__(
+        self,
+        text: str,
+        duration: Optional[int] = None,
+        style: TextStyle = TextStyle(),
+    ) -> None:
+        super().__init__(f"txt-{str(uuid.uuid4())}")
+        self.text = text
+        self.duration = duration
+        self.style: TextStyle = style
+
+    def to_json(self) -> dict:
+        return {
+            "text": copy.deepcopy(self.text),
+            "asset_id": copy.deepcopy(self.asset_id),
+            "duration": copy.deepcopy(self.duration),
+            "style": copy.deepcopy(self.style.__dict__),
+        }
+
+    def __repr__(self) -> str:
+        return (
+            f"TextAsset("
+            f"text={self.text}, "
+            f"asset_id={self.asset_id}, "
+            f"duration={self.duration}, "
+            f"style={self.style})"
         )
