@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, List, Dict, Tuple
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
@@ -68,7 +68,7 @@ class Video:
         """
         self._connection.delete(path=f"{ApiPath.video}/{self.id}")
 
-    def generate_stream(self, timeline: Optional[list[tuple[int, int]]] = None) -> str:
+    def generate_stream(self, timeline: Optional[List[Tuple[int, int]]] = None) -> str:
         """Generate the stream url of the video
 
         :param list timeline: The timeline of the video to be streamed. Defaults to None.
@@ -108,7 +108,7 @@ class Video:
         self.transcript = transcript_data.get("word_timestamps", [])
         self.transcript_text = transcript_data.get("text", "")
 
-    def get_transcript(self, force: bool = False) -> list[dict]:
+    def get_transcript(self, force: bool = False) -> List[Dict]:
         self._fetch_transcript(force)
         return self.transcript
 
