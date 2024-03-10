@@ -27,6 +27,14 @@ class Collection:
         self.name = name
         self.description = description
 
+    def __repr__(self) -> str:
+        return (
+            f"Collection("
+            f"id={self.id}, "
+            f"name={self.name}, "
+            f"description={self.description})"
+        )
+
     def get_videos(self) -> List[Video]:
         videos_data = self._connection.get(path=f"{ApiPath.video}")
         return [Video(self._connection, **video) for video in videos_data.get("videos")]

@@ -3,6 +3,7 @@ import logging
 from typing import (
     Optional,
     Union,
+    List,
 )
 
 from videodb._constants import (
@@ -35,6 +36,33 @@ class Connection(HttpClient):
         return Collection(
             self,
             self.collection_id,
+            collection_data.get("name"),
+            collection_data.get("description"),
+        )
+
+    def get_collections(self) -> List[Collection]:
+        collections_data = self.get(path=ApiPath.collection)
+        return [
+            Collection(
+                self,
+                collection.get("id"),
+                collection.get("name"),
+                collection.get("description"),
+            )
+            for collection in collections_data.get("collections")
+        ]
+
+    def create_collection(self, name: str, description: str) -> Collection:
+        collection_data = self.post(
+            path=ApiPath.collection,
+            data={
+                "name": name,
+                "description": description,
+            },
+        )
+        return Collection(
+            self,
+            collection_data.get("id"),
             collection_data.get("name"),
             collection_data.get("description"),
         )
