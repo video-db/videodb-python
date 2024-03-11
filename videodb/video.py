@@ -116,18 +116,18 @@ class Video:
         self._fetch_transcript(force)
         return self.transcript_text
 
-    def index_spoken_words(self) -> None:
+    def index_spoken_words(self, force: bool = False) -> None:
         """Semantic indexing of spoken words in the video
 
         :raises InvalidRequestError: If the video is already indexed
         :return: None if the indexing is successful
         :rtype: None
         """
-        self._fetch_transcript()
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             data={
                 "index_type": IndexType.semantic,
+                "force": force,
             },
         )
 
