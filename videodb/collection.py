@@ -36,7 +36,9 @@ class Collection:
         )
 
     def get_videos(self) -> List[Video]:
-        videos_data = self._connection.get(path=f"{ApiPath.video}")
+        videos_data = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.video}"
+        )
         return [Video(self._connection, **video) for video in videos_data.get("videos")]
 
     def get_video(self, video_id: str) -> Video:
@@ -54,7 +56,9 @@ class Collection:
         return self._connection.delete(path=f"{ApiPath.video}/{video_id}")
 
     def get_audios(self) -> List[Audio]:
-        audios_data = self._connection.get(path=f"{ApiPath.audio}")
+        audios_data = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.audio}"
+        )
         return [Audio(self._connection, **audio) for audio in audios_data.get("audios")]
 
     def get_audio(self, audio_id: str) -> Audio:
@@ -65,7 +69,9 @@ class Collection:
         return self._connection.delete(path=f"{ApiPath.audio}/{audio_id}")
 
     def get_images(self) -> List[Image]:
-        images_data = self._connection.get(path=f"{ApiPath.image}")
+        images_data = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.image}"
+        )
         return [Image(self._connection, **image) for image in images_data.get("images")]
 
     def get_image(self, image_id: str) -> Image:
