@@ -60,6 +60,7 @@ class Connection(HttpClient):
                 "description": description,
             },
         )
+        self.collection_id = collection_data.get("id", "default")
         return Collection(
             self,
             collection_data.get("id"),
