@@ -129,6 +129,7 @@ class Video:
                 "index_type": IndexType.semantic,
                 "force": force,
             },
+            show_progress=True,
         )
 
     def index_scenes(

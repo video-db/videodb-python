@@ -87,7 +87,7 @@ class HttpClient:
 
     def _handle_request_error(self, e: requests.exceptions.RequestException) -> None:
         """Handle request errors"""
-
+        self.show_progress = False
         if isinstance(e, requests.exceptions.HTTPError):
             try:
                 error_message = e.response.json().get("message", "Unknown error")
@@ -198,8 +198,11 @@ class HttpClient:
         self.show_progress = show_progress
         return self._make_request(method=self.session.get, path=path, **kwargs)
 
-    def post(self, path: str, data=None, **kwargs) -> requests.Response:
+    def post(
+        self, path: str, data=None, show_progress: Optional[bool] = False, **kwargs
+    ) -> requests.Response:
         """Make a post request"""
+        self.show_progress = show_progress
         return self._make_request(self.session.post, path, json=data, **kwargs)
 
     def put(self, path: str, data=None, **kwargs) -> requests.Response:
