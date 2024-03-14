@@ -68,6 +68,22 @@ class Connection(HttpClient):
             collection_data.get("description"),
         )
 
+    def update_collection(self, id: str, name: str, description: str) -> Collection:
+        collection_data = self.patch(
+            path=f"{ApiPath.collection}/{id}",
+            data={
+                "name": name,
+                "description": description,
+            },
+        )
+        self.collection_id = collection_data.get("id", "default")
+        return Collection(
+            self,
+            collection_data.get("id"),
+            collection_data.get("name"),
+            collection_data.get("description"),
+        )
+
     def upload(
         self,
         file_path: str = None,

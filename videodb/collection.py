@@ -37,12 +37,15 @@ class Collection:
 
     def get_videos(self) -> List[Video]:
         videos_data = self._connection.get(
-            path=f"{ApiPath.collection}/{self.id}/{ApiPath.video}"
+            path=f"{ApiPath.video}",
+            params={"collection_id": self.id},
         )
         return [Video(self._connection, **video) for video in videos_data.get("videos")]
 
     def get_video(self, video_id: str) -> Video:
-        video_data = self._connection.get(path=f"{ApiPath.video}/{video_id}")
+        video_data = self._connection.get(
+            path=f"{ApiPath.video}/{video_id}", params={"collection_id": self.id}
+        )
         return Video(self._connection, **video_data)
 
     def delete_video(self, video_id: str) -> None:
@@ -53,33 +56,45 @@ class Collection:
         :return: None if the delete is successful
         :rtype: None
         """
-        return self._connection.delete(path=f"{ApiPath.video}/{video_id}")
+        return self._connection.delete(
+            path=f"{ApiPath.video}/{video_id}", params={"collection_id": self.id}
+        )
 
     def get_audios(self) -> List[Audio]:
         audios_data = self._connection.get(
-            path=f"{ApiPath.collection}/{self.id}/{ApiPath.audio}"
+            path=f"{ApiPath.audio}",
+            params={"collection_id": self.id},
         )
         return [Audio(self._connection, **audio) for audio in audios_data.get("audios")]
 
     def get_audio(self, audio_id: str) -> Audio:
-        audio_data = self._connection.get(path=f"{ApiPath.audio}/{audio_id}")
+        audio_data = self._connection.get(
+            path=f"{ApiPath.audio}/{audio_id}", params={"collection_id": self.id}
+        )
         return Audio(self._connection, **audio_data)
 
     def delete_audio(self, audio_id: str) -> None:
-        return self._connection.delete(path=f"{ApiPath.audio}/{audio_id}")
+        return self._connection.delete(
+            path=f"{ApiPath.audio}/{audio_id}", params={"collection_id": self.id}
+        )
 
     def get_images(self) -> List[Image]:
         images_data = self._connection.get(
-            path=f"{ApiPath.collection}/{self.id}/{ApiPath.image}"
+            path=f"{ApiPath.image}",
+            params={"collection_id": self.id},
         )
         return [Image(self._connection, **image) for image in images_data.get("images")]
 
     def get_image(self, image_id: str) -> Image:
-        image_data = self._connection.get(path=f"{ApiPath.image}/{image_id}")
+        image_data = self._connection.get(
+            path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
+        )
         return Image(self._connection, **image_data)
 
     def delete_image(self, image_id: str) -> None:
-        return self._connection.delete(path=f"{ApiPath.image}/{image_id}")
+        return self._connection.delete(
+            path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
+        )
 
     def search(
         self,
