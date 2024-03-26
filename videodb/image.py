@@ -16,8 +16,8 @@ class Image:
             f"Image("
             f"id={self.id}, "
             f"collection_id={self.collection_id}, "
-            f"name={self.name}), "
-            f"url={self.url}"
+            f"name={self.name}, "
+            f"url={self.url})"
         )
 
     def delete(self) -> None:
