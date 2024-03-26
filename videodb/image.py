@@ -9,13 +9,15 @@ class Image:
         self.id = id
         self.collection_id = collection_id
         self.name = kwargs.get("name", None)
+        self.url = kwargs.get("url", None)
 
     def __repr__(self) -> str:
         return (
             f"Image("
             f"id={self.id}, "
             f"collection_id={self.collection_id}, "
-            f"name={self.name})"
+            f"name={self.name}), "
+            f"url={self.url}"
         )
 
     def delete(self) -> None:
