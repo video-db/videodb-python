@@ -7,6 +7,7 @@ from videodb._constants import (
     SubtitleStyle,
     Workflows,
 )
+from videodb.image import Image
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
 
@@ -88,14 +89,30 @@ class Video:
         )
         return stream_data.get("stream_url", None)
 
-    def generate_thumbnail(self):
-        if self.thumbnail_url:
+    def generate_thumbnail(self, time: Optional[float] = None) -> Union[str, Image]:
+        if self.thumbnail_url and not time:
             return self.thumbnail_url
+
+        if time:
+            thumbnail_data = self._connection.post(
+                path=f"{ApiPath.video}/{self.id}/{ApiPath.thumbnail}",
+                data={
+                    "time": time,
+                },
+            )
+            return Image(self._connection, **thumbnail_data)
+
         thumbnail_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.thumbnail}"
         )
         self.thumbnail_url = thumbnail_data.get("thumbnail_url")
         return self.thumbnail_url
+
+    def get_thumbnails(self) -> List[Image]:
+        thumbnails_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.thumbnails}"
+        )
+        return [Image(self._connection, **thumbnail) for thumbnail in thumbnails_data]
 
     def _fetch_transcript(self, force: bool = False) -> None:
         if self.transcript and not force:
@@ -116,19 +133,21 @@ class Video:
         self._fetch_transcript(force)
         return self.transcript_text
 
-    def index_spoken_words(self) -> None:
+    def index_spoken_words(self, force: bool = False, callback_url: str = None) -> None:
         """Semantic indexing of spoken words in the video
 
         :raises InvalidRequestError: If the video is already indexed
         :return: None if the indexing is successful
         :rtype: None
         """
-        self._fetch_transcript()
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             data={
                 "index_type": IndexType.semantic,
+                "force": force,
+                "callback_url": callback_url,
             },
+            show_progress=True,
         )
 
     def index_scenes(

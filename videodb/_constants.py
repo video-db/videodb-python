@@ -39,6 +39,7 @@ class ApiPath:
     image = "image"
     stream = "stream"
     thumbnail = "thumbnail"
+    thumbnails = "thumbnails"
     upload_url = "upload_url"
     transcription = "transcription"
     index = "index"
