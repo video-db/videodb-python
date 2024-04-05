@@ -48,6 +48,11 @@ class ApiPath:
     workflow = "workflow"
     timeline = "timeline"
     delete = "delete"
+    billing = "billing"
+    usage = "usage"
+    checkout = "checkout"
+    checkouts = "checkouts"
+    invoices = "invoices"
 
 
 class Status:
