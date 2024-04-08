@@ -87,8 +87,10 @@ class Connection(HttpClient):
     def check_usage(self) -> dict:
         return self.get(path=f"{ApiPath.billing}/{ApiPath.usage}")
 
-    def checkout(self) -> dict:
-        return self.post(path=f"{ApiPath.billing}/{ApiPath.checkout}")
+    def checkout(self, amount=100) -> dict:
+        return self.post(
+            path=f"{ApiPath.billing}/{ApiPath.checkout}", data={"amount": amount}
+        )
 
     def get_invoices(self) -> List[dict]:
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
