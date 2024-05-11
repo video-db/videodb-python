@@ -141,8 +141,7 @@ class Video:
         prompt: str = None,
         threshold: float = None,
         min_scene_len: int = None,
-        weights: list = None,
-        detector: str = None,
+        num_images: int = None,
         callback_url: str = None,
     ) -> None:
         self._connection.post(
@@ -154,8 +153,7 @@ class Video:
                 "prompt": prompt,
                 "threshold": threshold,
                 "min_scene_len": min_scene_len,
-                "weights": weights,
-                "detector": detector,
+                "num_images": num_images,
                 "callback_url": callback_url,
             },
         )
