@@ -159,7 +159,7 @@ class Video:
         )
 
     def get_scenes(
-        self, scene_model: str = SceneModels.gemini_vision
+        self, scene_model: str = SceneModels.gpt4_vision
     ) -> Union[list, None]:
         if self.scenes:
             return self.scenes
@@ -173,7 +173,7 @@ class Video:
         self.scenes = scene_data
         return scene_data if scene_data else None
 
-    def delete_scene_index(self, scene_model: str = SceneModels.gemini_vision) -> None:
+    def delete_scene_index(self, scene_model: str = SceneModels.gpt4_vision) -> None:
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.delete}",
             data={
