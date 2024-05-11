@@ -95,9 +95,6 @@ class Connection(HttpClient):
     def get_invoices(self) -> List[dict]:
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
-    def get_checkouts(self) -> List[dict]:
-        return self.get(path=f"{ApiPath.billing}/{ApiPath.checkouts}")
-
     def upload(
         self,
         file_path: str = None,
