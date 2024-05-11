@@ -136,7 +136,7 @@ class Video:
 
     def index_scenes(
         self,
-        scene_model: str = SceneModels.gemini_vision,
+        scene_model: str = SceneModels.gpt4_vision,
         force: bool = False,
         prompt: str = None,
         threshold: float = None,
