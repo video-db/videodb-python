@@ -28,6 +28,19 @@ class SceneModels:
     all: str = "all"
 
 
+class SceneWeights:
+    delta_hue_weight = "delta_hue_weight"
+    delta_sat_weight = "delta_sat_weight"
+    delta_lum_weight = "delta_lum_weight"
+    delta_edges_weight = "delta_edges_weight"
+
+
+class SceneDetectors:
+    content = "content"
+    adaptive = "adaptive"
+    threshold = "threshold"
+
+
 class Workflows:
     add_subtitles = "add_subtitles"
 

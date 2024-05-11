@@ -139,6 +139,10 @@ class Video:
         scene_model: str = SceneModels.gemini_vision,
         force: bool = False,
         prompt: str = None,
+        threshold: float = None,
+        min_scene_len: int = None,
+        weights: list = None,
+        detector: str = None,
         callback_url: str = None,
     ) -> None:
         self._connection.post(
@@ -148,6 +152,10 @@ class Video:
                 "model_name": scene_model,
                 "force": force,
                 "prompt": prompt,
+                "threshold": threshold,
+                "min_scene_len": min_scene_len,
+                "weights": weights,
+                "detector": detector,
                 "callback_url": callback_url,
             },
         )
