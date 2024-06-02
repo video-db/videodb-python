@@ -133,7 +133,12 @@ class Video:
         self._fetch_transcript(force)
         return self.transcript_text
 
-    def index_spoken_words(self, force: bool = False, callback_url: str = None) -> None:
+    def index_spoken_words(
+        self,
+        language_code: Optional[str] = None,
+        force: bool = False,
+        callback_url: str = None,
+    ) -> None:
         """Semantic indexing of spoken words in the video
 
         :raises InvalidRequestError: If the video is already indexed
@@ -144,6 +149,7 @@ class Video:
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             data={
                 "index_type": IndexType.semantic,
+                "language_code": language_code,
                 "force": force,
                 "callback_url": callback_url,
             },
