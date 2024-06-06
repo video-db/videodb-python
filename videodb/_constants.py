@@ -50,8 +50,6 @@ class ApiPath:
     delete = "delete"
     billing = "billing"
     usage = "usage"
-    checkout = "checkout"
-    checkouts = "checkouts"
     invoices = "invoices"
 
 
