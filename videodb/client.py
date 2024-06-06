@@ -84,6 +84,12 @@ class Connection(HttpClient):
             collection_data.get("description"),
         )
 
+    def check_usage(self) -> dict:
+        return self.get(path=f"{ApiPath.billing}/{ApiPath.usage}")
+
+    def get_invoices(self) -> List[dict]:
+        return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
+
     def upload(
         self,
         file_path: str = None,
