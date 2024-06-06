@@ -81,12 +81,12 @@ class SubtitleAlignment:
     bottom_left = 1
     bottom_center = 2
     bottom_right = 3
-    middle_left = 4
-    middle_center = 5
-    middle_right = 6
-    top_left = 7
-    top_center = 8
-    top_right = 9
+    middle_left = 9
+    middle_center = 10
+    middle_right = 11
+    top_left = 5
+    top_center = 6
+    top_right = 7
 
 
 @dataclass
