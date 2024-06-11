@@ -3,11 +3,13 @@ from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     IndexType,
+    SceneExtractionType,
     SearchType,
     SubtitleStyle,
     Workflows,
 )
-from videodb.image import Image
+from videodb.image import Image, Frame
+from videodb.scene import SceneExtractionConfig, Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
 
@@ -26,6 +28,7 @@ class Video:
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
         self.scenes = kwargs.get("scenes", None)
+        self.scene_collections = kwargs.get("scene_collections", None)
 
     def __repr__(self) -> str:
         return (
@@ -183,6 +186,87 @@ class Video:
         )
         self.scenes = scene_data
         return scene_data if scene_data else None
+
+    def _format_scene_collection(self, collection_data: dict) -> SceneCollection:
+        scenes = []
+        for scene in collection_data.get("scenes", []):
+            frames = []
+            for frame in scene.get("frames", []):
+                frame = Frame(
+                    self._connection,
+                    frame.get("frame_id"),
+                    self.id,
+                    scene.get("scene_id"),
+                    frame.get("url"),
+                    frame.get("frame_no"),
+                    frame.get("frame_time"),
+                    frame.get("description"),
+                )
+                frames.append(frame)
+            scene = Scene(
+                self._connection,
+                scene.get("scene_id"),
+                self.id,
+                scene.get("start"),
+                scene.get("end"),
+                frames,
+                scene.get("description"),
+            )
+            scenes.append(scene)
+
+        config = collection_data.get("config", {})
+
+        return SceneCollection(
+            self._connection,
+            collection_data.get("scenes_collection_id"),
+            self.id,
+            SceneExtractionConfig(
+                config.get("time"),
+                config.get("threshold"),
+                config.get("frame_count"),
+                config.get("select_frame"),
+            ),
+            scenes,
+        )
+
+    def extract_scenes(
+        self,
+        extraction_type: SceneExtractionType = SceneExtractionType.scene,
+        extraction_config: SceneExtractionConfig = SceneExtractionConfig(),
+        force: bool = False,
+        callback_url: str = None,
+    ):
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}",
+            data={
+                "index_type": IndexType.scene,
+                "extraction_type": extraction_type,
+                "extraction_config": extraction_config.__dict__,
+                "force": force,
+                "callback_url": callback_url,
+            },
+        )
+        return self._format_scene_collection(scenes_data.get("scenes_collection"))
+
+    def get_scene_collection(self, collection_id: str):
+        scenes_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+        )
+        return self._format_scene_collection(scenes_data.get("scenes_collection"))
+
+    def get_scene_collections(self):
+        scene_collections_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
+        )
+        scene_collections = []
+        for collection in scene_collections_data.get("scenes_collections", []):
+            scene_collections.append(self._format_scene_collection(collection))
+        return scene_collections
+
+    def delete_scene_collection(self, collection_id: str) -> None:
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+        )
 
     def delete_scene_index(self) -> None:
         self._connection.post(

@@ -22,6 +22,12 @@ class IndexType:
     scene = "scene"
 
 
+class SceneExtractionType:
+    scene = "scene"
+    time_based = "time_based"
+    compression_based = "compression_based"
+
+
 class Workflows:
     add_subtitles = "add_subtitles"
 
@@ -51,6 +57,7 @@ class ApiPath:
     billing = "billing"
     usage = "usage"
     invoices = "invoices"
+    scenes = "scenes"
 
 
 class Status:
