@@ -204,7 +204,6 @@ class Video:
                 )
                 frames.append(frame)
             scene = Scene(
-                self._connection,
                 scene.get("scene_id"),
                 self.id,
                 scene.get("start"),
@@ -266,6 +265,33 @@ class Video:
     def delete_scene_collection(self, collection_id: str) -> None:
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+        )
+
+    def create_scene_index(
+        self, scenes: List[Scene], callback_url: str = None
+    ) -> List[Scene]:
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data={
+                "scenes": [scene.to_json() for scene in scenes],
+                "callback_url": callback_url,
+            },
+        )
+        return [
+            Scene(
+                scene.get("scene_id"),
+                self.id,
+                scene.get("start"),
+                scene.get("end"),
+                [],
+                scene.get("description"),
+            )
+            for scene in scenes_data.get("scene_index_records", [])
+        ]
+
+    def delete_scene_index(self) -> None:
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
         )
 
     def delete_scene_index(self) -> None:

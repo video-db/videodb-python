@@ -54,3 +54,14 @@ class Frame(Image):
             f"frame_time={self.frame_time}, "
             f"description={self.description})"
         )
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "video_id": self.video_id,
+            "scene_id": self.scene_id,
+            "url": self.url,
+            "frame_no": self.frame_no,
+            "frame_time": self.frame_time,
+            "description": self.description,
+        }

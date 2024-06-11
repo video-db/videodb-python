@@ -58,6 +58,7 @@ class ApiPath:
     usage = "usage"
     invoices = "invoices"
     scenes = "scenes"
+    scene = "scene"
 
 
 class Status:

@@ -31,7 +31,6 @@ class SceneExtractionConfig:
 class Scene:
     def __init__(
         self,
-        _connection,
         id: str,
         video_id: str,
         start: float,
@@ -39,7 +38,6 @@ class Scene:
         frames: List[Frame],
         description: str,
     ):
-        self._connection = _connection
         self.id = id
         self.video_id = video_id
         self.start = start
@@ -57,6 +55,16 @@ class Scene:
             f"frames={self.frames}, "
             f"description={self.description})"
         )
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "video_id": self.video_id,
+            "start": self.start,
+            "end": self.end,
+            "frames": [frame.to_json() for frame in self.frames],
+            "description": self.description,
+        }
 
 
 class SceneCollection:
