@@ -9,7 +9,7 @@ from videodb._constants import (
     Workflows,
 )
 from videodb.image import Image, Frame
-from videodb.scene import SceneExtractionConfig, Scene, SceneCollection
+from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
 
@@ -213,25 +213,18 @@ class Video:
             )
             scenes.append(scene)
 
-        config = collection_data.get("config", {})
-
         return SceneCollection(
             self._connection,
             collection_data.get("scenes_collection_id"),
             self.id,
-            SceneExtractionConfig(
-                config.get("time"),
-                config.get("threshold"),
-                config.get("frame_count"),
-                config.get("select_frame"),
-            ),
+            collection_data.get("config", {}),
             scenes,
         )
 
     def extract_scenes(
         self,
         extraction_type: SceneExtractionType = SceneExtractionType.scene,
-        extraction_config: SceneExtractionConfig = SceneExtractionConfig(),
+        extraction_config: dict = {},
         force: bool = False,
         callback_url: str = None,
     ):
@@ -240,7 +233,7 @@ class Video:
             data={
                 "index_type": IndexType.scene,
                 "extraction_type": extraction_type,
-                "extraction_config": extraction_config.__dict__,
+                "extraction_config": extraction_config,
                 "force": force,
                 "callback_url": callback_url,
             },
@@ -267,7 +260,7 @@ class Video:
     def create_scene_index(
         self,
         extraction_type: SceneExtractionType = SceneExtractionType.scene,
-        extraction_config: SceneExtractionConfig = SceneExtractionConfig(),
+        extraction_config: dict = {},
         scenes: List[Scene] = [],
         force: bool = False,
         callback_url: str = None,
@@ -277,7 +270,7 @@ class Video:
             data={
                 "scenes": [scene.to_json() for scene in scenes],
                 "extraction_type": extraction_type,
-                "extraction_config": extraction_config.__dict__,
+                "extraction_config": extraction_config,
                 "force": force,
                 "callback_url": callback_url,
             },

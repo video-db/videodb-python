@@ -5,29 +5,6 @@ from videodb._constants import ApiPath
 from videodb.image import Frame
 
 
-class SceneExtractionConfig:
-    def __init__(
-        self,
-        time: int = 5,
-        threshold: int = 20,
-        frame_count: int = 1,
-        select_frame: str = "first",
-    ):
-        self.time = time
-        self.threshold = threshold
-        self.frame_count = frame_count
-        self.select_frame = select_frame
-
-    def __repr__(self) -> str:
-        return (
-            f"SceneExtractionConfig("
-            f"time={self.time}, "
-            f"threshold={self.threshold}, "
-            f"frame_count={self.frame_count}, "
-            f"select_frame={self.select_frame})"
-        )
-
-
 class Scene:
     def __init__(
         self,
@@ -73,13 +50,13 @@ class SceneCollection:
         _connection,
         id: str,
         video_id: str,
-        config: SceneExtractionConfig,
+        config: dict,
         scenes: List[Scene],
     ) -> None:
         self._connection = _connection
         self.id = id
         self.video_id = video_id
-        self.config: SceneExtractionConfig = config
+        self.config: dict = config
         self.scenes: List[Scene] = scenes
 
     def __repr__(self) -> str:
@@ -87,7 +64,7 @@ class SceneCollection:
             f"SceneCollection("
             f"id={self.id}, "
             f"video_id={self.video_id}, "
-            f"config={self.config.__dict__}, "
+            f"config={self.config}, "
             f"scenes={self.scenes})"
         )
 
