@@ -268,7 +268,7 @@ class Video:
         self,
         extraction_type: SceneExtractionType = SceneExtractionType.scene,
         extraction_config: SceneExtractionConfig = SceneExtractionConfig(),
-        scenes: List[Scene] = None,
+        scenes: List[Scene] = [],
         force: bool = False,
         callback_url: str = None,
     ) -> List[Scene]:
@@ -307,12 +307,12 @@ class Video:
         )
         return index_data.get("scene_index_records", [])
 
-    def delete_scene_index(self) -> None:
+    def delete_index(self, scene_index_id: str) -> None:
         self._connection.delete(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
         )
 
-    def delete_index(self) -> None:
+    def delete_scene_index(self) -> None:
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.delete}",
             data={
