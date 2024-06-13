@@ -265,12 +265,20 @@ class Video:
         )
 
     def create_scene_index(
-        self, scenes: List[Scene], callback_url: str = None
+        self,
+        scenes: List[Scene] = None,
+        extraction_type: SceneExtractionType = None,
+        extraction_config: SceneExtractionConfig = None,
+        force: bool = False,
+        callback_url: str = None,
     ) -> List[Scene]:
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
             data={
                 "scenes": [scene.to_json() for scene in scenes],
+                "extraction_type": extraction_type,
+                "extraction_config": extraction_config.__dict__,
+                "force": force,
                 "callback_url": callback_url,
             },
         )
