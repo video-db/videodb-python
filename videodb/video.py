@@ -53,6 +53,7 @@ class Video:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[int] = None,
         dynamic_score_percentage: Optional[int] = None,
+        **kwargs,
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_video(
@@ -61,6 +62,7 @@ class Video:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            **kwargs,
         )
 
     def delete(self) -> None:
