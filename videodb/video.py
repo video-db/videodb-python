@@ -275,17 +275,7 @@ class Video:
                 "callback_url": callback_url,
             },
         )
-        return [
-            Scene(
-                scene.get("scene_id"),
-                self.id,
-                scene.get("start"),
-                scene.get("end"),
-                [],
-                scene.get("description"),
-            )
-            for scene in scenes_data.get("scene_index_records", [])
-        ]
+        return scenes_data.get("scene_index_records", [])
 
     def get_scene_indexes(self) -> List:
         index_data = self._connection.get(

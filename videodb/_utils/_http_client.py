@@ -19,6 +19,7 @@ from videodb._constants import (
 from videodb.exceptions import (
     AuthenticationError,
     InvalidRequestError,
+    RequestTimeoutError,
 )
 
 logger = logging.getLogger(__name__)
@@ -109,8 +110,8 @@ class HttpClient:
             ) from None
 
         elif isinstance(e, requests.exceptions.Timeout):
-            raise InvalidRequestError(
-                "Invalid request: Request timed out", e.response
+            raise RequestTimeoutError(
+                "Timeout error: Request timed out", e.response
             ) from None
 
         elif isinstance(e, requests.exceptions.ConnectionError):

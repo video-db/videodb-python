@@ -37,6 +37,16 @@ class InvalidRequestError(VideodbError):
         self.response = response
 
 
+class RequestTimeoutError(VideodbError):
+    """
+    Raised when a request times out.
+    """
+
+    def __init__(self, message, response=None):
+        super(RequestTimeoutError, self).__init__(message)
+        self.response = response
+
+
 class SearchError(VideodbError):
     """
     Raised when a search is invalid.
