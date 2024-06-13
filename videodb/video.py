@@ -257,10 +257,7 @@ class Video:
         scene_collections_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
         )
-        scene_collections = []
-        for collection in scene_collections_data.get("scenes_collections", []):
-            scene_collections.append(self._format_scene_collection(collection))
-        return scene_collections
+        return scene_collections_data.get("scenes_collections", [])
 
     def delete_scene_collection(self, collection_id: str) -> None:
         self._connection.delete(
@@ -289,12 +286,25 @@ class Video:
             for scene in scenes_data.get("scene_index_records", [])
         ]
 
+    def get_scene_indexes(self) -> List:
+        index_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
+        )
+
+        return index_data.get("scene_indexes", [])
+
+    def get_scene_index(self, scene_index_id: str) -> Scene:
+        index_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+        )
+        return index_data.get("scene_index_records", [])
+
     def delete_scene_index(self) -> None:
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
         )
 
-    def delete_scene_index(self) -> None:
+    def delete_index(self) -> None:
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.delete}",
             data={
