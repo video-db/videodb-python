@@ -266,9 +266,9 @@ class Video:
 
     def create_scene_index(
         self,
+        extraction_type: SceneExtractionType = SceneExtractionType.scene,
+        extraction_config: SceneExtractionConfig = SceneExtractionConfig(),
         scenes: List[Scene] = None,
-        extraction_type: SceneExtractionType = None,
-        extraction_config: SceneExtractionConfig = None,
         force: bool = False,
         callback_url: str = None,
     ) -> List[Scene]:
