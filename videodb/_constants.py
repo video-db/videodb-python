@@ -23,9 +23,8 @@ class IndexType:
 
 
 class SceneExtractionType:
-    scene = "scene"
-    time_based = "time_based"
-    compression_based = "compression_based"
+    scene_based = "scene"
+    time_based = "time"
 
 
 class Workflows:

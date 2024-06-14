@@ -208,7 +208,7 @@ class Video:
 
     def extract_scenes(
         self,
-        extraction_type: SceneExtractionType = SceneExtractionType.scene,
+        extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
         extraction_config: dict = {},
         force: bool = False,
         callback_url: str = None,
@@ -243,7 +243,7 @@ class Video:
 
     def index_scenes(
         self,
-        extraction_type: SceneExtractionType = SceneExtractionType.scene,
+        extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
         extraction_config: dict = {},
         prompt: str = None,
         scenes: List[Scene] = [],
