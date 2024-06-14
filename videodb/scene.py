@@ -8,12 +8,12 @@ from videodb.image import Frame
 class Scene:
     def __init__(
         self,
-        id: str,
         video_id: str,
         start: float,
         end: float,
-        frames: List[Frame],
         description: str,
+        id: str = None,
+        frames: List[Frame] = [],
     ):
         self.id = id
         self.video_id = video_id

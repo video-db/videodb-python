@@ -32,14 +32,12 @@ class Frame(Image):
         video_id: str,
         scene_id: str,
         url: str,
-        frame_no: int,
         frame_time: float,
         description: str,
     ):
         super().__init__(_connection=_connection, id=id, collection_id=None, url=url)
         self.scene_id = scene_id
         self.video_id = video_id
-        self.frame_no = frame_no
         self.frame_time = frame_time
         self.description = description
 
@@ -50,7 +48,6 @@ class Frame(Image):
             f"video_id={self.video_id}, "
             f"scene_id={self.scene_id}, "
             f"url={self.url}, "
-            f"frame_no={self.frame_no}, "
             f"frame_time={self.frame_time}, "
             f"description={self.description})"
         )
@@ -61,7 +58,6 @@ class Frame(Image):
             "video_id": self.video_id,
             "scene_id": self.scene_id,
             "url": self.url,
-            "frame_no": self.frame_no,
             "frame_time": self.frame_time,
             "description": self.description,
         }

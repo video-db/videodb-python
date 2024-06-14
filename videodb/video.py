@@ -200,18 +200,17 @@ class Video:
                     self.id,
                     scene.get("scene_id"),
                     frame.get("url"),
-                    frame.get("frame_no"),
                     frame.get("frame_time"),
                     frame.get("description"),
                 )
                 frames.append(frame)
             scene = Scene(
-                scene.get("scene_id"),
-                self.id,
-                scene.get("start"),
-                scene.get("end"),
-                frames,
-                scene.get("description"),
+                video_id=self.id,
+                start=scene.get("start"),
+                end=scene.get("end"),
+                description=scene.get("description"),
+                id=scene.get("scene_id"),
+                frames=frames,
             )
             scenes.append(scene)
 
