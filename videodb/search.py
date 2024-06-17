@@ -110,8 +110,8 @@ class SemanticSearch(Search):
         video_id: str,
         query: str,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -123,6 +123,8 @@ class SemanticSearch(Search):
                 or SemanticSearchDefaultValues.score_threshold,
                 "result_threshold": result_threshold
                 or SemanticSearchDefaultValues.result_threshold,
+                "dynamic_score_percentage": dynamic_score_percentage,
+                **kwargs,
             },
         )
         return SearchResult(self._connection, **search_data)
@@ -132,8 +134,8 @@ class SemanticSearch(Search):
         collection_id: str,
         query: str,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -145,6 +147,8 @@ class SemanticSearch(Search):
                 or SemanticSearchDefaultValues.score_threshold,
                 "result_threshold": result_threshold
                 or SemanticSearchDefaultValues.result_threshold,
+                "dynamic_score_percentage": dynamic_score_percentage,
+                **kwargs,
             },
         )
         return SearchResult(self._connection, **search_data)
@@ -159,8 +163,8 @@ class KeywordSearch(Search):
         video_id: str,
         query: str,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -187,8 +191,8 @@ class SceneSearch(Search):
         video_id: str,
         query: str,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -198,6 +202,7 @@ class SceneSearch(Search):
                 "query": query,
                 "score_threshold": score_threshold,
                 "result_threshold": result_threshold,
+                "dynamic_score_percentage": dynamic_score_percentage,
                 **kwargs,
             },
         )

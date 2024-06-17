@@ -101,8 +101,8 @@ class Collection:
         query: str,
         search_type: Optional[str] = SearchType.semantic,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(

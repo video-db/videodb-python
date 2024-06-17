@@ -28,7 +28,6 @@ class Video:
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
         self.scenes = kwargs.get("scenes", None)
-        self.scene_collections = kwargs.get("scene_collections", None)
 
     def __repr__(self) -> str:
         return (
@@ -51,8 +50,8 @@ class Video:
         query: str,
         search_type: Optional[str] = SearchType.semantic,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
         **kwargs,
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
@@ -173,9 +172,9 @@ class Video:
         self.scenes = scene_data
         return scene_data if scene_data else None
 
-    def _format_scene_collection(self, collection_data: dict) -> SceneCollection:
+    def _format_scene_collection(self, scene_collection_data: dict) -> SceneCollection:
         scenes = []
-        for scene in collection_data.get("scenes", []):
+        for scene in scene_collection_data.get("scenes", []):
             frames = []
             for frame in scene.get("frames", []):
                 frame = Frame(
@@ -200,9 +199,9 @@ class Video:
 
         return SceneCollection(
             self._connection,
-            collection_data.get("scene_collection_id"),
+            scene_collection_data.get("scene_collection_id"),
             self.id,
-            collection_data.get("config", {}),
+            scene_collection_data.get("config", {}),
             scenes,
         )
 
