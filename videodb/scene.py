@@ -13,6 +13,7 @@ class Scene:
         end: float,
         description: str,
         id: str = None,
+        index_id: str = None,
         frames: List[Frame] = [],
     ):
         self.id = id
@@ -20,6 +21,7 @@ class Scene:
         self.start = start
         self.end = end
         self.frames: List[Frame] = frames
+        self.index_id = index_id
         self.description = description
 
     def __repr__(self) -> str:
@@ -30,6 +32,7 @@ class Scene:
             f"start={self.start}, "
             f"end={self.end}, "
             f"frames={self.frames}, "
+            f"index_id={self.index_id}, "
             f"description={self.description})"
         )
 

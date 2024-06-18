@@ -194,6 +194,7 @@ class Video:
                 description=scene.get("description"),
                 id=scene.get("scene_id"),
                 frames=frames,
+                index_id=scene.get("index_id"),
             )
             scenes.append(scene)
 
@@ -221,6 +222,8 @@ class Video:
                 "callback_url": callback_url,
             },
         )
+        if not scenes_data:
+            return None
         return self._format_scene_collection(scenes_data.get("scene_collection"))
 
     def get_scene_collection(self, collection_id: str):
@@ -248,7 +251,7 @@ class Video:
         scenes: List[Scene] = [],
         force: bool = False,
         callback_url: str = None,
-    ) -> List[Scene]:
+    ) -> List[Scene] or None:
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
             data={
@@ -260,7 +263,18 @@ class Video:
                 "callback_url": callback_url,
             },
         )
-        return scenes_data.get("scene_index_records", [])
+        if not scenes_data:
+            return None
+        return [
+            Scene(
+                video_id=self.id,
+                start=scene.get("start"),
+                end=scene.get("end"),
+                index_id=scene.get("scene_index_id"),
+                description=scene.get("description"),
+            )
+            for scene in scenes_data.get("scene_index_records", [])
+        ]
 
     def get_scene_indexes(self) -> List:
         index_data = self._connection.get(
@@ -269,11 +283,23 @@ class Video:
 
         return index_data.get("scene_indexes", [])
 
-    def get_scene_index(self, scene_index_id: str) -> Scene:
+    def get_scene_index(self, scene_index_id: str) -> List[Scene] or None:
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
         )
-        return index_data.get("scene_index_records", [])
+        index_records = index_data.get("scene_index_records", [])
+        if not index_records:
+            return None
+        return [
+            Scene(
+                video_id=self.id,
+                start=scene.get("start"),
+                end=scene.get("end"),
+                index_id=scene.get("scene_index_id"),
+                description=scene.get("description"),
+            )
+            for scene in index_records
+        ]
 
     def delete_scene_index(self, scene_index_id: str) -> None:
         self._connection.delete(
