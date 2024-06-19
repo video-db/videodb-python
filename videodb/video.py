@@ -194,7 +194,6 @@ class Video:
                 description=scene.get("description"),
                 id=scene.get("scene_id"),
                 frames=frames,
-                index_id=scene.get("index_id"),
             )
             scenes.append(scene)
 
@@ -232,7 +231,7 @@ class Video:
         )
         return self._format_scene_collection(scenes_data.get("scene_collection"))
 
-    def get_scene_collections(self):
+    def list_scene_collection(self):
         scene_collections_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
         )
@@ -265,18 +264,9 @@ class Video:
         )
         if not scenes_data:
             return None
-        return [
-            Scene(
-                video_id=self.id,
-                start=scene.get("start"),
-                end=scene.get("end"),
-                index_id=scene.get("scene_index_id"),
-                description=scene.get("description"),
-            )
-            for scene in scenes_data.get("scene_index_records", [])
-        ]
+        return scenes_data.get("scene_index_records", [])
 
-    def get_scene_indexes(self) -> List:
+    def list_scene_index(self) -> List:
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
         )
@@ -295,7 +285,6 @@ class Video:
                 video_id=self.id,
                 start=scene.get("start"),
                 end=scene.get("end"),
-                index_id=scene.get("scene_index_id"),
                 description=scene.get("description"),
             )
             for scene in index_records
