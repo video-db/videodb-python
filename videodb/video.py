@@ -245,20 +245,26 @@ class Video:
     def index_scenes(
         self,
         extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
-        extraction_config: dict = {},
-        prompt: str = None,
-        scenes: List[Scene] = [],
-        force: bool = False,
-        callback_url: str = None,
-    ) -> List[Scene] or None:
+        extraction_config: Dict = {},
+        prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        model_config: Optional[Dict] = None,
+        name: Optional[str] = None,
+        scenes: Optional[List[Scene]] = None,
+        force: Optional[bool] = False,
+        callback_url: Optional[str] = None,
+    ) -> Optional[List]:
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
             data={
-                "scenes": [scene.to_json() for scene in scenes],
                 "extraction_type": extraction_type,
                 "extraction_config": extraction_config,
                 "prompt": prompt,
+                "model": model,
+                "model_config": model_config,
+                "name": name,
                 "force": force,
+                "scenes": [scene.to_json() for scene in scenes] if scenes else None,
                 "callback_url": callback_url,
             },
         )
@@ -273,7 +279,7 @@ class Video:
 
         return index_data.get("scene_indexes", [])
 
-    def get_scene_index(self, scene_index_id: str) -> List[Scene] or None:
+    def get_scene_index(self, scene_index_id: str) -> Optional[List]:
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
         )
