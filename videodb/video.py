@@ -277,18 +277,9 @@ class Video:
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
         )
-        index_records = index_data.get("scene_index_records", [])
-        if not index_records:
+        if not index_data:
             return None
-        return [
-            Scene(
-                video_id=self.id,
-                start=scene.get("start"),
-                end=scene.get("end"),
-                description=scene.get("description"),
-            )
-            for scene in index_records
-        ]
+        return index_data.get("scene_index_records", [])
 
     def delete_scene_index(self, scene_index_id: str) -> None:
         self._connection.delete(
