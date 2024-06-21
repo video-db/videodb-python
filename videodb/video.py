@@ -276,7 +276,6 @@ class Video:
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
         )
-
         return index_data.get("scene_indexes", [])
 
     def get_scene_index(self, scene_index_id: str) -> Optional[List]:

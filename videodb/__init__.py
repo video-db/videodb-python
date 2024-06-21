@@ -4,6 +4,7 @@ import os
 import logging
 
 from typing import Optional
+from videodb.__about__ import __version__
 from videodb._utils._video import play_stream
 from videodb._constants import (
     VIDEO_DB_API,

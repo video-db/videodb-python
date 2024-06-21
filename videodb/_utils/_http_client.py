@@ -32,6 +32,7 @@ class HttpClient:
         self,
         api_key: str,
         base_url: str,
+        version: str,
         max_retries: Optional[int] = HttpClientDefaultValues.max_retries,
     ) -> None:
         """Create a new http client instance
@@ -50,8 +51,13 @@ class HttpClient:
         adapter = HTTPAdapter(max_retries=retries)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
+        self.version = version
         self.session.headers.update(
-            {"x-access-token": api_key, "Content-Type": "application/json"}
+            {
+                "x-access-token": api_key,
+                "x-videodb-client": f"videodb-python/{self.version}",
+                "Content-Type": "application/json",
+            }
         )
         self.base_url = base_url
         self.show_progress = False
