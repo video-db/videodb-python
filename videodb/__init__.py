@@ -4,7 +4,6 @@ import os
 import logging
 
 from typing import Optional
-from videodb.__about__ import __version__
 from videodb._utils._video import play_stream
 from videodb._constants import (
     VIDEO_DB_API,
@@ -26,8 +25,6 @@ from videodb.exceptions import (
 
 logger: logging.Logger = logging.getLogger("videodb")
 
-__version__ = "0.1.2"
-__author__ = "videodb"
 
 __all__ = [
     "VideodbError",

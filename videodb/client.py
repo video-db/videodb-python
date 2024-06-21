@@ -5,7 +5,7 @@ from typing import (
     Union,
     List,
 )
-from videodb import __version__
+from videodb.__about__ import __version__
 from videodb._constants import (
     ApiPath,
 )
