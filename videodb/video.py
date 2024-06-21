@@ -3,11 +3,13 @@ from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     IndexType,
+    SceneExtractionType,
     SearchType,
     SubtitleStyle,
     Workflows,
 )
-from videodb.image import Image
+from videodb.image import Image, Frame
+from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
 
@@ -48,8 +50,9 @@ class Video:
         query: str,
         search_type: Optional[str] = SearchType.semantic,
         result_threshold: Optional[int] = None,
-        score_threshold: Optional[int] = None,
-        dynamic_score_percentage: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
+        **kwargs,
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_video(
@@ -58,6 +61,7 @@ class Video:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            **kwargs,
         )
 
     def delete(self) -> None:
@@ -156,22 +160,6 @@ class Video:
             show_progress=True,
         )
 
-    def index_scenes(
-        self,
-        force: bool = False,
-        prompt: str = None,
-        callback_url: str = None,
-    ) -> None:
-        self._connection.post(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
-            data={
-                "index_type": IndexType.scene,
-                "force": force,
-                "prompt": prompt,
-                "callback_url": callback_url,
-            },
-        )
-
     def get_scenes(self) -> Union[list, None]:
         if self.scenes:
             return self.scenes
@@ -184,14 +172,124 @@ class Video:
         self.scenes = scene_data
         return scene_data if scene_data else None
 
-    def delete_scene_index(self) -> None:
-        self._connection.post(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.delete}",
+    def _format_scene_collection(self, scene_collection_data: dict) -> SceneCollection:
+        scenes = []
+        for scene in scene_collection_data.get("scenes", []):
+            frames = []
+            for frame in scene.get("frames", []):
+                frame = Frame(
+                    self._connection,
+                    frame.get("frame_id"),
+                    self.id,
+                    scene.get("scene_id"),
+                    frame.get("url"),
+                    frame.get("frame_time"),
+                    frame.get("description"),
+                )
+                frames.append(frame)
+            scene = Scene(
+                video_id=self.id,
+                start=scene.get("start"),
+                end=scene.get("end"),
+                description=scene.get("description"),
+                id=scene.get("scene_id"),
+                frames=frames,
+            )
+            scenes.append(scene)
+
+        return SceneCollection(
+            self._connection,
+            scene_collection_data.get("scene_collection_id"),
+            self.id,
+            scene_collection_data.get("config", {}),
+            scenes,
+        )
+
+    def extract_scenes(
+        self,
+        extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
+        extraction_config: dict = {},
+        force: bool = False,
+        callback_url: str = None,
+    ):
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}",
             data={
-                "index_type": IndexType.scene,
+                "extraction_type": extraction_type,
+                "extraction_config": extraction_config,
+                "force": force,
+                "callback_url": callback_url,
             },
         )
-        self.scenes = None
+        if not scenes_data:
+            return None
+        return self._format_scene_collection(scenes_data.get("scene_collection"))
+
+    def get_scene_collection(self, collection_id: str):
+        scenes_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+        )
+        return self._format_scene_collection(scenes_data.get("scene_collection"))
+
+    def list_scene_collection(self):
+        scene_collections_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
+        )
+        return scene_collections_data.get("scene_collections", [])
+
+    def delete_scene_collection(self, collection_id: str) -> None:
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+        )
+
+    def index_scenes(
+        self,
+        extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
+        extraction_config: Dict = {},
+        prompt: Optional[str] = None,
+        model: Optional[str] = None,
+        model_config: Optional[Dict] = None,
+        name: Optional[str] = None,
+        scenes: Optional[List[Scene]] = None,
+        force: Optional[bool] = False,
+        callback_url: Optional[str] = None,
+    ) -> Optional[List]:
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data={
+                "extraction_type": extraction_type,
+                "extraction_config": extraction_config,
+                "prompt": prompt,
+                "model": model,
+                "model_config": model_config,
+                "name": name,
+                "force": force,
+                "scenes": [scene.to_json() for scene in scenes] if scenes else None,
+                "callback_url": callback_url,
+            },
+        )
+        if not scenes_data:
+            return None
+        return scenes_data.get("scene_index_records", [])
+
+    def list_scene_index(self) -> List:
+        index_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
+        )
+        return index_data.get("scene_indexes", [])
+
+    def get_scene_index(self, scene_index_id: str) -> Optional[List]:
+        index_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+        )
+        if not index_data:
+            return None
+        return index_data.get("scene_index_records", [])
+
+    def delete_scene_index(self, scene_index_id: str) -> None:
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+        )
 
     def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:
         if not isinstance(style, SubtitleStyle):

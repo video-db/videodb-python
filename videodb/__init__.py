@@ -7,6 +7,7 @@ from typing import Optional
 from videodb._utils._video import play_stream
 from videodb._constants import (
     VIDEO_DB_API,
+    SceneExtractionType,
     MediaType,
     SearchType,
     SubtitleAlignment,
@@ -24,8 +25,6 @@ from videodb.exceptions import (
 
 logger: logging.Logger = logging.getLogger("videodb")
 
-__version__ = "0.1.2"
-__author__ = "videodb"
 
 __all__ = [
     "VideodbError",
@@ -39,6 +38,7 @@ __all__ = [
     "SubtitleBorderStyle",
     "SubtitleStyle",
     "TextStyle",
+    "SceneExtractionType",
 ]
 
 

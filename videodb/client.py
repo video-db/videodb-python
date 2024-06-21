@@ -5,7 +5,7 @@ from typing import (
     Union,
     List,
 )
-
+from videodb.__about__ import __version__
 from videodb._constants import (
     ApiPath,
 )
@@ -28,7 +28,7 @@ class Connection(HttpClient):
         self.api_key = api_key
         self.base_url = base_url
         self.collection_id = "default"
-        super().__init__(api_key, base_url)
+        super().__init__(api_key=api_key, base_url=base_url, version=__version__)
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
         collection_data = self.get(path=f"{ApiPath.collection}/{collection_id}")
