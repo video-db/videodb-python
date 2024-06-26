@@ -18,12 +18,12 @@ class SearchType:
 
 
 class IndexType:
-    semantic = "semantic"
+    spoken = "spoken"
     scene = "scene"
 
 
 class SceneExtractionType:
-    scene_based = "scene"
+    shot_based = "shot"
     time_based = "time"
 
 

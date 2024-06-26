@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from videodb._utils._video import play_stream
 from videodb._constants import (
+    IndexType,
     SearchType,
     ApiPath,
     SemanticSearchDefaultValues,
@@ -109,6 +110,8 @@ class SemanticSearch(Search):
         self,
         video_id: str,
         query: str,
+        search_type: str,
+        index_type: str,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -117,7 +120,8 @@ class SemanticSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
             data={
-                "index_type": SearchType.semantic,
+                "search_type": search_type,
+                "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold
                 or SemanticSearchDefaultValues.score_threshold,
@@ -133,6 +137,8 @@ class SemanticSearch(Search):
         self,
         collection_id: str,
         query: str,
+        search_type: str,
+        index_type: str,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -141,7 +147,8 @@ class SemanticSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.collection}/{collection_id}/{ApiPath.search}",
             data={
-                "index_type": SearchType.semantic,
+                "search_type": search_type,
+                "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold
                 or SemanticSearchDefaultValues.score_threshold,
@@ -162,6 +169,8 @@ class KeywordSearch(Search):
         self,
         video_id: str,
         query: str,
+        search_type: str,
+        index_type: str,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -170,7 +179,8 @@ class KeywordSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
             data={
-                "index_type": SearchType.keyword,
+                "search_type": search_type,
+                "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold,
                 "result_threshold": result_threshold,
@@ -190,6 +200,8 @@ class SceneSearch(Search):
         self,
         video_id: str,
         query: str,
+        search_type: str,
+        index_type: str,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -198,7 +210,8 @@ class SceneSearch(Search):
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{video_id}/{ApiPath.search}",
             data={
-                "index_type": SearchType.scene,
+                "search_type": search_type,
+                "index_type": IndexType.scene,
                 "query": query,
                 "score_threshold": score_threshold,
                 "result_threshold": result_threshold,
