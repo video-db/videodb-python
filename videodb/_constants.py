@@ -18,7 +18,7 @@ class SearchType:
 
 
 class IndexType:
-    spoken = "spoken"
+    spoken_word = "spoken_word"
     scene = "scene"
 
 

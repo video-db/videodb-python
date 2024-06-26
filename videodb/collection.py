@@ -101,7 +101,7 @@ class Collection:
         self,
         query: str,
         search_type: Optional[str] = SearchType.semantic,
-        index_type: Optional[str] = IndexType.spoken,
+        index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,

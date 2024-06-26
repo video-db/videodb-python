@@ -49,7 +49,7 @@ class Video:
         self,
         query: str,
         search_type: Optional[str] = SearchType.semantic,
-        index_type: Optional[str] = IndexType.spoken,
+        index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -155,7 +155,7 @@ class Video:
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             data={
-                "index_type": IndexType.spoken,
+                "index_type": IndexType.spoken_word,
                 "language_code": language_code,
                 "force": force,
                 "callback_url": callback_url,
