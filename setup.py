@@ -23,6 +23,7 @@ setup(
     version=about["__version__"],
     author=about["__author__"],
     author_email=about["__email__"],
+    license=about["__license__"],
     description="VideoDB Python SDK",
     long_description=long_description,
     long_description_content_type="text/markdown",
