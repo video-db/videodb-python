@@ -261,7 +261,6 @@ class Video:
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
         scenes: Optional[List[Scene]] = None,
-        force: Optional[bool] = False,
         callback_url: Optional[str] = None,
     ) -> Optional[str]:
         scenes_data = self._connection.post(
@@ -273,7 +272,6 @@ class Video:
                 "model_name": model_name,
                 "model_config": model_config,
                 "name": name,
-                "force": force,
                 "scenes": [scene.to_json() for scene in scenes] if scenes else None,
                 "callback_url": callback_url,
             },
