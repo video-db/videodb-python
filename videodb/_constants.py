@@ -27,10 +27,6 @@ class SceneExtractionType:
     time_based = "time"
 
 
-class SceneModels:
-    gpt4_o = "gpt4-o"
-
-
 class Workflows:
     add_subtitles = "add_subtitles"
 

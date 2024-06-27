@@ -1,6 +1,5 @@
 from videodb._constants import (
     ApiPath,
-    SceneModels,
 )
 
 
@@ -63,7 +62,7 @@ class Frame(Image):
             "description": self.description,
         }
 
-    def describe(self, prompt: str = None, model_name=SceneModels.gpt4_o):
+    def describe(self, prompt: str = None, model_name=None):
         description_data = self._connection.post(
             path=f"{ApiPath.video}/{self.video_id}/{ApiPath.frame}/{self.id}/{ApiPath.describe}",
             data={"prompt": prompt, "model_name": model_name},

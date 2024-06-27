@@ -1,6 +1,6 @@
 from typing import List
 
-from videodb._constants import ApiPath, SceneModels
+from videodb._constants import ApiPath
 
 from videodb.image import Frame
 
@@ -45,7 +45,7 @@ class Scene:
             "description": self.description,
         }
 
-    def describe(self, prompt: str = None, model_name=SceneModels.gpt4_o) -> None:
+    def describe(self, prompt: str = None, model_name=None) -> None:
         if self._connection is None:
             raise ValueError("Connection is required to describe a scene")
         description_data = self._connection.post(
