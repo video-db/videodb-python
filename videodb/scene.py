@@ -1,6 +1,6 @@
 from typing import List
 
-from videodb._constants import ApiPath
+from videodb._constants import ApiPath, SceneModels
 
 from videodb.image import Frame
 
@@ -14,6 +14,7 @@ class Scene:
         description: str,
         id: str = None,
         frames: List[Frame] = [],
+        connection=None,
     ):
         self.id = id
         self.video_id = video_id
@@ -21,6 +22,7 @@ class Scene:
         self.end = end
         self.frames: List[Frame] = frames
         self.description = description
+        self._connection = connection
 
     def __repr__(self) -> str:
         return (
@@ -42,6 +44,16 @@ class Scene:
             "frames": [frame.to_json() for frame in self.frames],
             "description": self.description,
         }
+
+    def describe(self, prompt: str = None, model_name=SceneModels.gpt4_o) -> None:
+        if self._connection is None:
+            raise ValueError("Connection is required to describe a scene")
+        description_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.video_id}/{ApiPath.scene}/{self.id}/{ApiPath.describe}",
+            data={"prompt": prompt, "model_name": model_name},
+        )
+        self.description = description_data.get("description", None)
+        return self.description
 
 
 class SceneCollection:

@@ -27,6 +27,10 @@ class SceneExtractionType:
     time_based = "time"
 
 
+class SceneModels:
+    gpt4_o = "gpt4-o"
+
+
 class Workflows:
     add_subtitles = "add_subtitles"
 
@@ -58,6 +62,8 @@ class ApiPath:
     invoices = "invoices"
     scenes = "scenes"
     scene = "scene"
+    frame = "frame"
+    describe = "describe"
 
 
 class Status:

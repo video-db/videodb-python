@@ -197,6 +197,7 @@ class Video:
                 description=scene.get("description"),
                 id=scene.get("scene_id"),
                 frames=frames,
+                connection=self._connection,
             )
             scenes.append(scene)
 
