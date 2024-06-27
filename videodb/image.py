@@ -61,3 +61,11 @@ class Frame(Image):
             "frame_time": self.frame_time,
             "description": self.description,
         }
+
+    def describe(self, prompt: str = None, model_name=None):
+        description_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.video_id}/{ApiPath.frame}/{self.id}/{ApiPath.describe}",
+            data={"prompt": prompt, "model_name": model_name},
+        )
+        self.description = description_data.get("description", None)
+        return self.description

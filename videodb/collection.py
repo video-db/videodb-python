@@ -10,6 +10,7 @@ from videodb._upload import (
 )
 from videodb._constants import (
     ApiPath,
+    IndexType,
     SearchType,
 )
 from videodb.video import Video
@@ -100,6 +101,7 @@ class Collection:
         self,
         query: str,
         search_type: Optional[str] = SearchType.semantic,
+        index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -108,6 +110,8 @@ class Collection:
         return search.search_inside_collection(
             collection_id=self.id,
             query=query,
+            search_type=search_type,
+            index_type=index_type,
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,

@@ -49,6 +49,7 @@ class Video:
         self,
         query: str,
         search_type: Optional[str] = SearchType.semantic,
+        index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
@@ -58,6 +59,8 @@ class Video:
         return search.search_inside_video(
             video_id=self.id,
             query=query,
+            search_type=search_type,
+            index_type=index_type,
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
@@ -152,7 +155,7 @@ class Video:
         self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
             data={
-                "index_type": IndexType.semantic,
+                "index_type": IndexType.spoken_word,
                 "language_code": language_code,
                 "force": force,
                 "callback_url": callback_url,
@@ -194,6 +197,7 @@ class Video:
                 description=scene.get("description"),
                 id=scene.get("scene_id"),
                 frames=frames,
+                connection=self._connection,
             )
             scenes.append(scene)
 
@@ -207,11 +211,11 @@ class Video:
 
     def extract_scenes(
         self,
-        extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
+        extraction_type: SceneExtractionType = SceneExtractionType.shot_based,
         extraction_config: dict = {},
         force: bool = False,
         callback_url: str = None,
-    ):
+    ) -> Optional[SceneCollection]:
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}",
             data={
@@ -225,10 +229,14 @@ class Video:
             return None
         return self._format_scene_collection(scenes_data.get("scene_collection"))
 
-    def get_scene_collection(self, collection_id: str):
+    def get_scene_collection(self, collection_id: str) -> Optional[SceneCollection]:
+        if not collection_id:
+            raise ValueError("collection_id is required")
         scenes_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
         )
+        if not scenes_data:
+            return None
         return self._format_scene_collection(scenes_data.get("scene_collection"))
 
     def list_scene_collection(self):
@@ -238,29 +246,31 @@ class Video:
         return scene_collections_data.get("scene_collections", [])
 
     def delete_scene_collection(self, collection_id: str) -> None:
+        if not collection_id:
+            raise ValueError("collection_id is required")
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
         )
 
     def index_scenes(
         self,
-        extraction_type: SceneExtractionType = SceneExtractionType.scene_based,
+        extraction_type: SceneExtractionType = SceneExtractionType.shot_based,
         extraction_config: Dict = {},
         prompt: Optional[str] = None,
-        model: Optional[str] = None,
+        model_name: Optional[str] = None,
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
         scenes: Optional[List[Scene]] = None,
         force: Optional[bool] = False,
         callback_url: Optional[str] = None,
-    ) -> Optional[List]:
+    ) -> Optional[str]:
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
             data={
                 "extraction_type": extraction_type,
                 "extraction_config": extraction_config,
                 "prompt": prompt,
-                "model": model,
+                "model_name": model_name,
                 "model_config": model_config,
                 "name": name,
                 "force": force,
@@ -270,7 +280,7 @@ class Video:
         )
         if not scenes_data:
             return None
-        return scenes_data.get("scene_index_records", [])
+        return scenes_data.get("scene_index_id")
 
     def list_scene_index(self) -> List:
         index_data = self._connection.get(
@@ -287,6 +297,8 @@ class Video:
         return index_data.get("scene_index_records", [])
 
     def delete_scene_index(self, scene_index_id: str) -> None:
+        if not scene_index_id:
+            raise ValueError("scene_index_id is required")
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
         )

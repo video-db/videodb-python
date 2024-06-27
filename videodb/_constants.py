@@ -18,12 +18,12 @@ class SearchType:
 
 
 class IndexType:
-    semantic = "semantic"
+    spoken_word = "spoken_word"
     scene = "scene"
 
 
 class SceneExtractionType:
-    scene_based = "scene"
+    shot_based = "shot"
     time_based = "time"
 
 
@@ -58,6 +58,8 @@ class ApiPath:
     invoices = "invoices"
     scenes = "scenes"
     scene = "scene"
+    frame = "frame"
+    describe = "describe"
 
 
 class Status:
