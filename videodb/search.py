@@ -184,6 +184,7 @@ class KeywordSearch(Search):
                 "query": query,
                 "score_threshold": score_threshold,
                 "result_threshold": result_threshold,
+                **kwargs,
             },
         )
         return SearchResult(self._connection, **search_data)
