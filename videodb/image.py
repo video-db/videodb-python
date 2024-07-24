@@ -21,6 +21,12 @@ class Image:
         )
 
     def delete(self) -> None:
+        """Delete the image.
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
         self._connection.delete(f"{ApiPath.image}/{self.id}")
 
 
@@ -63,6 +69,13 @@ class Frame(Image):
         }
 
     def describe(self, prompt: str = None, model_name=None):
+        """Describe the frame.
+
+        :param str prompt: (optional) The prompt to use for the description
+        :param str model_name: (optional) The model to use for the description
+        :return: The description of the frame
+        :rtype: str
+        """
         description_data = self._connection.post(
             path=f"{ApiPath.video}/{self.video_id}/{ApiPath.frame}/{self.id}/{ApiPath.describe}",
             data={"prompt": prompt, "model_name": model_name},

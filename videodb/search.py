@@ -53,7 +53,7 @@ class SearchResult:
         return self.shots
 
     def compile(self) -> str:
-        """Compile the search result shots into a stream url
+        """Compile the search result shots into a stream url.
 
         :raises SearchError: If no shots are found in the search results
         :return: The stream url
@@ -81,7 +81,7 @@ class SearchResult:
             raise SearchError("No shots found in search results to compile")
 
     def play(self) -> str:
-        """Generate a stream url for the shot and open it in the default browser
+        """Generate a stream url for the shot and open it in the default browser.
 
         :return: The stream url
         :rtype: str

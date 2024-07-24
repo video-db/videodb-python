@@ -21,4 +21,10 @@ class Audio:
         )
 
     def delete(self) -> None:
+        """Delete the audio.
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
         self._connection.delete(f"{ApiPath.audio}/{self.id}")

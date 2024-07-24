@@ -15,6 +15,8 @@ from videodb.shot import Shot
 
 
 class Video:
+    """Video class to interact with the Video"""
+
     def __init__(self, _connection, id: str, collection_id: str, **kwargs) -> None:
         self._connection = _connection
         self.id = id
@@ -55,6 +57,19 @@ class Video:
         dynamic_score_percentage: Optional[float] = None,
         **kwargs,
     ) -> SearchResult:
+        """Search for a query in the video.
+
+        :param str query: Query to search for
+        :param SearchType search_type:(optional) Type of search to perform :class:`SearchType <SearchType>` object
+        :param IndexType index_type:(optional) Type of index to search :class:`IndexType <IndexType>` object
+        :param str index_id: (optional) Index ID of scene index to search
+        :param int result_threshold:(optional) Number of results to return
+        :param float score_threshold:(optional) Threshold score for the search
+        :param float dynamic_score_percentage:(optional) Percentage of dynamic score to consider
+        :raise SearchError: If the search fails
+        :return: :class:`SearchResult <SearchResult>` object
+        :rtype: :class:`videodb.search.SearchResult`
+        """
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_video(
             video_id=self.id,
@@ -68,7 +83,7 @@ class Video:
         )
 
     def delete(self) -> None:
-        """Delete the video
+        """Delete the video.
 
         :raises InvalidRequestError: If the delete fails
         :return: None if the delete is successful
@@ -77,9 +92,9 @@ class Video:
         self._connection.delete(path=f"{ApiPath.video}/{self.id}")
 
     def generate_stream(self, timeline: Optional[List[Tuple[int, int]]] = None) -> str:
-        """Generate the stream url of the video
+        """Generate the stream url of the video.
 
-        :param list timeline: The timeline of the video to be streamed. Defaults to None.
+        :param list timeline:(optional) The timeline of the video to be streamed in the format [(start, end)]
         :raises InvalidRequestError: If the get_stream fails
         :return: The stream url of the video
         :rtype: str
@@ -97,6 +112,12 @@ class Video:
         return stream_data.get("stream_url", None)
 
     def generate_thumbnail(self, time: Optional[float] = None) -> Union[str, Image]:
+        """Generate the thumbnail of the video.
+
+        :param float time:(optional) The time of the video to generate the thumbnail
+        :returns: :class:`Image <Image>` object if time is provided else the thumbnail url
+        :rtype: Union[str, :class:`videodb.image.Image`]
+        """
         if self.thumbnail_url and not time:
             return self.thumbnail_url
 
@@ -116,6 +137,11 @@ class Video:
         return self.thumbnail_url
 
     def get_thumbnails(self) -> List[Image]:
+        """Get all the thumbnails of the video.
+
+        :return: List of :class:`Image <Image>` objects
+        :rtype: List[:class:`videodb.image.Image`]
+        """
         thumbnails_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.thumbnails}"
         )
@@ -133,10 +159,22 @@ class Video:
         self.transcript_text = transcript_data.get("text", "")
 
     def get_transcript(self, force: bool = False) -> List[Dict]:
+        """Get the transcript of the video.
+
+        :param bool force: (optional) Force to fetch the transcript
+        :return: The transcript of the video
+        :rtype: list[dict]
+        """
         self._fetch_transcript(force)
         return self.transcript
 
     def get_transcript_text(self, force: bool = False) -> str:
+        """Get the transcript text of the video.
+
+        :param bool force: (optional) Force to fetch the transcript
+        :return: The transcript text of the video
+        :rtype: str
+        """
         self._fetch_transcript(force)
         return self.transcript_text
 
@@ -146,8 +184,11 @@ class Video:
         force: bool = False,
         callback_url: str = None,
     ) -> None:
-        """Semantic indexing of spoken words in the video
+        """Semantic indexing of spoken words in the video.
 
+        :param str language_code:(optional) Language code of the video
+        :param bool force:(optional) Force to index the video
+        :param str callback_url:(optional) URL to receive the callback
         :raises InvalidRequestError: If the video is already indexed
         :return: None if the indexing is successful
         :rtype: None
@@ -164,6 +205,11 @@ class Video:
         )
 
     def get_scenes(self) -> Union[list, None]:
+        """Get the scenes of the video.
+
+        :return: The scenes of the video
+        :rtype: list
+        """
         if self.scenes:
             return self.scenes
         scene_data = self._connection.get(
@@ -216,6 +262,16 @@ class Video:
         force: bool = False,
         callback_url: str = None,
     ) -> Optional[SceneCollection]:
+        """Extract the scenes of the video.
+
+        :param SceneExtractionType extraction_type: (optional) The type of extraction, :class:`SceneExtractionType <SceneExtractionType>` object
+        :param dict extraction_config: (optional) The configuration for the extraction
+        :param bool force: (optional) Force to extract the scenes
+        :param str callback_url: (optional) URL to receive the callback
+        :raises InvalidRequestError: If the extraction fails
+        :return: The scene collection, :class:`SceneCollection <SceneCollection>` object
+        :rtype: :class:`videodb.scene.SceneCollection`
+        """
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}",
             data={
@@ -230,6 +286,12 @@ class Video:
         return self._format_scene_collection(scenes_data.get("scene_collection"))
 
     def get_scene_collection(self, collection_id: str) -> Optional[SceneCollection]:
+        """Get the scene collection.
+
+        :param str collection_id: The id of the scene collection
+        :return: The scene collection
+        :rtype: :class:`videodb.scene.SceneCollection`
+        """
         if not collection_id:
             raise ValueError("collection_id is required")
         scenes_data = self._connection.get(
@@ -240,12 +302,24 @@ class Video:
         return self._format_scene_collection(scenes_data.get("scene_collection"))
 
     def list_scene_collection(self):
+        """List all the scene collections.
+
+        :return: The scene collections
+        :rtype: list
+        """
         scene_collections_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
         )
         return scene_collections_data.get("scene_collections", [])
 
     def delete_scene_collection(self, collection_id: str) -> None:
+        """Delete the scene collection.
+
+        :param str collection_id: The id of the scene collection to be deleted
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
         if not collection_id:
             raise ValueError("collection_id is required")
         self._connection.delete(
@@ -263,6 +337,20 @@ class Video:
         scenes: Optional[List[Scene]] = None,
         callback_url: Optional[str] = None,
     ) -> Optional[str]:
+        """Index the scenes of the video.
+
+        :param SceneExtractionType extraction_type: (optional) The type of extraction, :class:`SceneExtractionType <SceneExtractionType>` object
+        :param dict extraction_config: (optional) The configuration for the extraction
+        :param str prompt: (optional) The prompt for the extraction
+        :param str model_name: (optional) The model name for the extraction
+        :param dict model_config: (optional) The model configuration for the extraction
+        :param str name: (optional) The name of the scene index
+        :param list[Scene] scenes: (optional) The scenes to be indexed, List of :class:`Scene <Scene>` objects
+        :param str callback_url: (optional) The callback url
+        :raises InvalidRequestError: If the index fails or index already exists
+        :return: The scene index id
+        :rtype: str
+        """
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
             data={
@@ -281,12 +369,23 @@ class Video:
         return scenes_data.get("scene_index_id")
 
     def list_scene_index(self) -> List:
+        """List all the scene indexes.
+
+        :return: The scene indexes
+        :rtype: list
+        """
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
         )
         return index_data.get("scene_indexes", [])
 
     def get_scene_index(self, scene_index_id: str) -> Optional[List]:
+        """Get the scene index.
+
+        :param str scene_index_id: The id of the scene index
+        :return: The scene index records
+        :rtype: list
+        """
         index_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
         )
@@ -295,6 +394,13 @@ class Video:
         return index_data.get("scene_index_records", [])
 
     def delete_scene_index(self, scene_index_id: str) -> None:
+        """Delete the scene index.
+
+        :param str scene_index_id: The id of the scene index to be deleted
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
         if not scene_index_id:
             raise ValueError("scene_index_id is required")
         self._connection.delete(
@@ -302,6 +408,12 @@ class Video:
         )
 
     def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:
+        """Add subtitles to the video.
+
+        :param SubtitleStyle style: (optional) The style of the subtitles, :class:`SubtitleStyle <SubtitleStyle>` object
+        :return: The stream url of the video with subtitles
+        :rtype: str
+        """
         if not isinstance(style, SubtitleStyle):
             raise ValueError("style must be of type SubtitleStyle")
         subtitle_data = self._connection.post(
@@ -353,9 +465,9 @@ class Video:
         return compile_data.get("stream_url", None)
 
     def play(self) -> str:
-        """Open the player url in the browser/iframe and return the stream url
+        """Open the player url in the browser/iframe and return the stream url.
 
-        :return: The stream url
+        :return: The player url
         :rtype: str
         """
         return play_stream(self.stream_url)

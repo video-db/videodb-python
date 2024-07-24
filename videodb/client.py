@@ -24,13 +24,29 @@ logger = logging.getLogger(__name__)
 
 
 class Connection(HttpClient):
+    """Connection class to interact with the VideoDB"""
+
     def __init__(self, api_key: str, base_url: str) -> None:
+        """Initializes a new instance of the Connection class with specified API credentials.
+
+        :param api_key: API key for authentication
+        :param str base_url: (optional) Base URL of the VideoDB API
+        :raise ValueError: If the API key is not provided
+        :return: connection object
+        :rtype: str
+        """
         self.api_key = api_key
         self.base_url = base_url
         self.collection_id = "default"
         super().__init__(api_key=api_key, base_url=base_url, version=__version__)
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
+        """Get a collection object by its ID.
+
+        :param collection_id: ID of the collection
+        :return: :class:`Collection <Collection>` object
+        :rtype: :class:`videodb.collection.Collection`
+        """
         collection_data = self.get(path=f"{ApiPath.collection}/{collection_id}")
         self.collection_id = collection_data.get("id", "default")
         return Collection(
@@ -41,6 +57,11 @@ class Connection(HttpClient):
         )
 
     def get_collections(self) -> List[Collection]:
+        """Get a list of all collections.
+
+        :return: List of :class:`Collection <Collection>` objects
+        :rtype: list[:class:`videodb.collection.Collection`]
+        """
         collections_data = self.get(path=ApiPath.collection)
         return [
             Collection(
@@ -53,6 +74,13 @@ class Connection(HttpClient):
         ]
 
     def create_collection(self, name: str, description: str) -> Collection:
+        """Create a new collection.
+
+        :param name: Name of the collection
+        :param description: Description of the collection
+        :return: :class:`Collection <Collection>` object
+        :rtype: :class:`videodb.collection.Collection`
+        """
         collection_data = self.post(
             path=ApiPath.collection,
             data={
@@ -69,6 +97,14 @@ class Connection(HttpClient):
         )
 
     def update_collection(self, id: str, name: str, description: str) -> Collection:
+        """Update an existing collection.
+
+        :param str id: ID of the collection
+        :param name: Name of the collection
+        :param description: Description of the collection
+        :return: :class:`Collection <Collection>` object
+        :rtype: :class:`videodb.collection.Collection`
+        """
         collection_data = self.patch(
             path=f"{ApiPath.collection}/{id}",
             data={
@@ -85,9 +121,19 @@ class Connection(HttpClient):
         )
 
     def check_usage(self) -> dict:
+        """Check the usage.
+
+        :return: Usage data
+        :rtype: dict
+        """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.usage}")
 
     def get_invoices(self) -> List[dict]:
+        """Get a list of all invoices.
+
+        :return: List of invoices
+        :rtype: list of dict
+        """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
     def upload(
@@ -99,6 +145,17 @@ class Connection(HttpClient):
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
     ) -> Union[Video, Audio, Image, None]:
+        """Upload a file.
+
+        :param file_path: Path to the file to upload
+        :param url: URL of the file to upload
+        :param MediaType media_type:(optional):class:`MediaType <MediaType>` object
+        :param name:(optional) Name of the file
+        :param description:(optional) Description of the file
+        :param callback_url:(optional) URL to receive the callback
+        :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
+        :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
+        """
         upload_data = upload(
             self,
             file_path,
