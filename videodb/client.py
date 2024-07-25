@@ -32,8 +32,8 @@ class Connection(HttpClient):
         :param api_key: API key for authentication
         :param str base_url: (optional) Base URL of the VideoDB API
         :raise ValueError: If the API key is not provided
-        :return: connection object
-        :rtype: str
+        :return: :class:`Connection <Connection>` object, to interact with the VideoDB
+        :rtype: :class:`videodb.client.Connection`
         """
         self.api_key = api_key
         self.base_url = base_url
