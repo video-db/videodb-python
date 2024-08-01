@@ -60,6 +60,7 @@ class ApiPath:
     scene = "scene"
     frame = "frame"
     describe = "describe"
+    storage = "storage"
 
 
 class Status:
