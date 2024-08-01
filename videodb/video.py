@@ -76,6 +76,9 @@ class Video:
         """
         self._connection.delete(path=f"{ApiPath.video}/{self.id}")
 
+    def remove_storage(self) -> None:
+        self._connection.delete(path=f"{ApiPath.video}/{self.id}/{ApiPath.storage}")
+
     def generate_stream(self, timeline: Optional[List[Tuple[int, int]]] = None) -> str:
         """Generate the stream url of the video
 
