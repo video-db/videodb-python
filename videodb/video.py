@@ -124,23 +124,61 @@ class Video:
         )
         return [Image(self._connection, **thumbnail) for thumbnail in thumbnails_data]
 
-    def _fetch_transcript(self, force: bool = False) -> None:
-        if self.transcript and not force:
+    def _fetch_transcript(
+        self,
+        start: int = None,
+        end: int = None,
+        segmenter: str = None,
+        count: int = None,
+        force: bool = None,
+    ) -> None:
+        if (
+            self.transcript
+            and not start
+            and not end
+            and not segmenter
+            and not count
+            and not force
+        ):
             return
         transcript_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
-            params={"force": "true" if force else "false"},
+            params={
+                "start": start,
+                "end": end,
+                "segmenter": segmenter,
+                "count": count,
+                "force": "true" if force else "false",
+            },
             show_progress=True,
         )
         self.transcript = transcript_data.get("word_timestamps", [])
         self.transcript_text = transcript_data.get("text", "")
 
-    def get_transcript(self, force: bool = False) -> List[Dict]:
-        self._fetch_transcript(force)
+    def get_transcript(
+        self,
+        start: int = None,
+        end: int = None,
+        segmenter: str = None,
+        count: int = None,
+        force: bool = None,
+    ) -> List[Dict]:
+        self._fetch_transcript(
+            start=start, end=end, segmenter=segmenter, count=count, force=force
+        )
         return self.transcript
 
-    def get_transcript_text(self, force: bool = False) -> str:
-        self._fetch_transcript(force)
+    def get_transcript_text(
+        self,
+        start: int = None,
+        end: int = None,
+        segmenter: str = None,
+        count: int = None,
+        force: bool = None,
+    ) -> str:
+        self._fetch_transcript(
+            start=start, end=end, segmenter=segmenter, count=count, force=force
+        )
         return self.transcript_text
 
     def index_spoken_words(
