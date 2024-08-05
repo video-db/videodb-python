@@ -5,6 +5,7 @@ from videodb._constants import (
     IndexType,
     SceneExtractionType,
     SearchType,
+    Segmenter,
     SubtitleStyle,
     Workflows,
 )
@@ -128,8 +129,8 @@ class Video:
         self,
         start: int = None,
         end: int = None,
-        segmenter: str = None,
-        count: int = None,
+        segmenter: str = Segmenter.word,
+        length: int = 1,
         force: bool = None,
     ) -> None:
         if (
@@ -137,7 +138,7 @@ class Video:
             and not start
             and not end
             and not segmenter
-            and not count
+            and not length
             and not force
         ):
             return
@@ -147,7 +148,7 @@ class Video:
                 "start": start,
                 "end": end,
                 "segmenter": segmenter,
-                "count": count,
+                "length": length,
                 "force": "true" if force else "false",
             },
             show_progress=True,
@@ -159,12 +160,12 @@ class Video:
         self,
         start: int = None,
         end: int = None,
-        segmenter: str = None,
-        count: int = None,
+        segmenter: str = Segmenter.word,
+        length: int = 1,
         force: bool = None,
     ) -> List[Dict]:
         self._fetch_transcript(
-            start=start, end=end, segmenter=segmenter, count=count, force=force
+            start=start, end=end, segmenter=segmenter, length=length, force=force
         )
         return self.transcript
 
@@ -172,12 +173,12 @@ class Video:
         self,
         start: int = None,
         end: int = None,
-        segmenter: str = None,
-        count: int = None,
+        segmenter: str = Segmenter.word,
+        length: int = 1,
         force: bool = None,
     ) -> str:
         self._fetch_transcript(
-            start=start, end=end, segmenter=segmenter, count=count, force=force
+            start=start, end=end, segmenter=segmenter, length=length, force=force
         )
         return self.transcript_text
 
