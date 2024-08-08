@@ -11,6 +11,7 @@ from videodb._constants import (
     SceneExtractionType,
     MediaType,
     SearchType,
+    Segmenter,
     SubtitleAlignment,
     SubtitleBorderStyle,
     SubtitleStyle,
@@ -41,6 +42,7 @@ __all__ = [
     "SubtitleStyle",
     "TextStyle",
     "SceneExtractionType",
+    "Segmenter",
 ]
 
 

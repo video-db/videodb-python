@@ -36,6 +36,12 @@ class SemanticSearchDefaultValues:
     score_threshold = 0.2
 
 
+class Segmenter:
+    time = "time"
+    word = "word"
+    sentence = "sentence"
+
+
 class ApiPath:
     collection = "collection"
     upload = "upload"
