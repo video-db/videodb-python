@@ -90,6 +90,15 @@ class Connection(HttpClient):
     def get_invoices(self) -> List[dict]:
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
+    def download(self, stream_link: str, name: str) -> dict:
+        return self.post(
+            path=f"{ApiPath.download}",
+            data={
+                "stream_link": stream_link,
+                "name": name,
+            },
+        )
+
     def upload(
         self,
         file_path: str = None,
