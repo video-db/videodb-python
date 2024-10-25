@@ -67,6 +67,7 @@ class ApiPath:
     frame = "frame"
     describe = "describe"
     storage = "storage"
+    download = "download"
 
 
 class Status:
