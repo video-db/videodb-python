@@ -117,6 +117,19 @@ class Collection:
             dynamic_score_percentage=dynamic_score_percentage,
         )
 
+    def search_title(self, query) -> List[Video]:
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
+            data={
+                "query": query,
+                "search_type": SearchType.llm,
+            },
+        )
+        return [
+            {"video": Video(self._connection, **result.get("video"))}
+            for result in search_data
+        ]
+
     def upload(
         self,
         file_path: str = None,
