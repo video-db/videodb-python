@@ -106,18 +106,6 @@ class Collection:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
     ) -> SearchResult:
-        if search_type == SearchType.llm:
-            search_data = self._connection.post(
-                path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
-                data={
-                    "query": query,
-                    "search_type": search_type,
-                },
-            )
-            return [
-                Video(self._connection, **result.get("video")) for result in search_data
-            ]
-
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
             collection_id=self.id,
@@ -128,6 +116,18 @@ class Collection:
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
         )
+
+    def search_title(self, query) -> List[Video]:
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
+            data={
+                "query": query,
+                "search_type": SearchType.llm,
+            },
+        )
+        return [
+            Video(self._connection, **result.get("video")) for result in search_data
+        ]
 
     def upload(
         self,
