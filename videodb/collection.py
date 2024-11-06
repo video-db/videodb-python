@@ -126,7 +126,8 @@ class Collection:
             },
         )
         return [
-            Video(self._connection, **result.get("video")) for result in search_data
+            {"video": Video(self._connection, **result.get("video"))}
+            for result in search_data
         ]
 
     def upload(
