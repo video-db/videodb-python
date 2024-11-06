@@ -15,6 +15,7 @@ class SearchType:
     semantic = "semantic"
     keyword = "keyword"
     scene = "scene"
+    llm = "llm"
 
 
 class IndexType:
@@ -68,6 +69,7 @@ class ApiPath:
     describe = "describe"
     storage = "storage"
     download = "download"
+    title = "title"
 
 
 class Status:
