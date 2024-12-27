@@ -71,6 +71,7 @@ class ApiPath:
     download = "download"
     title = "title"
     rtstream = "rtstream"
+    status = "status"
 
 
 class Status:

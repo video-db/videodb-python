@@ -16,7 +16,7 @@ from videodb._constants import (
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
-from videodb.rtstream import RtStream
+from videodb.rtstream import RTStream
 from videodb.search import SearchFactory, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -98,18 +98,18 @@ class Collection:
             path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
         )
 
-    def get_rtstream(self, id: str) -> RtStream:
+    def get_rtstream(self, id: str) -> RTStream:
         rtstream_data = self._connection.get(
             path=f"{ApiPath.rtstream}/{id}",
         )
-        return RtStream(self._connection, **rtstream_data)
+        return RTStream(self._connection, **rtstream_data)
 
-    def list_rtstreams(self) -> List[RtStream]:
+    def list_rtstreams(self) -> List[RTStream]:
         rtstreams_data = self._connection.get(
             path=f"{ApiPath.rtstream}",
         )
         return [
-            RtStream(self._connection, **rtstream)
+            RTStream(self._connection, **rtstream)
             for rtstream in rtstreams_data.get("results")
         ]
 
