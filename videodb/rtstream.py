@@ -28,7 +28,6 @@ class RTStreamSceneIndex:
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}",
             params={"page": page, "page_size": page_size},
         )
-        print(index_data)
         if not index_data:
             return None
         return {
