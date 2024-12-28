@@ -23,13 +23,18 @@ class RTStreamSceneIndex:
             f"status={self.status})"
         )
 
-    def get_scene_index(self):
+    def get_scene_index(self, page=1, page_size=100):
         index_data = self._connection.get(
-            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}"
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}",
+            params={"page": page, "page_size": page_size},
         )
+        print(index_data)
         if not index_data:
             return None
-        return index_data.get("scene_index_records", [])
+        return {
+            "scenes": index_data.get("scene_index_records", []),
+            "next_page": index_data.get("next_page", False),
+        }
 
     def start(self):
         self._connection.patch(
@@ -121,7 +126,7 @@ class RTStream:
 
     def get_rtstream_scene_index(self, index_id: str) -> RTStreamSceneIndex:
         index_data = self._connection.get(
-            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{index_id}"
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{index_id}"
         )
         return RTStreamSceneIndex(
             _connection=self._connection,
