@@ -11,6 +11,9 @@ class RTStreamSceneIndex:
         self._connection = _connection
         self.rtstream_index_id = rtstream_index_id
         self.rtstream_id = rtstream_id
+        self.extraction_type = kwargs.get("extraction_type", None)
+        self.extraction_config = kwargs.get("extraction_config", None)
+        self.prompt = kwargs.get("prompt", None)
         self.name = kwargs.get("name", None)
         self.status = kwargs.get("status", None)
 
@@ -19,6 +22,9 @@ class RTStreamSceneIndex:
             f"RTStreamSceneIndex("
             f"rtstream_index_id={self.rtstream_index_id}, "
             f"rtstream_id={self.rtstream_id}, "
+            f"extraction_type={self.extraction_type}, "
+            f"extraction_config={self.extraction_config}, "
+            f"prompt={self.prompt}, "
             f"name={self.name}, "
             f"status={self.status})"
         )
@@ -132,6 +138,9 @@ class RTStream:
             _connection=self._connection,
             rtstream_index_id=index_data.get("rtstream_index_id"),
             rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
         )
@@ -145,6 +154,9 @@ class RTStream:
                 _connection=self._connection,
                 rtstream_index_id=index.get("rtstream_index_id"),
                 rtstream_id=self.id,
+                extraction_type=index.get("extraction_type"),
+                extraction_config=index.get("extraction_config"),
+                prompt=index.get("prompt"),
                 name=index.get("name"),
                 status=index.get("status"),
             )
@@ -159,6 +171,9 @@ class RTStream:
             _connection=self._connection,
             rtstream_index_id=index_data.get("rtstream_index_id"),
             rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
         )
