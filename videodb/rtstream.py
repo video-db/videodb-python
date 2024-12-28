@@ -102,7 +102,7 @@ class RTStream:
             status=index_data.get("status"),
         )
 
-    def list_indexes(self):
+    def list_scene_indexes(self):
         index_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
         )
