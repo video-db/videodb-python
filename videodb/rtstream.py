@@ -32,16 +32,18 @@ class RTStreamSceneIndex:
         return index_data.get("scene_index_records", [])
 
     def start(self):
-        return self._connection.patch(
+        self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}/{ApiPath.status}",
             data={"status": "running"},
         )
+        self.status = "running"
 
     def stop(self):
-        return self._connection.patch(
+        self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}/{ApiPath.status}",
             data={"status": "stopped"},
         )
+        self.status = "stopped"
 
 
 class RTStream:
@@ -116,3 +118,15 @@ class RTStream:
             )
             for index in index_data.get("scene_indexes", [])
         ]
+
+    def get_rtstream_scene_index(self, index_id: str) -> RTStreamSceneIndex:
+        index_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{index_id}"
+        )
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )

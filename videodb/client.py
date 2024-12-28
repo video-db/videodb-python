@@ -90,6 +90,18 @@ class Connection(HttpClient):
     def get_invoices(self) -> List[dict]:
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
+    def create_event(self, event_prompt: str, label: str):
+        event_data = self.post(
+            f"{ApiPath.rtstream}/{ApiPath.event}",
+            data={"event_prompt": event_prompt, "label": label},
+        )
+
+        return event_data.get("event_id")
+
+    def list_events(self):
+        event_data = self.get(f"{ApiPath.rtstream}/{ApiPath.event}")
+        return event_data.get("events", [])
+
     def download(self, stream_link: str, name: str) -> dict:
         return self.post(
             path=f"{ApiPath.download}",

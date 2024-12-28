@@ -113,24 +113,6 @@ class Collection:
             for rtstream in rtstreams_data.get("results")
         ]
 
-    def create_event(
-        self,
-        event_prompt="Did someone fall from bed? Output yes or no",
-        label="fall_alert",
-    ):
-        event_data = self._connection.post(
-            f"{ApiPath.rtstream}/{ApiPath.collection}/{self.id}/{ApiPath.event}",
-            data={"event_prompt": event_prompt, "label": label},
-        )
-
-        return event_data.get("event_id")
-
-    def get_events(self):
-        event_data = self._connection.get(
-            f"{ApiPath.rtstream}/{ApiPath.collection}/{self.id}/{ApiPath.event}"
-        )
-        return event_data.get("events", [])
-
     def search(
         self,
         query: str,
