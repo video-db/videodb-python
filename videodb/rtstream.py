@@ -49,6 +49,34 @@ class RTStreamSceneIndex:
         )
         self.status = "stopped"
 
+    def create_alert(self, event_id, callback_url) -> str:
+        alert_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}",
+            data={
+                "event_id": event_id,
+                "callback_url": callback_url,
+            },
+        )
+        return alert_data.get("alert_id", None)
+
+    def list_alerts(self):
+        alert_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}"
+        )
+        return alert_data.get("alerts", [])
+
+    def enable_alert(self, alert_id):
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"status": "enabled"},
+        )
+
+    def disable_alert(self, alert_id):
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"status": "disabled"},
+        )
+
 
 class RTStream:
     def __init__(self, _connection, id: str, **kwargs) -> None:
