@@ -72,6 +72,7 @@ class ApiPath:
     title = "title"
     rtstream = "rtstream"
     status = "status"
+    event = "event"
 
 
 class Status:
