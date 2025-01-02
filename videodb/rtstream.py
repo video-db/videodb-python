@@ -21,7 +21,6 @@ class RTStreamSceneIndex:
         return (
             f"RTStreamSceneIndex("
             f"rtstream_index_id={self.rtstream_index_id}, "
-            f"rtstream_id={self.rtstream_id}, "
             f"extraction_type={self.extraction_type}, "
             f"extraction_config={self.extraction_config}, "
             f"prompt={self.prompt}, "
@@ -29,7 +28,7 @@ class RTStreamSceneIndex:
             f"status={self.status})"
         )
 
-    def get_scene_index(self, page=1, page_size=100):
+    def get_scenes(self, page=1, page_size=100):
         index_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}",
             params={"page": page, "page_size": page_size},
@@ -105,7 +104,7 @@ class RTStream:
             f"status={self.status})"
         )
 
-    def stream(self, start, end):
+    def generate_stream(self, start, end):
         stream_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.stream}",
             params={"start": start, "end": end},
@@ -163,7 +162,7 @@ class RTStream:
             for index in index_data.get("scene_indexes", [])
         ]
 
-    def get_rtstream_scene_index(self, index_id: str) -> RTStreamSceneIndex:
+    def get_scene_index(self, index_id: str) -> RTStreamSceneIndex:
         index_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{index_id}"
         )
