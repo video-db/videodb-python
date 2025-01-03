@@ -28,10 +28,15 @@ class RTStreamSceneIndex:
             f"status={self.status})"
         )
 
-    def get_scenes(self, page=1, page_size=100):
+    def get_scenes(self, start: int = None, end: int = None, page=1, page_size=100):
+        params = {"page": page, "page_size": page_size}
+        if start and end:
+            params["start"] = start
+            params["end"] = end
+
         index_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}",
-            params={"page": page, "page_size": page_size},
+            params=params,
         )
         if not index_data:
             return None
