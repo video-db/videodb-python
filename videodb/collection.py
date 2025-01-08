@@ -4,6 +4,8 @@ from typing import (
     Optional,
     Union,
     List,
+    Dict,
+    Any,
 )
 from videodb._upload import (
     upload,
@@ -105,6 +107,7 @@ class Collection:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        filter: List[Dict[str, Any]] = [],
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
@@ -115,6 +118,7 @@ class Collection:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            filter=filter,
         )
 
     def search_title(self, query) -> List[Video]:
