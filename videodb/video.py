@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Dict, Tuple
+from typing import Optional, Union, List, Dict, Tuple, Any
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
@@ -54,6 +54,7 @@ class Video:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        filter: List[Dict[str, Any]] = [],
         **kwargs,
     ) -> SearchResult:
         search = SearchFactory(self._connection).get_search(search_type)
@@ -65,6 +66,7 @@ class Video:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            filter=filter,
             **kwargs,
         )
 
@@ -299,6 +301,7 @@ class Video:
         extraction_type: SceneExtractionType = SceneExtractionType.shot_based,
         extraction_config: Dict = {},
         prompt: Optional[str] = None,
+        metadata: Dict = {},
         model_name: Optional[str] = None,
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
@@ -311,6 +314,7 @@ class Video:
                 "extraction_type": extraction_type,
                 "extraction_config": extraction_config,
                 "prompt": prompt,
+                "metadata": metadata,
                 "model_name": model_name,
                 "model_config": model_config,
                 "name": name,
