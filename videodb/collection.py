@@ -38,6 +38,15 @@ class Collection:
             f"description={self.description})"
         )
 
+    def delete(self) -> None:
+        """Delete the collection
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
+        self._connection.delete(path=f"{ApiPath.collection}/{self.id}")
+
     def get_videos(self) -> List[Video]:
         videos_data = self._connection.get(
             path=f"{ApiPath.video}",
