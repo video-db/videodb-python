@@ -24,18 +24,27 @@ logger = logging.getLogger(__name__)
 
 
 class Collection:
-    def __init__(self, _connection, id: str, name: str = None, description: str = None):
+    def __init__(
+        self,
+        _connection,
+        id: str,
+        name: str = None,
+        description: str = None,
+        is_public: bool = False,
+    ):
         self._connection = _connection
         self.id = id
         self.name = name
         self.description = description
+        self.is_public = is_public
 
     def __repr__(self) -> str:
         return (
             f"Collection("
             f"id={self.id}, "
             f"name={self.name}, "
-            f"description={self.description})"
+            f"description={self.description}), "
+            f"is_public={self.is_public})"
         )
 
     def delete(self) -> None:
@@ -168,3 +177,15 @@ class Collection:
             return Audio(self._connection, **upload_data)
         elif media_id.startswith("img-"):
             return Image(self._connection, **upload_data)
+
+    def make_public(self):
+        self._connection.patch(
+            path=f"{ApiPath.collection}/{self.id}", data={"is_public": True}
+        )
+        self.is_public = True
+
+    def make_private(self):
+        self._connection.patch(
+            path=f"{ApiPath.collection}/{self.id}", data={"is_public": False}
+        )
+        self.is_public = False
