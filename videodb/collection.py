@@ -182,8 +182,10 @@ class Collection:
         self._connection.patch(
             path=f"{ApiPath.collection}/{self.id}", data={"is_public": True}
         )
+        self.is_public = True
 
     def make_private(self):
         self._connection.patch(
             path=f"{ApiPath.collection}/{self.id}", data={"is_public": False}
         )
+        self.is_public = False
