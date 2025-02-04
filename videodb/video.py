@@ -277,7 +277,8 @@ class Video:
         if not collection_id:
             raise ValueError("collection_id is required")
         scenes_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
+            params={"collection_id": self.collection_id},
         )
         if not scenes_data:
             return None
@@ -285,7 +286,8 @@ class Video:
 
     def list_scene_collection(self):
         scene_collections_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}",
+            params={"collection_id": self.collection_id},
         )
         return scene_collections_data.get("scene_collections", [])
 
@@ -328,13 +330,15 @@ class Video:
 
     def list_scene_index(self) -> List:
         index_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            params={"collection_id": self.collection_id},
         )
         return index_data.get("scene_indexes", [])
 
     def get_scene_index(self, scene_index_id: str) -> Optional[List]:
         index_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
+            params={"collection_id": self.collection_id},
         )
         if not index_data:
             return None

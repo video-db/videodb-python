@@ -38,6 +38,7 @@ class Connection(HttpClient):
             self.collection_id,
             collection_data.get("name"),
             collection_data.get("description"),
+            collection_data.get("is_public", False),
         )
 
     def get_collections(self) -> List[Collection]:
@@ -48,6 +49,7 @@ class Connection(HttpClient):
                 collection.get("id"),
                 collection.get("name"),
                 collection.get("description"),
+                collection.get("is_public", False),
             )
             for collection in collections_data.get("collections")
         ]
@@ -66,6 +68,7 @@ class Connection(HttpClient):
             collection_data.get("id"),
             collection_data.get("name"),
             collection_data.get("description"),
+            collection_data.get("is_public", False),
         )
 
     def update_collection(self, id: str, name: str, description: str) -> Collection:
@@ -82,6 +85,7 @@ class Connection(HttpClient):
             collection_data.get("id"),
             collection_data.get("name"),
             collection_data.get("description"),
+            collection_data.get("is_public", False),
         )
 
     def check_usage(self) -> dict:
