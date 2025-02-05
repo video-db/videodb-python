@@ -54,12 +54,15 @@ class Connection(HttpClient):
             for collection in collections_data.get("collections")
         ]
 
-    def create_collection(self, name: str, description: str) -> Collection:
+    def create_collection(
+        self, name: str, description: str, is_public: bool = False
+    ) -> Collection:
         collection_data = self.post(
             path=ApiPath.collection,
             data={
                 "name": name,
                 "description": description,
+                "is_public": is_public,
             },
         )
         self.collection_id = collection_data.get("id", "default")

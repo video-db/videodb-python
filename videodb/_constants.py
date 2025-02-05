@@ -70,6 +70,7 @@ class ApiPath:
     storage = "storage"
     download = "download"
     title = "title"
+    generate_url = "generate_url"
 
 
 class Status:
