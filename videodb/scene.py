@@ -46,6 +46,13 @@ class Scene:
         }
 
     def describe(self, prompt: str = None, model_name=None) -> None:
+        """Describe the scene.
+
+        :param str prompt: (optional) The prompt to use for the description
+        :param str model_name: (optional) The model to use for the description
+        :return: The description of the scene
+        :rtype: str
+        """
         if self._connection is None:
             raise ValueError("Connection is required to describe a scene")
         description_data = self._connection.post(
@@ -81,6 +88,12 @@ class SceneCollection:
         )
 
     def delete(self) -> None:
+        """Delete the scene collection.
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
         self._connection.delete(
             path=f"{ApiPath.video}/{self.video_id}/{ApiPath.scenes}/{self.id}"
         )

@@ -51,7 +51,7 @@ class Shot:
         return self.__dict__[key]
 
     def generate_stream(self) -> str:
-        """Generate a stream url for the shot
+        """Generate a stream url for the shot.
 
         :return: The stream url
         :rtype: str
@@ -72,7 +72,7 @@ class Shot:
             return self.stream_url
 
     def play(self) -> str:
-        """Generate a stream url for the shot and open it in the default browser/ notebook
+        """Generate a stream url for the shot and open it in the default browser/ notebook.
 
         :return: The stream url
         :rtype: str
