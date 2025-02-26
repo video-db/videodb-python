@@ -1,10 +1,11 @@
-from typing import Optional, Union, List, Dict, Tuple
+from typing import Optional, Union, List, Dict, Tuple, Any
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     IndexType,
     SceneExtractionType,
     SearchType,
+    Segmenter,
     SubtitleStyle,
     Workflows,
 )
@@ -55,6 +56,7 @@ class Video:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        filter: List[Dict[str, Any]] = [],
         **kwargs,
     ) -> SearchResult:
         """Search for a query in the video.
@@ -79,6 +81,7 @@ class Video:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            filter=filter,
             **kwargs,
         )
 
@@ -90,6 +93,9 @@ class Video:
         :rtype: None
         """
         self._connection.delete(path=f"{ApiPath.video}/{self.id}")
+
+    def remove_storage(self) -> None:
+        self._connection.delete(path=f"{ApiPath.video}/{self.id}/{ApiPath.storage}")
 
     def generate_stream(self, timeline: Optional[List[Tuple[int, int]]] = None) -> str:
         """Generate the stream url of the video.
@@ -147,35 +153,73 @@ class Video:
         )
         return [Image(self._connection, **thumbnail) for thumbnail in thumbnails_data]
 
-    def _fetch_transcript(self, force: bool = False) -> None:
-        if self.transcript and not force:
+    def _fetch_transcript(
+        self,
+        start: int = None,
+        end: int = None,
+        segmenter: str = Segmenter.word,
+        length: int = 1,
+        force: bool = None,
+    ) -> None:
+        if (
+            self.transcript
+            and not start
+            and not end
+            and not segmenter
+            and not length
+            and not force
+        ):
             return
         transcript_data = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
-            params={"force": "true" if force else "false"},
+            params={
+                "start": start,
+                "end": end,
+                "segmenter": segmenter,
+                "length": length,
+                "force": "true" if force else "false",
+            },
             show_progress=True,
         )
         self.transcript = transcript_data.get("word_timestamps", [])
         self.transcript_text = transcript_data.get("text", "")
 
-    def get_transcript(self, force: bool = False) -> List[Dict]:
+    def get_transcript(
+        self,
+        start: int = None,
+        end: int = None,
+        segmenter: str = Segmenter.word,
+        length: int = 1,
+        force: bool = None,
+    ) -> List[Dict]:
         """Get the transcript of the video.
 
         :param bool force: (optional) Force to fetch the transcript
         :return: The transcript of the video
         :rtype: list[dict]
         """
-        self._fetch_transcript(force)
+        self._fetch_transcript(
+            start=start, end=end, segmenter=segmenter, length=length, force=force
+        )
         return self.transcript
 
-    def get_transcript_text(self, force: bool = False) -> str:
+    def get_transcript_text(
+        self,
+        start: int = None,
+        end: int = None,
+        segmenter: str = Segmenter.word,
+        length: int = 1,
+        force: bool = None,
+    ) -> str:
         """Get the transcript text of the video.
 
         :param bool force: (optional) Force to fetch the transcript
         :return: The transcript text of the video
         :rtype: str
         """
-        self._fetch_transcript(force)
+        self._fetch_transcript(
+            start=start, end=end, segmenter=segmenter, length=length, force=force
+        )
         return self.transcript_text
 
     def index_spoken_words(
@@ -295,7 +339,8 @@ class Video:
         if not collection_id:
             raise ValueError("collection_id is required")
         scenes_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
+            params={"collection_id": self.collection_id},
         )
         if not scenes_data:
             return None
@@ -308,7 +353,8 @@ class Video:
         :rtype: list
         """
         scene_collections_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}",
+            params={"collection_id": self.collection_id},
         )
         return scene_collections_data.get("scene_collections", [])
 
@@ -331,6 +377,7 @@ class Video:
         extraction_type: SceneExtractionType = SceneExtractionType.shot_based,
         extraction_config: Dict = {},
         prompt: Optional[str] = None,
+        metadata: Dict = {},
         model_name: Optional[str] = None,
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
@@ -357,6 +404,7 @@ class Video:
                 "extraction_type": extraction_type,
                 "extraction_config": extraction_config,
                 "prompt": prompt,
+                "metadata": metadata,
                 "model_name": model_name,
                 "model_config": model_config,
                 "name": name,
@@ -375,7 +423,8 @@ class Video:
         :rtype: list
         """
         index_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            params={"collection_id": self.collection_id},
         )
         return index_data.get("scene_indexes", [])
 
@@ -387,7 +436,8 @@ class Video:
         :rtype: list
         """
         index_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
+            params={"collection_id": self.collection_id},
         )
         if not index_data:
             return None

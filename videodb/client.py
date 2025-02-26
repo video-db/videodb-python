@@ -54,6 +54,7 @@ class Connection(HttpClient):
             self.collection_id,
             collection_data.get("name"),
             collection_data.get("description"),
+            collection_data.get("is_public", False),
         )
 
     def get_collections(self) -> List[Collection]:
@@ -69,15 +70,19 @@ class Connection(HttpClient):
                 collection.get("id"),
                 collection.get("name"),
                 collection.get("description"),
+                collection.get("is_public", False),
             )
             for collection in collections_data.get("collections")
         ]
 
-    def create_collection(self, name: str, description: str) -> Collection:
+    def create_collection(
+        self, name: str, description: str, is_public: bool = False
+    ) -> Collection:
         """Create a new collection.
 
         :param name: Name of the collection
         :param description: Description of the collection
+        :param is_public: Make collection public
         :return: :class:`Collection <Collection>` object
         :rtype: :class:`videodb.collection.Collection`
         """
@@ -86,6 +91,7 @@ class Connection(HttpClient):
             data={
                 "name": name,
                 "description": description,
+                "is_public": is_public,
             },
         )
         self.collection_id = collection_data.get("id", "default")
@@ -94,6 +100,7 @@ class Connection(HttpClient):
             collection_data.get("id"),
             collection_data.get("name"),
             collection_data.get("description"),
+            collection_data.get("is_public", False),
         )
 
     def update_collection(self, id: str, name: str, description: str) -> Collection:
@@ -118,6 +125,7 @@ class Connection(HttpClient):
             collection_data.get("id"),
             collection_data.get("name"),
             collection_data.get("description"),
+            collection_data.get("is_public", False),
         )
 
     def check_usage(self) -> dict:
@@ -135,6 +143,15 @@ class Connection(HttpClient):
         :rtype: list of dict
         """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
+
+    def download(self, stream_link: str, name: str) -> dict:
+        return self.post(
+            path=f"{ApiPath.download}",
+            data={
+                "stream_link": stream_link,
+                "name": name,
+            },
+        )
 
     def upload(
         self,

@@ -20,6 +20,13 @@ class Audio:
             f"length={self.length})"
         )
 
+    def generate_url(self) -> str:
+        url_data = self._connection.post(
+            path=f"{ApiPath.audio}/{self.id}/{ApiPath.generate_url}",
+            params={"collection_id": self.collection_id},
+        )
+        return url_data.get("signed_url", None)
+
     def delete(self) -> None:
         """Delete the audio.
 

@@ -15,6 +15,7 @@ class SearchType:
     semantic = "semantic"
     keyword = "keyword"
     scene = "scene"
+    llm = "llm"
 
 
 class IndexType:
@@ -34,6 +35,12 @@ class Workflows:
 class SemanticSearchDefaultValues:
     result_threshold = 5
     score_threshold = 0.2
+
+
+class Segmenter:
+    time = "time"
+    word = "word"
+    sentence = "sentence"
 
 
 class ApiPath:
@@ -60,6 +67,10 @@ class ApiPath:
     scene = "scene"
     frame = "frame"
     describe = "describe"
+    storage = "storage"
+    download = "download"
+    title = "title"
+    generate_url = "generate_url"
 
 
 class Status:

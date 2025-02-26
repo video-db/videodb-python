@@ -4,6 +4,8 @@ from typing import (
     Optional,
     Union,
     List,
+    Dict,
+    Any,
 )
 from videodb._upload import (
     upload,
@@ -24,19 +26,37 @@ logger = logging.getLogger(__name__)
 class Collection:
     """Collection class to interact with the Collection"""
 
-    def __init__(self, _connection, id: str, name: str = None, description: str = None):
+    def __init__(
+        self,
+        _connection,
+        id: str,
+        name: str = None,
+        description: str = None,
+        is_public: bool = False,
+    ):
         self._connection = _connection
         self.id = id
         self.name = name
         self.description = description
+        self.is_public = is_public
 
     def __repr__(self) -> str:
         return (
             f"Collection("
             f"id={self.id}, "
             f"name={self.name}, "
-            f"description={self.description})"
+            f"description={self.description}), "
+            f"is_public={self.is_public})"
         )
+
+    def delete(self) -> None:
+        """Delete the collection
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
+        self._connection.delete(path=f"{ApiPath.collection}/{self.id}")
 
     def get_videos(self) -> List[Video]:
         """Get all the videos in the collection.
@@ -154,6 +174,7 @@ class Collection:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        filter: List[Dict[str, Any]] = [],
     ) -> SearchResult:
         """Search for a query in the collection.
 
@@ -176,7 +197,21 @@ class Collection:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            filter=filter,
         )
+
+    def search_title(self, query) -> List[Video]:
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
+            data={
+                "query": query,
+                "search_type": SearchType.llm,
+            },
+        )
+        return [
+            {"video": Video(self._connection, **result.get("video"))}
+            for result in search_data
+        ]
 
     def upload(
         self,
@@ -214,3 +249,15 @@ class Collection:
             return Audio(self._connection, **upload_data)
         elif media_id.startswith("img-"):
             return Image(self._connection, **upload_data)
+
+    def make_public(self):
+        self._connection.patch(
+            path=f"{ApiPath.collection}/{self.id}", data={"is_public": True}
+        )
+        self.is_public = True
+
+    def make_private(self):
+        self._connection.patch(
+            path=f"{ApiPath.collection}/{self.id}", data={"is_public": False}
+        )
+        self.is_public = False
