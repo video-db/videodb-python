@@ -64,7 +64,6 @@ class Video:
         :param str query: Query to search for
         :param SearchType search_type:(optional) Type of search to perform :class:`SearchType <SearchType>` object
         :param IndexType index_type:(optional) Type of index to search :class:`IndexType <IndexType>` object
-        :param str index_id: (optional) Index ID of scene index to search
         :param int result_threshold:(optional) Number of results to return
         :param float score_threshold:(optional) Threshold score for the search
         :param float dynamic_score_percentage:(optional) Percentage of dynamic score to consider
@@ -95,6 +94,12 @@ class Video:
         self._connection.delete(path=f"{ApiPath.video}/{self.id}")
 
     def remove_storage(self) -> None:
+        """Remove the video storage.
+
+        :raises InvalidRequestError: If the storage removal fails
+        :return: None if the removal is successful
+        :rtype: None
+        """
         self._connection.delete(path=f"{ApiPath.video}/{self.id}/{ApiPath.storage}")
 
     def generate_stream(self, timeline: Optional[List[Tuple[int, int]]] = None) -> str:
@@ -188,15 +193,20 @@ class Video:
         self,
         start: int = None,
         end: int = None,
-        segmenter: str = Segmenter.word,
+        segmenter: Segmenter = Segmenter.word,
         length: int = 1,
         force: bool = None,
-    ) -> List[Dict]:
-        """Get the transcript of the video.
+    ) -> List[Dict[str, Union[float, str]]]:
+        """Get timestamped transcript segments for the video.
 
-        :param bool force: (optional) Force to fetch the transcript
-        :return: The transcript of the video
-        :rtype: list[dict]
+        :param int start: Start time in seconds
+        :param int end: End time in seconds
+        :param Segmenter segmenter: Segmentation type (:class:`Segmenter.word`,
+            :class:`Segmenter.sentence`, :class:`Segmenter.time`)
+        :param int length: Length of segments when using time segmenter
+        :param bool force: Force fetch new transcript
+        :return: List of dicts with keys: start (float), end (float), text (str)
+        :rtype: List[Dict[str, Union[float, str]]]
         """
         self._fetch_transcript(
             start=start, end=end, segmenter=segmenter, length=length, force=force
@@ -211,10 +221,12 @@ class Video:
         length: int = 1,
         force: bool = None,
     ) -> str:
-        """Get the transcript text of the video.
+        """Get plain text transcript for the video.
 
-        :param bool force: (optional) Force to fetch the transcript
-        :return: The transcript text of the video
+        :param int start: Start time in seconds to get transcript from
+        :param int end: End time in seconds to get transcript until
+        :param bool force: Force fetch new transcript
+        :return: Full transcript text as string
         :rtype: str
         """
         self._fetch_transcript(
@@ -249,7 +261,11 @@ class Video:
         )
 
     def get_scenes(self) -> Union[list, None]:
-        """Get the scenes of the video.
+        """
+        .. deprecated:: 0.2.0
+        Use :func:`list_scene_index` and :func:`get_scene_index` instead.
+
+        Get the scenes of the video.
 
         :return: The scenes of the video
         :rtype: list
@@ -309,7 +325,20 @@ class Video:
         """Extract the scenes of the video.
 
         :param SceneExtractionType extraction_type: (optional) The type of extraction, :class:`SceneExtractionType <SceneExtractionType>` object
-        :param dict extraction_config: (optional) The configuration for the extraction
+        :param dict extraction_config: (optional) Dictionary of configuration parameters to control how scenes are extracted.
+            For time-based extraction (extraction_type=time_based):
+                - "time" (int, optional): Interval in seconds at which scenes are segmented.
+                Default is 10 (i.e., every 10 seconds forms a new scene).
+                - "frame_count" (int, optional): Number of frames to extract per scene.
+                Default is 1.
+                - "select_frames" (List[str], optional): Which frames to select from each segment.
+                Possible values include "first", "middle", and "last". Default is ["first"].
+
+            For shot-based extraction (extraction_type=shot_based):
+                - "threshold" (int, optional): Sensitivity for detecting scene changes (camera shots).
+                The higher the threshold, the fewer scene splits. Default is 20.
+                - "frame_count" (int, optional): Number of frames to extract from each detected shot.
+                Default is 1.
         :param bool force: (optional) Force to extract the scenes
         :param str callback_url: (optional) URL to receive the callback
         :raises InvalidRequestError: If the extraction fails
@@ -387,7 +416,20 @@ class Video:
         """Index the scenes of the video.
 
         :param SceneExtractionType extraction_type: (optional) The type of extraction, :class:`SceneExtractionType <SceneExtractionType>` object
-        :param dict extraction_config: (optional) The configuration for the extraction
+        :param dict extraction_config: (optional) Dictionary of configuration parameters to control how scenes are extracted.
+            For time-based extraction (extraction_type=time_based):
+                - "time" (int, optional): Interval in seconds at which scenes are segmented.
+                Default is 10 (i.e., every 10 seconds forms a new scene).
+                - "frame_count" (int, optional): Number of frames to extract per scene.
+                Default is 1.
+                - "select_frames" (List[str], optional): Which frames to select from each segment.
+                Possible values include "first", "middle", and "last". Default is ["first"].
+
+            For shot-based extraction (extraction_type=shot_based):
+                - "threshold" (int, optional): Sensitivity for detecting scene changes (camera shots).
+                The higher the threshold, the fewer scene splits. Default is 20.
+                - "frame_count" (int, optional): Number of frames to extract from each detected shot.
+                Default is 1.
         :param str prompt: (optional) The prompt for the extraction
         :param str model_name: (optional) The model name for the extraction
         :param dict model_config: (optional) The model configuration for the extraction
