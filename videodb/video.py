@@ -61,7 +61,7 @@ class Video:
     ) -> SearchResult:
         """Search for a query in the video.
 
-        :param str query: Query to search for
+        :param str query: Query to search for.
         :param SearchType search_type:(optional) Type of search to perform :class:`SearchType <SearchType>` object
         :param IndexType index_type:(optional) Type of index to search :class:`IndexType <IndexType>` object
         :param int result_threshold:(optional) Number of results to return
