@@ -1,4 +1,5 @@
 """Constants used in the videodb package."""
+
 from typing import Union
 from dataclasses import dataclass
 

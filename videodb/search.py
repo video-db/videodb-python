@@ -14,6 +14,14 @@ from videodb.shot import Shot
 
 
 class SearchResult:
+    """SearchResult class to interact with search results
+
+    :ivar str collection_id: ID of the collection this search result belongs to
+    :ivar str stream_url: URL to stream the search result
+    :ivar str player_url: URL to play the search result in a player
+    :ivar list[Shot] shots: List of shots in the search result
+    """
+
     def __init__(self, _connection, **kwargs):
         self._connection = _connection
         self.shots = []

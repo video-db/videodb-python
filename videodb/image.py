@@ -4,6 +4,14 @@ from videodb._constants import (
 
 
 class Image:
+    """Image class to interact with the Image
+
+    :ivar str id: Unique identifier for the image
+    :ivar str collection_id: ID of the collection this image belongs to 
+    :ivar str name: Name of the image file
+    :ivar str url: URL of the image
+    """
+
     def __init__(self, _connection, id: str, collection_id: str, **kwargs) -> None:
         self._connection = _connection
         self.id = id
@@ -21,6 +29,12 @@ class Image:
         )
 
     def generate_url(self) -> str:
+        """Generate the signed url of the image.
+
+        :raises InvalidRequestError: If the get_url fails
+        :return: The signed url of the image
+        :rtype: str
+        """
         url_data = self._connection.post(
             path=f"{ApiPath.image}/{self.id}/{ApiPath.generate_url}",
             params={"collection_id": self.collection_id},
@@ -38,6 +52,16 @@ class Image:
 
 
 class Frame(Image):
+    """Frame class to interact with video frames
+
+    :ivar str id: Unique identifier for the frame
+    :ivar str video_id: ID of the video this frame belongs to
+    :ivar str scene_id: ID of the scene this frame belongs to
+    :ivar str url: URL of the frame
+    :ivar float frame_time: Timestamp of the frame in the video
+    :ivar str description: Description of the frame contents
+    """
+
     def __init__(
         self,
         _connection,

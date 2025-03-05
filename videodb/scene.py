@@ -6,6 +6,16 @@ from videodb.image import Frame
 
 
 class Scene:
+    """Scene class to interact with video scenes
+
+    :ivar str id: Unique identifier for the scene
+    :ivar str video_id: ID of the video this scene belongs to 
+    :ivar float start: Start time of the scene in seconds
+    :ivar float end: End time of the scene in seconds
+    :ivar List[Frame] frames: List of frames in the scene
+    :ivar str description: Description of the scene contents
+    """
+
     def __init__(
         self,
         video_id: str,
@@ -64,6 +74,14 @@ class Scene:
 
 
 class SceneCollection:
+    """SceneCollection class to interact with collections of scenes
+
+    :ivar str id: Unique identifier for the scene collection
+    :ivar str video_id: ID of the video these scenes belong to
+    :ivar dict config: Configuration settings for the scene collection
+    :ivar List[Scene] scenes: List of scenes in the collection
+    """
+
     def __init__(
         self,
         _connection,

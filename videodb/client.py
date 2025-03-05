@@ -26,11 +26,14 @@ logger = logging.getLogger(__name__)
 class Connection(HttpClient):
     """Connection class to interact with the VideoDB"""
 
-    def __init__(self, api_key: str, base_url: str) -> None:
+    def __init__(self, api_key: str, base_url: str) -> "Connection":
         """Initializes a new instance of the Connection class with specified API credentials.
 
-        :param api_key: API key for authentication
-        :param str base_url: (optional) Base URL of the VideoDB API
+        Note: Users should not initialize this class directly.
+        Instead use :meth:`videodb.connect() <videodb.connect>`
+
+        :param str api_key: API key for authentication
+        :param str base_url: Base URL of the VideoDB API
         :raise ValueError: If the API key is not provided
         :return: :class:`Connection <Connection>` object, to interact with the VideoDB
         :rtype: :class:`videodb.client.Connection`
@@ -43,7 +46,7 @@ class Connection(HttpClient):
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
         """Get a collection object by its ID.
 
-        :param collection_id: ID of the collection
+        :param str collection_id: ID of the collection (optional, default: "default")
         :return: :class:`Collection <Collection>` object
         :rtype: :class:`videodb.collection.Collection`
         """
@@ -80,9 +83,9 @@ class Connection(HttpClient):
     ) -> Collection:
         """Create a new collection.
 
-        :param name: Name of the collection
-        :param description: Description of the collection
-        :param is_public: Make collection public
+        :param str name: Name of the collection
+        :param str description: Description of the collection
+        :param bool is_public: Make collection public (optional, default: False)
         :return: :class:`Collection <Collection>` object
         :rtype: :class:`videodb.collection.Collection`
         """
@@ -107,8 +110,8 @@ class Connection(HttpClient):
         """Update an existing collection.
 
         :param str id: ID of the collection
-        :param name: Name of the collection
-        :param description: Description of the collection
+        :param str name: Name of the collection 
+        :param str description: Description of the collection
         :return: :class:`Collection <Collection>` object
         :rtype: :class:`videodb.collection.Collection`
         """
@@ -140,7 +143,7 @@ class Connection(HttpClient):
         """Get a list of all invoices.
 
         :return: List of invoices
-        :rtype: list of dict
+        :rtype: list[dict]
         """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
@@ -171,12 +174,12 @@ class Connection(HttpClient):
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file.
 
-        :param file_path: Path to the file to upload
-        :param url: URL of the file to upload
-        :param MediaType media_type:(optional) MediaType object
-        :param name:(optional) Name of the file
-        :param description:(optional) Description of the file
-        :param callback_url:(optional) URL to receive the callback
+        :param str file_path: Path to the file to upload (optional)
+        :param str url: URL of the file to upload (optional)
+        :param MediaType media_type: MediaType object (optional)
+        :param str name: Name of the file (optional)
+        :param str description: Description of the file (optional)
+        :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
         :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
         """

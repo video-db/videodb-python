@@ -24,7 +24,11 @@ logger = logging.getLogger(__name__)
 
 
 class Collection:
-    """Collection class to interact with the Collection"""
+    """Collection class to interact with the Collection.
+
+    Note: Users should not initialize this class directly.
+    Instead use :meth:`Connection.get_collection() <videodb.client.Connection.get_collection>`
+    """
 
     def __init__(
         self,
@@ -179,11 +183,11 @@ class Collection:
         """Search for a query in the collection.
 
         :param str query: Query to search for
-        :param search_type:(optional) Type of search to perform :class:`SearchType <SearchType>` object
-        :param index_type:(optional) Type of index to search :class:`IndexType <IndexType>` object
-        :param int result_threshold:(optional) Number of results to return
-        :param float score_threshold:(optional) Threshold score for the search
-        :param float dynamic_score_percentage:(optional) Percentage of dynamic score to consider
+        :param SearchType search_type: Type of search to perform (optional)
+        :param IndexType index_type: Type of index to search (optional)
+        :param int result_threshold: Number of results to return (optional)
+        :param float score_threshold: Threshold score for the search (optional)
+        :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -226,12 +230,12 @@ class Collection:
 
         :param str file_path: Path to the file to be uploaded
         :param str url: URL of the file to be uploaded
-        :param MediaType media_type:(optional):class:`MediaType <MediaType>` object
-        :param name:(optional) Name of the file
-        :param description:(optional) Description of the file
-        :param callback_url:(optional) URL to receive the callback
+        :param MediaType media_type: MediaType object (optional)
+        :param str name: Name of the file (optional)
+        :param str description: Description of the file (optional)
+        :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
-        Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
+        :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
         """
         upload_data = upload(
             self._connection,
@@ -251,12 +255,22 @@ class Collection:
             return Image(self._connection, **upload_data)
 
     def make_public(self):
+        """Make the collection public.
+
+        :return: None
+        :rtype: None
+        """
         self._connection.patch(
             path=f"{ApiPath.collection}/{self.id}", data={"is_public": True}
         )
         self.is_public = True
 
     def make_private(self):
+        """Make the collection private.
+
+        :return: None
+        :rtype: None
+        """
         self._connection.patch(
             path=f"{ApiPath.collection}/{self.id}", data={"is_public": False}
         )

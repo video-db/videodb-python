@@ -16,7 +16,20 @@ from videodb.shot import Shot
 
 
 class Video:
-    """Video class to interact with the Video"""
+    """Video class to interact with the Video
+
+    :ivar str id: Unique identifier for the video
+    :ivar str collection_id: ID of the collection this video belongs to
+    :ivar str stream_url: URL to stream the video
+    :ivar str player_url: URL to play the video in a player
+    :ivar str name: Name of the video file
+    :ivar str description: Description of the video
+    :ivar str thumbnail_url: URL of the video thumbnail
+    :ivar float length: Duration of the video in seconds
+    :ivar list transcript: Timestamped transcript segments
+    :ivar str transcript_text: Full transcript text
+    :ivar list scenes: List of scenes in the video
+    """
 
     def __init__(self, _connection, id: str, collection_id: str, **kwargs) -> None:
         self._connection = _connection
@@ -62,11 +75,11 @@ class Video:
         """Search for a query in the video.
 
         :param str query: Query to search for.
-        :param SearchType search_type:(optional) Type of search to perform :class:`SearchType <SearchType>` object
-        :param IndexType index_type:(optional) Type of index to search :class:`IndexType <IndexType>` object
-        :param int result_threshold:(optional) Number of results to return
-        :param float score_threshold:(optional) Threshold score for the search
-        :param float dynamic_score_percentage:(optional) Percentage of dynamic score to consider
+        :param SearchType search_type: (optional) Type of search to perform :class:`SearchType <SearchType>` object
+        :param IndexType index_type: (optional) Type of index to search :class:`IndexType <IndexType>` object
+        :param int result_threshold: (optional) Number of results to return
+        :param float score_threshold: (optional) Threshold score for the search
+        :param float dynamic_score_percentage: (optional) Percentage of dynamic score to consider
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -102,10 +115,12 @@ class Video:
         """
         self._connection.delete(path=f"{ApiPath.video}/{self.id}/{ApiPath.storage}")
 
-    def generate_stream(self, timeline: Optional[List[Tuple[int, int]]] = None) -> str:
+    def generate_stream(
+        self, timeline: Optional[List[Tuple[float, float]]] = None
+    ) -> str:
         """Generate the stream url of the video.
 
-        :param list timeline:(optional) The timeline of the video to be streamed in the format [(start, end)]
+        :param List[Tuple[float, float]] timeline: (optional) The timeline of the video to be streamed in the format [(start, end)]
         :raises InvalidRequestError: If the get_stream fails
         :return: The stream url of the video
         :rtype: str
@@ -125,7 +140,7 @@ class Video:
     def generate_thumbnail(self, time: Optional[float] = None) -> Union[str, Image]:
         """Generate the thumbnail of the video.
 
-        :param float time:(optional) The time of the video to generate the thumbnail
+        :param float time: (optional) The time of the video to generate the thumbnail
         :returns: :class:`Image <Image>` object if time is provided else the thumbnail url
         :rtype: Union[str, :class:`videodb.image.Image`]
         """
@@ -242,9 +257,9 @@ class Video:
     ) -> None:
         """Semantic indexing of spoken words in the video.
 
-        :param str language_code:(optional) Language code of the video
-        :param bool force:(optional) Force to index the video
-        :param str callback_url:(optional) URL to receive the callback
+        :param str language_code: (optional) Language code of the video
+        :param bool force: (optional) Force to index the video
+        :param str callback_url: (optional) URL to receive the callback
         :raises InvalidRequestError: If the video is already indexed
         :return: None if the indexing is successful
         :rtype: None
@@ -326,19 +341,21 @@ class Video:
 
         :param SceneExtractionType extraction_type: (optional) The type of extraction, :class:`SceneExtractionType <SceneExtractionType>` object
         :param dict extraction_config: (optional) Dictionary of configuration parameters to control how scenes are extracted.
-            For time-based extraction (extraction_type=time_based):
-                - "time" (int, optional): Interval in seconds at which scenes are segmented.
-                Default is 10 (i.e., every 10 seconds forms a new scene).
-                - "frame_count" (int, optional): Number of frames to extract per scene.
-                Default is 1.
-                - "select_frames" (List[str], optional): Which frames to select from each segment.
-                Possible values include "first", "middle", and "last". Default is ["first"].
+            For time-based extraction (extraction_type=time_based):\n
+                - "time" (int, optional): Interval in seconds at which scenes are
+                  segmented. Default is 10 (i.e., every 10 seconds forms a new scene).
+                - "frame_count" (int, optional): Number of frames to extract per
+                  scene. Default is 1.
+                - "select_frames" (List[str], optional): Which frames to select from
+                  each segment. Possible values include "first", "middle", and "last".
+                  Default is ["first"].
 
-            For shot-based extraction (extraction_type=shot_based):
-                - "threshold" (int, optional): Sensitivity for detecting scene changes (camera shots).
-                The higher the threshold, the fewer scene splits. Default is 20.
-                - "frame_count" (int, optional): Number of frames to extract from each detected shot.
-                Default is 1.
+            For shot-based extraction (extraction_type=shot_based):\n
+                - "threshold" (int, optional): Sensitivity for detecting scene changes
+                  (camera shots). The higher the threshold, the fewer scene splits.
+                  Default is 20.
+                - "frame_count" (int, optional): Number of frames to extract from
+                  each detected shot. Default is 1.
         :param bool force: (optional) Force to extract the scenes
         :param str callback_url: (optional) URL to receive the callback
         :raises InvalidRequestError: If the extraction fails
@@ -417,19 +434,21 @@ class Video:
 
         :param SceneExtractionType extraction_type: (optional) The type of extraction, :class:`SceneExtractionType <SceneExtractionType>` object
         :param dict extraction_config: (optional) Dictionary of configuration parameters to control how scenes are extracted.
-            For time-based extraction (extraction_type=time_based):
-                - "time" (int, optional): Interval in seconds at which scenes are segmented.
-                Default is 10 (i.e., every 10 seconds forms a new scene).
-                - "frame_count" (int, optional): Number of frames to extract per scene.
-                Default is 1.
-                - "select_frames" (List[str], optional): Which frames to select from each segment.
-                Possible values include "first", "middle", and "last". Default is ["first"].
+            For time-based extraction (extraction_type=time_based):\n
+                - "time" (int, optional): Interval in seconds at which scenes are
+                  segmented. Default is 10 (i.e., every 10 seconds forms a new scene).
+                - "frame_count" (int, optional): Number of frames to extract per
+                  scene. Default is 1.
+                - "select_frames" (List[str], optional): Which frames to select from
+                  each segment. Possible values include "first", "middle", and "last".
+                  Default is ["first"].
 
-            For shot-based extraction (extraction_type=shot_based):
-                - "threshold" (int, optional): Sensitivity for detecting scene changes (camera shots).
-                The higher the threshold, the fewer scene splits. Default is 20.
-                - "frame_count" (int, optional): Number of frames to extract from each detected shot.
-                Default is 1.
+            For shot-based extraction (extraction_type=shot_based):\n
+                - "threshold" (int, optional): Sensitivity for detecting scene changes
+                  (camera shots). The higher the threshold, the fewer scene splits.
+                  Default is 20.
+                - "frame_count" (int, optional): Number of frames to extract from
+                  each detected shot. Default is 1.
         :param str prompt: (optional) The prompt for the extraction
         :param str model_name: (optional) The model name for the extraction
         :param dict model_config: (optional) The model configuration for the extraction
