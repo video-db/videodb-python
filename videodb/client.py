@@ -145,6 +145,13 @@ class Connection(HttpClient):
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
     def download(self, stream_link: str, name: str) -> dict:
+        """Download a file from a stream link.
+
+        :param stream_link: URL of the stream to download
+        :param name: Name to save the downloaded file as
+        :return: Download response data
+        :rtype: dict
+        """
         return self.post(
             path=f"{ApiPath.download}",
             data={
@@ -166,7 +173,7 @@ class Connection(HttpClient):
 
         :param file_path: Path to the file to upload
         :param url: URL of the file to upload
-        :param MediaType media_type:(optional):class:`MediaType <MediaType>` object
+        :param MediaType media_type:(optional) MediaType object
         :param name:(optional) Name of the file
         :param description:(optional) Description of the file
         :param callback_url:(optional) URL to receive the callback
