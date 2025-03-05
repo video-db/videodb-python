@@ -24,6 +24,7 @@ class Scene:
         description: str,
         id: str = None,
         frames: List[Frame] = [],
+        metadata: dict = {},
         connection=None,
     ):
         self.id = id
@@ -32,6 +33,7 @@ class Scene:
         self.end = end
         self.frames: List[Frame] = frames
         self.description = description
+        self.metadata = metadata
         self._connection = connection
 
     def __repr__(self) -> str:
@@ -42,7 +44,8 @@ class Scene:
             f"start={self.start}, "
             f"end={self.end}, "
             f"frames={self.frames}, "
-            f"description={self.description})"
+            f"description={self.description}), "
+            f"metadata={self.metadata})"
         )
 
     def to_json(self):
@@ -53,6 +56,7 @@ class Scene:
             "end": self.end,
             "frames": [frame.to_json() for frame in self.frames],
             "description": self.description,
+            "metadata": self.metadata,
         }
 
     def describe(self, prompt: str = None, model_name=None) -> None:
