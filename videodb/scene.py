@@ -6,6 +6,16 @@ from videodb.image import Frame
 
 
 class Scene:
+    """Scene class to interact with video scenes
+
+    :ivar str id: Unique identifier for the scene
+    :ivar str video_id: ID of the video this scene belongs to 
+    :ivar float start: Start time of the scene in seconds
+    :ivar float end: End time of the scene in seconds
+    :ivar List[Frame] frames: List of frames in the scene
+    :ivar str description: Description of the scene contents
+    """
+
     def __init__(
         self,
         video_id: str,
@@ -50,6 +60,13 @@ class Scene:
         }
 
     def describe(self, prompt: str = None, model_name=None) -> None:
+        """Describe the scene.
+
+        :param str prompt: (optional) The prompt to use for the description
+        :param str model_name: (optional) The model to use for the description
+        :return: The description of the scene
+        :rtype: str
+        """
         if self._connection is None:
             raise ValueError("Connection is required to describe a scene")
         description_data = self._connection.post(
@@ -61,6 +78,14 @@ class Scene:
 
 
 class SceneCollection:
+    """SceneCollection class to interact with collections of scenes
+
+    :ivar str id: Unique identifier for the scene collection
+    :ivar str video_id: ID of the video these scenes belong to
+    :ivar dict config: Configuration settings for the scene collection
+    :ivar List[Scene] scenes: List of scenes in the collection
+    """
+
     def __init__(
         self,
         _connection,
@@ -85,6 +110,12 @@ class SceneCollection:
         )
 
     def delete(self) -> None:
+        """Delete the scene collection.
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
         self._connection.delete(
             path=f"{ApiPath.video}/{self.video_id}/{ApiPath.scenes}/{self.id}"
         )

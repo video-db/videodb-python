@@ -14,6 +14,14 @@ from videodb.shot import Shot
 
 
 class SearchResult:
+    """SearchResult class to interact with search results
+
+    :ivar str collection_id: ID of the collection this search result belongs to
+    :ivar str stream_url: URL to stream the search result
+    :ivar str player_url: URL to play the search result in a player
+    :ivar list[Shot] shots: List of shots in the search result
+    """
+
     def __init__(self, _connection, **kwargs):
         self._connection = _connection
         self.shots = []
@@ -53,7 +61,7 @@ class SearchResult:
         return self.shots
 
     def compile(self) -> str:
-        """Compile the search result shots into a stream url
+        """Compile the search result shots into a stream url.
 
         :raises SearchError: If no shots are found in the search results
         :return: The stream url
@@ -81,7 +89,7 @@ class SearchResult:
             raise SearchError("No shots found in search results to compile")
 
     def play(self) -> str:
-        """Generate a stream url for the shot and open it in the default browser
+        """Generate a stream url for the shot and open it in the default browser.
 
         :return: The stream url
         :rtype: str
