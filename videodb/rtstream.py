@@ -48,14 +48,14 @@ class RTStreamSceneIndex:
     def start(self):
         self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}/{ApiPath.status}",
-            data={"status": "running"},
+            data={"action": "start"},
         )
-        self.status = "running"
+        self.status = "connected"
 
     def stop(self):
         self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{ApiPath.scene}/{self.rtstream_index_id}/{ApiPath.status}",
-            data={"status": "stopped"},
+            data={"action": "stop"},
         )
         self.status = "stopped"
 
@@ -108,6 +108,20 @@ class RTStream:
             f"sample_rate={self.sample_rate}, "
             f"status={self.status})"
         )
+
+    def start(self):
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.status}",
+            data={"action": "start"},
+        )
+        self.status = "connected"
+
+    def stop(self):
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.status}",
+            data={"action": "stop"},
+        )
+        self.status = "stopped"
 
     def generate_stream(self, start, end):
         stream_data = self._connection.get(
