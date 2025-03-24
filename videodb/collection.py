@@ -1,12 +1,6 @@
 import logging
 
-from typing import (
-    Optional,
-    Union,
-    List,
-    Dict,
-    Any,
-)
+from typing import Optional, Union, List, Dict, Any, Literal
 from videodb._upload import (
     upload,
 )
@@ -169,6 +163,44 @@ class Collection:
         return self._connection.delete(
             path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
         )
+
+    def youtube_search(
+        self, query: str, result_threshold: Optional[int] = 10
+    ) -> List[dict]:
+        """Search for a query on YouTube.
+
+        :param str query: Query to search for
+        :param int result_threshold: Number of results to return (optional)
+        :return: List of YouTube search results
+        :rtype: List[dict]
+        """
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.web}",
+            data={
+                "query": query,
+                "result_threshold": result_threshold,
+                "platform": "youtube",
+            },
+        )
+        print(search_data)
+        return search_data.get("results")
+
+    def generate_image(
+        self,
+        prompt: str,
+        aspect_ratio: Optional[Literal["1:1", "9:16", "16:9", "4:3", "3:4"]] = "1:1",
+    ) -> Image:
+        """Generate an image from a prompt.
+
+        :param str prompt: Prompt for the image generation
+        :return: :class:`Image <Image>` object
+        :rtype: :class:`videodb.image.Image`
+        """
+        image_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.image}",
+            data={"prompt": prompt, "aspect_ratio": aspect_ratio},
+        )
+        return Image(self._connection, **image_data)
 
     def search(
         self,
