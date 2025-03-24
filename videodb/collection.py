@@ -182,8 +182,21 @@ class Collection:
                 "platform": "youtube",
             },
         )
-        print(search_data)
         return search_data.get("results")
+
+    def translate_video(self, video_id: str, language_code: str) -> List[dict]:
+        """Translate subtitles of a video to a language.
+
+        :param str video_id: ID of the video
+        :param str language_code: Language code to translate the subtitles to
+        :return: List of translated subtitles
+        :rtype: List[dict]
+        """
+        translate_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.video}/{video_id}/{ApiPath.translate}",
+            data={"language_code": language_code},
+        )
+        return translate_data.get("translated_text")
 
     def generate_image(
         self,
@@ -201,6 +214,54 @@ class Collection:
             data={"prompt": prompt, "aspect_ratio": aspect_ratio},
         )
         return Image(self._connection, **image_data)
+
+    def generate_music(self, prompt: str, duration: int = 5) -> Audio:
+        """Generate music from a prompt.
+
+        :param str prompt: Prompt for the music generation
+        :param int duration: Duration of the music in seconds
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={"prompt": prompt, "duration": duration, "audio_type": "music"},
+        )
+        return Audio(self._connection, **audio_data)
+
+    def generate_sound_effect(self, prompt: str, duration: int = 2) -> Audio:
+        """Generate sound effect from a prompt.
+
+        :param str prompt: Prompt for the sound effect generation
+        :param int duration: Duration of the sound effect in seconds
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={"prompt": prompt, "duration": duration, "audio_type": "sound_effect"},
+        )
+        return Audio(self._connection, **audio_data)
+
+    def generate_text_to_speech(self, text: str) -> Audio:
+        """Generate text to speech audio.
+
+        :param str text: Text to convert to speech
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={"text": text, "audio_type": "text_to_speech"},
+        )
+        return Audio(self._connection, **audio_data)
+
+    def dub_video(self, video_id: str, language_code: str) -> Video:
+        dub_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.video}/{ApiPath.dub}",
+            data={"video_id": video_id, "language_code": language_code},
+        )
+        return Video(self._connection, **dub_data)
 
     def search(
         self,
