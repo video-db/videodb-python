@@ -199,7 +199,8 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.video}/{video_id}/{ApiPath.translate}",
             data={"language_code": language_code, "callback_url": callback_url},
         )
-        return translate_data.get("translated_text")
+        if translate_data:
+            return translate_data.get("translated_text")
 
     def generate_image(
         self,
@@ -223,7 +224,8 @@ class Collection:
                 "callback_url": callback_url,
             },
         )
-        return Image(self._connection, **image_data)
+        if image_data:
+            return Image(self._connection, **image_data)
 
     def generate_music(
         self, prompt: str, duration: int = 5, callback_url: Optional[str] = None
@@ -245,7 +247,8 @@ class Collection:
                 "callback_url": callback_url,
             },
         )
-        return Audio(self._connection, **audio_data)
+        if audio_data:
+            return Audio(self._connection, **audio_data)
 
     def generate_sound_effect(
         self, prompt: str, duration: int = 2, callback_url: Optional[str] = None
@@ -267,7 +270,8 @@ class Collection:
                 "callback_url": callback_url,
             },
         )
-        return Audio(self._connection, **audio_data)
+        if audio_data:
+            return Audio(self._connection, **audio_data)
 
     def generate_text_to_speech(
         self, text: str, callback_url: Optional[str] = None
@@ -287,7 +291,8 @@ class Collection:
                 "callback_url": callback_url,
             },
         )
-        return Audio(self._connection, **audio_data)
+        if audio_data:
+            return Audio(self._connection, **audio_data)
 
     def dub_video(
         self, video_id: str, language_code: str, callback_url: Optional[str] = None
@@ -300,7 +305,8 @@ class Collection:
                 "callback_url": callback_url,
             },
         )
-        return Video(self._connection, **dub_data)
+        if dub_data:
+            return Video(self._connection, **dub_data)
 
     def search(
         self,
