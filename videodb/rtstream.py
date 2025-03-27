@@ -78,13 +78,13 @@ class RTStreamSceneIndex:
     def enable_alert(self, alert_id):
         self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
-            data={"status": "enabled"},
+            data={"action": "enable"},
         )
 
     def disable_alert(self, alert_id):
         self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
-            data={"status": "disabled"},
+            data={"action": "disable"},
         )
 
 
@@ -135,7 +135,7 @@ class RTStream:
         extraction_type=SceneExtractionType.time_based,
         extraction_config={"time": 2, "frame_count": 5},
         prompt="Describe the scene",
-        model_name="GPT4o",
+        model_name=None,
         model_config={},
         name=None,
     ):
