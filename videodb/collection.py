@@ -165,12 +165,16 @@ class Collection:
         )
 
     def youtube_search(
-        self, query: str, result_threshold: Optional[int] = 10
+        self,
+        query: str,
+        result_threshold: Optional[int] = 10,
+        duration: str = "medium",
     ) -> List[dict]:
         """Search for a query on YouTube.
 
         :param str query: Query to search for
         :param int result_threshold: Number of results to return (optional)
+        :param str duration: Duration of the video (optional)
         :return: List of YouTube search results
         :rtype: List[dict]
         """
@@ -180,24 +184,34 @@ class Collection:
                 "query": query,
                 "result_threshold": result_threshold,
                 "platform": "youtube",
+                "duration": duration,
             },
         )
         return search_data.get("results")
 
     def translate_video(
-        self, video_id: str, language_code: str, callback_url: Optional[str] = None
+        self,
+        video_id: str,
+        language_code: str,
+        additional_notes: str = "",
+        callback_url: Optional[str] = None,
     ) -> List[dict]:
         """Translate subtitles of a video to a language.
 
         :param str video_id: ID of the video
         :param str language_code: Language code to translate the subtitles to
+        :param str additional_notes: Additional notes for the style of language
         :param str callback_url: URL to receive the callback (optional)
         :return: List of translated subtitles
         :rtype: List[dict]
         """
         translate_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.video}/{video_id}/{ApiPath.translate}",
-            data={"language_code": language_code, "callback_url": callback_url},
+            data={
+                "language_code": language_code,
+                "additional_notes": additional_notes,
+                "callback_url": callback_url,
+            },
         )
         if translate_data:
             return translate_data.get("translated_text")
@@ -251,12 +265,17 @@ class Collection:
             return Audio(self._connection, **audio_data)
 
     def generate_sound_effect(
-        self, prompt: str, duration: int = 2, callback_url: Optional[str] = None
+        self,
+        prompt: str,
+        duration: int = 2,
+        config: dict = {},
+        callback_url: Optional[str] = None,
     ) -> Audio:
         """Generate sound effect from a prompt.
 
         :param str prompt: Prompt for the sound effect generation
         :param int duration: Duration of the sound effect in seconds
+        :param dict config: Configuration for the sound effect generation
         :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Audio <Audio>` object
         :rtype: :class:`videodb.audio.Audio`
@@ -267,6 +286,7 @@ class Collection:
                 "prompt": prompt,
                 "duration": duration,
                 "audio_type": "sound_effect",
+                "config": config,
                 "callback_url": callback_url,
             },
         )
@@ -274,11 +294,15 @@ class Collection:
             return Audio(self._connection, **audio_data)
 
     def generate_text_to_speech(
-        self, text: str, callback_url: Optional[str] = None
+        self,
+        text: str,
+        config: dict = {},
+        callback_url: Optional[str] = None,
     ) -> Audio:
         """Generate text to speech audio.
 
         :param str text: Text to convert to speech
+        :param dict config: Configuration for the text to speech generation
         :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Audio <Audio>` object
         :rtype: :class:`videodb.audio.Audio`
@@ -288,6 +312,7 @@ class Collection:
             data={
                 "text": text,
                 "audio_type": "text_to_speech",
+                "config": config,
                 "callback_url": callback_url,
             },
         )
