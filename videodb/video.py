@@ -255,12 +255,12 @@ class Video:
         additional_notes: str = "",
         callback_url: Optional[str] = None,
     ) -> List[dict]:
-        """Translate transcript of a video to a language.
+        """Translate transcript of a video to a given language.
 
-        :param str language: Language to translate the subtitles to
+        :param str language: Language to translate the transcript
         :param str additional_notes: Additional notes for the style of language
         :param str callback_url: URL to receive the callback (optional)
-        :return: List of translated subtitles
+        :return: List of translated transcript
         :rtype: List[dict]
         """
         translate_data = self._connection.post(

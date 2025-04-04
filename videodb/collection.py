@@ -248,10 +248,11 @@ class Collection:
         config: dict = {},
         callback_url: Optional[str] = None,
     ) -> Audio:
-        """Generate text to speech audio.
+        """Generate voice from text.
 
-        :param str text: Text to convert to speech
-        :param dict config: Configuration for the text to speech generation
+        :param str text: Text to convert to voice
+        :param str voice_name: Name of the voice to use
+        :param dict config: Configuration for the voice generation
         :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Audio <Audio>` object
         :rtype: :class:`videodb.audio.Audio`
@@ -272,6 +273,14 @@ class Collection:
     def dub_video(
         self, video_id: str, language_code: str, callback_url: Optional[str] = None
     ) -> Video:
+        """Dub a video.
+
+        :param str video_id: ID of the video to dub
+        :param str language_code: Language code to dub the video to
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Video <Video>` object
+        :rtype: :class:`videodb.video.Video`
+        """
         dub_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.video}/{ApiPath.dub}",
             data={
