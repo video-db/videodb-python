@@ -1,12 +1,6 @@
 import logging
 
-from typing import (
-    Optional,
-    Union,
-    List,
-    Dict,
-    Any,
-)
+from typing import Optional, Union, List, Dict, Any, Literal
 from videodb._upload import (
     upload,
 )
@@ -169,6 +163,134 @@ class Collection:
         return self._connection.delete(
             path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
         )
+
+    def generate_image(
+        self,
+        prompt: str,
+        aspect_ratio: Optional[Literal["1:1", "9:16", "16:9", "4:3", "3:4"]] = "1:1",
+        callback_url: Optional[str] = None,
+    ) -> Image:
+        """Generate an image from a prompt.
+
+        :param str prompt: Prompt for the image generation
+        :param str aspect_ratio: Aspect ratio of the image (optional)
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Image <Image>` object
+        :rtype: :class:`videodb.image.Image`
+        """
+        image_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.image}",
+            data={
+                "prompt": prompt,
+                "aspect_ratio": aspect_ratio,
+                "callback_url": callback_url,
+            },
+        )
+        if image_data:
+            return Image(self._connection, **image_data)
+
+    def generate_music(
+        self, prompt: str, duration: int = 5, callback_url: Optional[str] = None
+    ) -> Audio:
+        """Generate music from a prompt.
+
+        :param str prompt: Prompt for the music generation
+        :param int duration: Duration of the music in seconds
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={
+                "prompt": prompt,
+                "duration": duration,
+                "audio_type": "music",
+                "callback_url": callback_url,
+            },
+        )
+        if audio_data:
+            return Audio(self._connection, **audio_data)
+
+    def generate_sound_effect(
+        self,
+        prompt: str,
+        duration: int = 2,
+        config: dict = {},
+        callback_url: Optional[str] = None,
+    ) -> Audio:
+        """Generate sound effect from a prompt.
+
+        :param str prompt: Prompt for the sound effect generation
+        :param int duration: Duration of the sound effect in seconds
+        :param dict config: Configuration for the sound effect generation
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={
+                "prompt": prompt,
+                "duration": duration,
+                "audio_type": "sound_effect",
+                "config": config,
+                "callback_url": callback_url,
+            },
+        )
+        if audio_data:
+            return Audio(self._connection, **audio_data)
+
+    def generate_voice(
+        self,
+        text: str,
+        voice_name: str = "Default",
+        config: dict = {},
+        callback_url: Optional[str] = None,
+    ) -> Audio:
+        """Generate voice from text.
+
+        :param str text: Text to convert to voice
+        :param str voice_name: Name of the voice to use
+        :param dict config: Configuration for the voice generation
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={
+                "text": text,
+                "audio_type": "voice",
+                "voice_name": voice_name,
+                "config": config,
+                "callback_url": callback_url,
+            },
+        )
+        if audio_data:
+            return Audio(self._connection, **audio_data)
+
+    def dub_video(
+        self, video_id: str, language_code: str, callback_url: Optional[str] = None
+    ) -> Video:
+        """Dub a video.
+
+        :param str video_id: ID of the video to dub
+        :param str language_code: Language code to dub the video to
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Video <Video>` object
+        :rtype: :class:`videodb.video.Video`
+        """
+        dub_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.video}/{ApiPath.dub}",
+            data={
+                "video_id": video_id,
+                "language_code": language_code,
+                "callback_url": callback_url,
+            },
+        )
+        if dub_data:
+            return Video(self._connection, **dub_data)
 
     def search(
         self,

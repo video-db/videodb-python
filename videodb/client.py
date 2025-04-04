@@ -110,7 +110,7 @@ class Connection(HttpClient):
         """Update an existing collection.
 
         :param str id: ID of the collection
-        :param str name: Name of the collection 
+        :param str name: Name of the collection
         :param str description: Description of the collection
         :return: :class:`Collection <Collection>` object
         :rtype: :class:`videodb.collection.Collection`
@@ -162,6 +162,31 @@ class Connection(HttpClient):
                 "name": name,
             },
         )
+
+    def youtube_search(
+        self,
+        query: str,
+        result_threshold: Optional[int] = 10,
+        duration: str = "medium",
+    ) -> List[dict]:
+        """Search for a query on YouTube.
+
+        :param str query: Query to search for
+        :param int result_threshold: Number of results to return (optional)
+        :param str duration: Duration of the video (optional)
+        :return: List of YouTube search results
+        :rtype: List[dict]
+        """
+        search_data = self.post(
+            path=f"{ApiPath.collection}/{self.collection_id}/{ApiPath.search}/{ApiPath.web}",
+            data={
+                "query": query,
+                "result_threshold": result_threshold,
+                "platform": "youtube",
+                "duration": duration,
+            },
+        )
+        return search_data.get("results")
 
     def upload(
         self,

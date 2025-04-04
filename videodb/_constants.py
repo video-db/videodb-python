@@ -72,6 +72,10 @@ class ApiPath:
     download = "download"
     title = "title"
     generate_url = "generate_url"
+    generate = "generate"
+    web = "web"
+    translate = "translate"
+    dub = "dub"
 
 
 class Status:
