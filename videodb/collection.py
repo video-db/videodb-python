@@ -164,58 +164,6 @@ class Collection:
             path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
         )
 
-    def youtube_search(
-        self,
-        query: str,
-        result_threshold: Optional[int] = 10,
-        duration: str = "medium",
-    ) -> List[dict]:
-        """Search for a query on YouTube.
-
-        :param str query: Query to search for
-        :param int result_threshold: Number of results to return (optional)
-        :param str duration: Duration of the video (optional)
-        :return: List of YouTube search results
-        :rtype: List[dict]
-        """
-        search_data = self._connection.post(
-            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.web}",
-            data={
-                "query": query,
-                "result_threshold": result_threshold,
-                "platform": "youtube",
-                "duration": duration,
-            },
-        )
-        return search_data.get("results")
-
-    def translate_video(
-        self,
-        video_id: str,
-        language_code: str,
-        additional_notes: str = "",
-        callback_url: Optional[str] = None,
-    ) -> List[dict]:
-        """Translate subtitles of a video to a language.
-
-        :param str video_id: ID of the video
-        :param str language_code: Language code to translate the subtitles to
-        :param str additional_notes: Additional notes for the style of language
-        :param str callback_url: URL to receive the callback (optional)
-        :return: List of translated subtitles
-        :rtype: List[dict]
-        """
-        translate_data = self._connection.post(
-            path=f"{ApiPath.collection}/{self.id}/{ApiPath.video}/{video_id}/{ApiPath.translate}",
-            data={
-                "language_code": language_code,
-                "additional_notes": additional_notes,
-                "callback_url": callback_url,
-            },
-        )
-        if translate_data:
-            return translate_data.get("translated_text")
-
     def generate_image(
         self,
         prompt: str,
@@ -293,9 +241,10 @@ class Collection:
         if audio_data:
             return Audio(self._connection, **audio_data)
 
-    def generate_text_to_speech(
+    def generate_voice(
         self,
         text: str,
+        voice_name: str = "Default",
         config: dict = {},
         callback_url: Optional[str] = None,
     ) -> Audio:
@@ -311,7 +260,8 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
             data={
                 "text": text,
-                "audio_type": "text_to_speech",
+                "audio_type": "voice",
+                "voice_name": voice_name,
                 "config": config,
                 "callback_url": callback_url,
             },
