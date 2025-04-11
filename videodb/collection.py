@@ -273,7 +273,7 @@ class Collection:
     def generate_video(
         self,
         prompt: str,
-        duration: float,
+        duration: float = 5,
         callback_url: Optional[str] = None,
     ) -> Video:
         """
