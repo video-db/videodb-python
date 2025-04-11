@@ -270,6 +270,45 @@ class Collection:
         if audio_data:
             return Audio(self._connection, **audio_data)
 
+    def generate_video(
+        self,
+        prompt: str,
+        duration: float,
+        callback_url: Optional[str] = None,
+    ) -> Video:
+        """
+        Generate a video from the given text prompt.
+
+        This method sends a request to generate a video using the provided prompt,
+        duration. If a callback URL is provided, the generation result will be sent to that endpoint asynchronously.
+
+        :param str prompt: Text prompt used as input for video generation.
+
+        :param float duration:
+            Duration of the generated video in seconds.
+            Must be an **integer value** (not a float) and must be **between 5 and 8 inclusive**.
+            A `ValueError` will be raised if the validation fails.
+
+        :param str callback_url:
+            Optional URL to receive a callback once video generation is complete.
+
+        :return:
+            A `Video` object containing the generated video metadata and access details.
+
+        :rtype:
+            :class:`videodb.video.Video`
+        """
+        video_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.video}",
+            data={
+                "prompt": prompt,
+                "duration": duration,
+                "callback_url": callback_url,
+            },
+        )
+        if video_data:
+            return Video(self._connection, **video_data)
+
     def dub_video(
         self, video_id: str, language_code: str, callback_url: Optional[str] = None
     ) -> Video:
