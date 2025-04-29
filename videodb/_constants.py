@@ -76,6 +76,7 @@ class ApiPath:
     web = "web"
     translate = "translate"
     dub = "dub"
+    transcode = "transcode"
 
 
 class Status:
@@ -164,3 +165,28 @@ class TextStyle:
     tabsize: int = 4
     x: Union[str, int] = "(main_w-text_w)/2"
     y: Union[str, int] = "(main_h-text_h)/2"
+
+
+class TranscodeMode:
+    lightning = "lightning"
+    economy = "economy"
+
+
+class ResizeMode:
+    crop = "crop"
+    fit = "fit"
+    pad = "pad"
+
+
+@dataclass
+class VideoConfig:
+    resolution: int = 720
+    quality: int = 23
+    framerate: int = None
+    aspect_ratio: str = None
+    resize_mode: str = ResizeMode.crop
+
+
+@dataclass
+class AudioConfig:
+    mute: bool = False
