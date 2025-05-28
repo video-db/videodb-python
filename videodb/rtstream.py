@@ -201,8 +201,8 @@ class RTStream:
     def generate_stream(self, start, end):
         """Generate a stream from the rtstream.
 
-        :param int start: Start time of the stream
-        :param int end: End time of the stream
+        :param int start: Start time of the stream in Unix timestamp format
+        :param int end: End time of the stream in Unix timestamp format
         :return: Stream URL
         :rtype: str
         """
