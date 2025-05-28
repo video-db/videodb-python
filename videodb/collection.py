@@ -172,7 +172,7 @@ class Collection:
 
         :param str url: URL of the rtstream
         :param str name: Name of the rtstream
-        :param int sample_rate: Sample rate of the rtstream default is 1fps
+        :param int sample_rate: Sample rate of the rtstream (optional)
         :return: :class:`RTStream <RTStream>` object
         """
         rtstream_data = self._connection.post(
