@@ -98,7 +98,9 @@ class Collection:
             path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
         )
 
-    def connect_rtstream(self, url: str, name: str, sample_rate: int = 1) -> RTStream:
+    def connect_rtstream(
+        self, url: str, name: str, sample_rate: int = None
+    ) -> RTStream:
         rtstream_data = self._connection.post(
             path=f"{ApiPath.rtstream}",
             data={

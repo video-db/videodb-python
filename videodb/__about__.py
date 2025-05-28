@@ -1,7 +1,7 @@
 """ About information for videodb sdk"""
 
 
-__version__ = "0.2.7"
+__version__ = "0.2.14"
 __title__ = "videodb"
 __author__ = "videodb"
 __email__ = "contact@videodb.io"
