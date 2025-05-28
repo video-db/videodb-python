@@ -1,4 +1,3 @@
-"""This module contains the shot class"""
 
 
 from typing import Optional
@@ -9,7 +8,18 @@ from videodb._constants import (
 
 
 class Shot:
-    """A shot is a part of a video that contains a specific scene"""
+    """Shot class to interact with video shots
+
+    :ivar str video_id: Unique identifier for the video
+    :ivar float video_length: Duration of the video in seconds
+    :ivar str video_title: Title of the video
+    :ivar float start: Start time of the shot in seconds
+    :ivar float end: End time of the shot in seconds
+    :ivar str text: Text content of the shot
+    :ivar int search_score: Search relevance score
+    :ivar str stream_url: URL to stream the shot
+    :ivar str player_url: URL to play the shot in a player
+    """
 
     def __init__(
         self,
@@ -51,7 +61,7 @@ class Shot:
         return self.__dict__[key]
 
     def generate_stream(self) -> str:
-        """Generate a stream url for the shot
+        """Generate a stream url for the shot.
 
         :return: The stream url
         :rtype: str
@@ -72,7 +82,7 @@ class Shot:
             return self.stream_url
 
     def play(self) -> str:
-        """Generate a stream url for the shot and open it in the default browser/ notebook
+        """Generate a stream url for the shot and open it in the default browser/ notebook.
 
         :return: The stream url
         :rtype: str

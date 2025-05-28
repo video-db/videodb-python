@@ -1,4 +1,5 @@
 """Constants used in the videodb package."""
+
 from typing import Union
 from dataclasses import dataclass
 
@@ -74,6 +75,11 @@ class ApiPath:
     status = "status"
     event = "event"
     alert = "alert"
+    generate_url = "generate_url"
+    generate = "generate"
+    web = "web"
+    translate = "translate"
+    dub = "dub"
 
 
 class Status:
