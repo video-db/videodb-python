@@ -147,6 +147,30 @@ class Connection(HttpClient):
         """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
+    def create_event(self, event_prompt: str, label: str):
+        """Create an rtstream event.
+
+        :param str event_prompt: Prompt for the event
+        :param str label: Label for the event
+        :return: Event ID
+        :rtype: str
+        """
+        event_data = self.post(
+            f"{ApiPath.rtstream}/{ApiPath.event}",
+            data={"event_prompt": event_prompt, "label": label},
+        )
+
+        return event_data.get("event_id")
+
+    def list_events(self):
+        """List all rtstream events.
+
+        :return: List of events
+        :rtype: list[dict]
+        """
+        event_data = self.get(f"{ApiPath.rtstream}/{ApiPath.event}")
+        return event_data.get("events", [])
+
     def download(self, stream_link: str, name: str) -> dict:
         """Download a file from a stream link.
 
