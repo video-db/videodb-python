@@ -562,6 +562,31 @@ class Video:
         )
         return subtitle_data.get("stream_url", None)
 
+    def clip(
+        self,
+        query: str,
+        content_type: str,
+        model_name: str,
+    ) -> str:
+        """Generate a clip from the video using a prompt.
+
+        :param str query: Prompt to generate the clip
+        :param str content_type: Content type for the clip
+        :param str model_name: Model name for generation
+        :return: The stream url of the generated clip
+        :rtype: str
+        """
+
+        clip_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.clip}",
+            data={
+                "prompt": query,
+                "content_type": content_type,
+                "model_name": model_name,
+            },
+        )
+        return clip_data.get("stream_url")
+
     def insert_video(self, video, timestamp: float) -> str:
         """Insert a video into another video
 
