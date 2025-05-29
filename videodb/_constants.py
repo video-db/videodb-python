@@ -58,6 +58,7 @@ class ApiPath:
     index = "index"
     search = "search"
     compile = "compile"
+    clip = "clip"
     workflow = "workflow"
     timeline = "timeline"
     delete = "delete"
