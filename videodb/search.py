@@ -123,6 +123,7 @@ class SemanticSearch(Search):
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        rerank: bool = SemanticSearchDefaultValues.rerank,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -136,6 +137,7 @@ class SemanticSearch(Search):
                 "result_threshold": result_threshold
                 or SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
+                "rerank": rerank,
                 **kwargs,
             },
         )
@@ -150,6 +152,7 @@ class SemanticSearch(Search):
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        rerank: bool = SemanticSearchDefaultValues.rerank,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -163,6 +166,7 @@ class SemanticSearch(Search):
                 "result_threshold": result_threshold
                 or SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
+                "rerank": rerank,
                 **kwargs,
             },
         )

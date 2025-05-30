@@ -5,6 +5,7 @@ from videodb._constants import (
     IndexType,
     SceneExtractionType,
     SearchType,
+    SemanticSearchDefaultValues,
     Segmenter,
     SubtitleStyle,
     Workflows,
@@ -69,6 +70,7 @@ class Video:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        rerank: bool = SemanticSearchDefaultValues.rerank,
         filter: List[Dict[str, Any]] = [],
         **kwargs,
     ) -> SearchResult:
@@ -80,6 +82,7 @@ class Video:
         :param int result_threshold: (optional) Number of results to return
         :param float score_threshold: (optional) Threshold score for the search
         :param float dynamic_score_percentage: (optional) Percentage of dynamic score to consider
+        :param bool rerank: (optional) Rerank search results
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -93,6 +96,7 @@ class Video:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            rerank=rerank,
             filter=filter,
             **kwargs,
         )

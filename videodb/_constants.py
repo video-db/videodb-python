@@ -36,6 +36,7 @@ class Workflows:
 class SemanticSearchDefaultValues:
     result_threshold = 5
     score_threshold = 0.2
+    rerank = False
 
 
 class Segmenter:

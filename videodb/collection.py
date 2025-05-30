@@ -8,6 +8,7 @@ from videodb._constants import (
     ApiPath,
     IndexType,
     SearchType,
+    SemanticSearchDefaultValues,
 )
 from videodb.video import Video
 from videodb.audio import Audio
@@ -387,6 +388,7 @@ class Collection:
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        rerank: bool = SemanticSearchDefaultValues.rerank,
         filter: List[Dict[str, Any]] = [],
     ) -> SearchResult:
         """Search for a query in the collection.
@@ -397,6 +399,7 @@ class Collection:
         :param int result_threshold: Number of results to return (optional)
         :param float score_threshold: Threshold score for the search (optional)
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
+        :param bool rerank: Rerank search results (optional)
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -410,6 +413,7 @@ class Collection:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            rerank=rerank,
             filter=filter,
         )
 
