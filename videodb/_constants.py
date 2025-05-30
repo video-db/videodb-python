@@ -37,7 +37,7 @@ class SemanticSearchDefaultValues:
     result_threshold = 5
     score_threshold = 0.2
     rerank = False
-    rerank_param = {}
+    rerank_params = {}
 
 
 class Segmenter:

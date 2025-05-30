@@ -389,7 +389,7 @@ class Collection:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
         rerank: bool = SemanticSearchDefaultValues.rerank,
-        rerank_param: dict = SemanticSearchDefaultValues.rerank_param,
+        rerank_params: dict = SemanticSearchDefaultValues.rerank_params,
         filter: List[Dict[str, Any]] = [],
     ) -> SearchResult:
         """Search for a query in the collection.
@@ -401,7 +401,7 @@ class Collection:
         :param float score_threshold: Threshold score for the search (optional)
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
         :param bool rerank: Rerank search results (optional)
-        :param dict rerank_param: Parameters for reranking (optional)
+        :param dict rerank_params: Parameters for reranking (optional)
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -416,7 +416,7 @@ class Collection:
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
             rerank=rerank,
-            rerank_param=rerank_param,
+            rerank_params=rerank_params,
             filter=filter,
         )
 
