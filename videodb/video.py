@@ -71,6 +71,7 @@ class Video:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
         rerank: bool = SemanticSearchDefaultValues.rerank,
+        rerank_param: dict = SemanticSearchDefaultValues.rerank_param,
         filter: List[Dict[str, Any]] = [],
         **kwargs,
     ) -> SearchResult:
@@ -83,6 +84,7 @@ class Video:
         :param float score_threshold: (optional) Threshold score for the search
         :param float dynamic_score_percentage: (optional) Percentage of dynamic score to consider
         :param bool rerank: (optional) Rerank search results
+        :param dict rerank_param: (optional) Parameters for reranking
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -97,6 +99,7 @@ class Video:
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
             rerank=rerank,
+            rerank_param=rerank_param,
             filter=filter,
             **kwargs,
         )
