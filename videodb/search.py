@@ -134,9 +134,11 @@ class SemanticSearch(Search):
                 "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold
-                or SemanticSearchDefaultValues.score_threshold,
+                if score_threshold is not None
+                else SemanticSearchDefaultValues.score_threshold,
                 "result_threshold": result_threshold
-                or SemanticSearchDefaultValues.result_threshold,
+                if result_threshold is not None
+                else SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
                 "rerank": rerank,
                 "rerank_params": rerank_params,
@@ -165,9 +167,11 @@ class SemanticSearch(Search):
                 "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold
-                or SemanticSearchDefaultValues.score_threshold,
+                if score_threshold is not None
+                else SemanticSearchDefaultValues.score_threshold,
                 "result_threshold": result_threshold
-                or SemanticSearchDefaultValues.result_threshold,
+                if result_threshold is not None
+                else SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
                 "rerank": rerank,
                 "rerank_params": rerank_params,
