@@ -226,6 +226,15 @@ class Connection(HttpClient):
             },
         )
 
+    def get_transcode_details(self, job_id: str) -> dict:
+        """Get the details of a transcode job.
+
+        :param str job_id: ID of the transcode job
+        :return: Details of the transcode job
+        :rtype: dict
+        """
+        return self.get(path=f"{ApiPath.transcode}/{job_id}")
+
     def upload(
         self,
         file_path: str = None,
