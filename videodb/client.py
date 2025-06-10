@@ -213,7 +213,7 @@ class Connection(HttpClient):
         :return: None
         :rtype: None
         """
-        self.post(
+        job_data = self.post(
             path=f"{ApiPath.transcode}",
             data={
                 "source": source,
@@ -225,6 +225,7 @@ class Connection(HttpClient):
                 "audio_config": audio_config.__dict__,
             },
         )
+        return job_data.get("job_id")
 
     def get_transcode_details(self, job_id: str) -> dict:
         """Get the details of a transcode job.
