@@ -180,7 +180,7 @@ class ResizeMode:
 
 @dataclass
 class VideoConfig:
-    resolution: int = 720
+    resolution: int = None
     quality: int = 23
     framerate: int = None
     aspect_ratio: str = None
