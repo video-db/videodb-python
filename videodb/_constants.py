@@ -22,6 +22,7 @@ class SearchType:
 class IndexType:
     spoken_word = "spoken_word"
     scene = "scene"
+    hybrid = "hybrid"
 
 
 class SceneExtractionType:
