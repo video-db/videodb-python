@@ -29,6 +29,7 @@ class SearchResult:
         self.player_url = None
         self.collection_id = "default"
         self._results = kwargs.get("results", [])
+        self.metadata = kwargs.get("meta", None)
         self._format_results()
 
     def _format_results(self):
