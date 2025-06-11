@@ -196,8 +196,6 @@ class Connection(HttpClient):
         source: str,
         callback_url: str,
         mode: TranscodeMode = TranscodeMode.economy,
-        start: int = None,
-        end: int = None,
         video_config: VideoConfig = VideoConfig(),
         audio_config: AudioConfig = AudioConfig(),
     ) -> None:
@@ -206,8 +204,6 @@ class Connection(HttpClient):
         :param str source: URL of the video to transcode, preferably a downloadable URL
         :param str callback_url: URL to receive the callback
         :param TranscodeMode mode: Mode of the transcoding
-        :param int start: Start timestamp of the video to transcode (optional)
-        :param int end: End timestamp of the video to transcode (optional)
         :param VideoConfig video_config: Video configuration (optional)
         :param AudioConfig audio_config: Audio configuration (optional)
         :return: None
@@ -219,8 +215,6 @@ class Connection(HttpClient):
                 "source": source,
                 "callback_url": callback_url,
                 "mode": mode,
-                "start": start,
-                "end": end,
                 "video_config": video_config.__dict__,
                 "audio_config": audio_config.__dict__,
             },
