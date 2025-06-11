@@ -390,6 +390,7 @@ class Collection:
         dynamic_score_percentage: Optional[float] = None,
         rerank: bool = SemanticSearchDefaultValues.rerank,
         rerank_params: dict = SemanticSearchDefaultValues.rerank_params,
+        sort_docs_on: str = SemanticSearchDefaultValues.sort_docs_on,
         filter: List[Dict[str, Any]] = [],
     ) -> SearchResult:
         """Search for a query in the collection.
@@ -402,6 +403,7 @@ class Collection:
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
         :param bool rerank: Rerank search results (optional)
         :param dict rerank_params: Parameters for reranking (optional)
+        :param str sort_docs_on: Parameter to specify what metric to sort the docs of video on
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -418,6 +420,7 @@ class Collection:
             rerank=rerank,
             rerank_params=rerank_params,
             filter=filter,
+            sort_docs_on=sort_docs_on
         )
 
     def search_title(self, query) -> List[Video]:

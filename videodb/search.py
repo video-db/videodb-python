@@ -161,6 +161,7 @@ class SemanticSearch(Search):
         dynamic_score_percentage: Optional[float] = None,
         rerank: bool = SemanticSearchDefaultValues.rerank,
         rerank_params: dict = SemanticSearchDefaultValues.rerank_params,
+        sort_docs_on: str = SemanticSearchDefaultValues.sort_docs_on,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -178,6 +179,7 @@ class SemanticSearch(Search):
                 "dynamic_score_percentage": dynamic_score_percentage,
                 "rerank": rerank,
                 "rerank_params": rerank_params,
+                "sort_docs_on": sort_docs_on,
                 **kwargs,
             },
         )

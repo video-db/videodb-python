@@ -39,6 +39,7 @@ class SemanticSearchDefaultValues:
     score_threshold = 0.2
     rerank = False
     rerank_params = {}
+    sort_docs_on = None
 
 
 class Segmenter:
