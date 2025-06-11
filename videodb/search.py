@@ -256,6 +256,7 @@ search_type = {
     SearchType.semantic: SemanticSearch,
     SearchType.keyword: KeywordSearch,
     SearchType.scene: SceneSearch,
+    SearchType.custom: SemanticSearch,
 }
 
 

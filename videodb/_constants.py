@@ -17,6 +17,7 @@ class SearchType:
     keyword = "keyword"
     scene = "scene"
     llm = "llm"
+    custom = "custom"
 
 
 class IndexType:
