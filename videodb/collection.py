@@ -12,6 +12,7 @@ from videodb._constants import (
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
+from videodb.rtstream import RTStream
 from videodb.search import SearchFactory, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -163,6 +164,53 @@ class Collection:
         return self._connection.delete(
             path=f"{ApiPath.image}/{image_id}", params={"collection_id": self.id}
         )
+
+    def connect_rtstream(
+        self, url: str, name: str, sample_rate: int = None
+    ) -> RTStream:
+        """Connect to an rtstream.
+
+        :param str url: URL of the rtstream
+        :param str name: Name of the rtstream
+        :param int sample_rate: Sample rate of the rtstream (optional)
+        :return: :class:`RTStream <RTStream>` object
+        """
+        rtstream_data = self._connection.post(
+            path=f"{ApiPath.rtstream}",
+            data={
+                "collection_id": self.id,
+                "url": url,
+                "name": name,
+                "sample_rate": sample_rate,
+            },
+        )
+        return RTStream(self._connection, **rtstream_data)
+
+    def get_rtstream(self, id: str) -> RTStream:
+        """Get an rtstream by its ID.
+
+        :param str id: ID of the rtstream
+        :return: :class:`RTStream <RTStream>` object
+        :rtype: :class:`videodb.rtstream.RTStream`
+        """
+        rtstream_data = self._connection.get(
+            path=f"{ApiPath.rtstream}/{id}",
+        )
+        return RTStream(self._connection, **rtstream_data)
+
+    def list_rtstreams(self) -> List[RTStream]:
+        """List all rtstreams in the collection.
+
+        :return: List of :class:`RTStream <RTStream>` objects
+        :rtype: List[:class:`videodb.rtstream.RTStream`]
+        """
+        rtstreams_data = self._connection.get(
+            path=f"{ApiPath.rtstream}",
+        )
+        return [
+            RTStream(self._connection, **rtstream)
+            for rtstream in rtstreams_data.get("results")
+        ]
 
     def generate_image(
         self,
