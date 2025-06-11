@@ -34,8 +34,6 @@ class SearchResult:
     def _format_results(self):
         for result in self._results:
             self.collection_id = result.get("collection_id")
-            scene_index_id = result.get("scene_index_id")
-            scene_index_name = result.get("scene_index_name")
             for doc in result.get("docs"):
                 self.shots.append(
                     Shot(
@@ -47,8 +45,9 @@ class SearchResult:
                         doc.get("end"),
                         doc.get("text"),
                         doc.get("score"),
-                        scene_index_id=scene_index_id,
-                        scene_index_name=scene_index_name,
+                        scene_index_id=doc.get("scene_index_id"),
+                        scene_index_name=doc.get("scene_index_name"),
+                        metadata=doc.get("metadata"),
                     )
                 )
 

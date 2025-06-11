@@ -21,6 +21,7 @@ class Shot:
     :ivar str player_url: URL to play the shot in a player
     :ivar Optional[str] scene_index_id: ID of the scene index for scene search results
     :ivar Optional[str] scene_index_name: Name of the scene index for scene search results
+    :ivar Optional[dict] metadata: Additional metadata for the shot
     """
 
     def __init__(
@@ -35,6 +36,8 @@ class Shot:
         search_score: Optional[int] = None,
         scene_index_id: Optional[str] = None,
         scene_index_name: Optional[str] = None,
+        metadata: Optional[dict] = None,
+
     ) -> None:
         self._connection = _connection
         self.video_id = video_id
@@ -46,6 +49,7 @@ class Shot:
         self.search_score = search_score
         self.scene_index_id = scene_index_id
         self.scene_index_name = scene_index_name
+        self.metadata = metadata
         self.stream_url = None
         self.player_url = None
 
@@ -64,6 +68,9 @@ class Shot:
 
         if self.scene_index_name:
             repr_str += f", scene_index_name={self.scene_index_name}"
+
+        if self.metadata:
+            repr_str += f", metadata={self.metadata}"
 
         repr_str += (
             f", stream_url={self.stream_url}, "
