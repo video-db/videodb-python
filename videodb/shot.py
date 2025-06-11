@@ -19,6 +19,8 @@ class Shot:
     :ivar int search_score: Search relevance score
     :ivar str stream_url: URL to stream the shot
     :ivar str player_url: URL to play the shot in a player
+    :ivar Optional[str] scene_index_id: ID of the scene index for scene search results
+    :ivar Optional[str] scene_index_name: Name of the scene index for scene search results
     """
 
     def __init__(
@@ -31,6 +33,8 @@ class Shot:
         end: float,
         text: Optional[str] = None,
         search_score: Optional[int] = None,
+        scene_index_id: Optional[str] = None,
+        scene_index_name: Optional[str] = None,
     ) -> None:
         self._connection = _connection
         self.video_id = video_id
@@ -40,21 +44,33 @@ class Shot:
         self.end = end
         self.text = text
         self.search_score = search_score
+        self.scene_index_id = scene_index_id
+        self.scene_index_name = scene_index_name
         self.stream_url = None
         self.player_url = None
 
     def __repr__(self) -> str:
-        return (
+        repr_str = (
             f"Shot("
             f"video_id={self.video_id}, "
             f"video_title={self.video_title}, "
             f"start={self.start}, "
             f"end={self.end}, "
             f"text={self.text}, "
-            f"search_score={self.search_score}, "
-            f"stream_url={self.stream_url}, "
+            f"search_score={self.search_score}"
+        )
+        if self.scene_index_id:
+            repr_str += f", scene_index_id={self.scene_index_id}"
+
+        if self.scene_index_name:
+            repr_str += f", scene_index_name={self.scene_index_name}"
+
+        repr_str += (
+            f", stream_url={self.stream_url}, "
             f"player_url={self.player_url})"
         )
+        return repr_str
+
 
     def __getitem__(self, key):
         """Get an item from the shot object"""
