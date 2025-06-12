@@ -230,8 +230,8 @@ class Connection(HttpClient):
         :param TranscodeMode mode: Mode of the transcoding
         :param VideoConfig video_config: Video configuration (optional)
         :param AudioConfig audio_config: Audio configuration (optional)
-        :return: None
-        :rtype: None
+        :return: Transcode job ID
+        :rtype: str
         """
         job_data = self.post(
             path=f"{ApiPath.transcode}",
