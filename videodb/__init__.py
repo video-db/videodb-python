@@ -16,6 +16,10 @@ from videodb._constants import (
     SubtitleBorderStyle,
     SubtitleStyle,
     TextStyle,
+    TranscodeMode,
+    ResizeMode,
+    VideoConfig,
+    AudioConfig,
 )
 from videodb.client import Connection
 from videodb.exceptions import (
@@ -43,6 +47,10 @@ __all__ = [
     "TextStyle",
     "SceneExtractionType",
     "Segmenter",
+    "TranscodeMode",
+    "ResizeMode",
+    "VideoConfig",
+    "AudioConfig",
 ]
 
 

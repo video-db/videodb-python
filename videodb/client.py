@@ -8,6 +8,9 @@ from typing import (
 from videodb.__about__ import __version__
 from videodb._constants import (
     ApiPath,
+    TranscodeMode,
+    VideoConfig,
+    AudioConfig,
 )
 
 from videodb.collection import Collection
@@ -211,6 +214,45 @@ class Connection(HttpClient):
             },
         )
         return search_data.get("results")
+
+    def transcode(
+        self,
+        source: str,
+        callback_url: str,
+        mode: TranscodeMode = TranscodeMode.economy,
+        video_config: VideoConfig = VideoConfig(),
+        audio_config: AudioConfig = AudioConfig(),
+    ) -> None:
+        """Transcode the video
+
+        :param str source: URL of the video to transcode, preferably a downloadable URL
+        :param str callback_url: URL to receive the callback
+        :param TranscodeMode mode: Mode of the transcoding
+        :param VideoConfig video_config: Video configuration (optional)
+        :param AudioConfig audio_config: Audio configuration (optional)
+        :return: Transcode job ID
+        :rtype: str
+        """
+        job_data = self.post(
+            path=f"{ApiPath.transcode}",
+            data={
+                "source": source,
+                "callback_url": callback_url,
+                "mode": mode,
+                "video_config": video_config.__dict__,
+                "audio_config": audio_config.__dict__,
+            },
+        )
+        return job_data.get("job_id")
+
+    def get_transcode_details(self, job_id: str) -> dict:
+        """Get the details of a transcode job.
+
+        :param str job_id: ID of the transcode job
+        :return: Details of the transcode job
+        :rtype: dict
+        """
+        return self.get(path=f"{ApiPath.transcode}/{job_id}")
 
     def upload(
         self,
