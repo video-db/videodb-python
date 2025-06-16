@@ -595,7 +595,7 @@ class Video:
                 "model_name": model_name,
             },
         )
-        return clip_data.get("stream_url")
+        return SearchResult(self._connection, **clip_data)
 
     def insert_video(self, video, timestamp: float) -> str:
         """Insert a video into another video
