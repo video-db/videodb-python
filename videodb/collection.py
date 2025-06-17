@@ -484,3 +484,45 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}", data={"is_public": False}
         )
         self.is_public = False
+
+    def record_meeting(
+        self,
+        link: str,
+        bot_name: str,
+        meeting_name: str,
+        callback_url: str,
+        time_zone: str = "UTC",
+    ) -> dict:
+        """Record a meeting and upload it to this collection.
+
+        :param str link: Meeting link
+        :param str bot_name: Name of the recorder bot
+        :param str meeting_name: Name of the meeting
+        :param str callback_url: URL to receive callback once recording is done
+        :param str time_zone: Time zone for the meeting (default ``UTC``)
+        :return: Response data from the API
+        :rtype: dict
+        """
+
+        return self._connection.post(
+            path=f"/collection/{self.id}/{ApiPath.meeting}/{ApiPath.record}",
+            data={
+                "link": link,
+                "bot_name": bot_name,
+                "meeting_name": meeting_name,
+                "callback_url": callback_url,
+                "time_zone": time_zone,
+            },
+        )
+
+    def get_meeting_info(self, bot_id: str) -> dict:
+        """Get the recording info for a meeting bot in this collection.
+
+        :param str bot_id: ID returned when recording was initiated
+        :return: Information of the meeting bot
+        :rtype: dict
+        """
+
+        return self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.meeting}/{bot_id}"
+        )

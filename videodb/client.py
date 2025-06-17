@@ -290,3 +290,44 @@ class Connection(HttpClient):
             return Audio(self, **upload_data)
         elif media_id.startswith("img-"):
             return Image(self, **upload_data)
+
+    def record_meeting(
+        self,
+        link: str,
+        bot_name: str,
+        meeting_name: str,
+        callback_url: str,
+        time_zone: str = "UTC",
+    ) -> dict:
+        """Record a meeting and upload it to the default collection.
+
+        :param str link: Meeting link
+        :param str bot_name: Name of the recorder bot
+        :param str meeting_name: Name of the meeting
+        :param str callback_url: URL to receive callback once recording is done
+        :param str time_zone: Time zone for the meeting (default ``UTC``)
+        :return: Response data from the API
+        :rtype: dict
+        """
+
+        response = self.post(
+            path=f"{ApiPath.collection}/default/{ApiPath.meeting}/{ApiPath.record}",
+            data={
+                "link": link,
+                "bot_name": bot_name,
+                "meeting_name": meeting_name,
+                "callback_url": callback_url,
+                "time_zone": time_zone,
+            },
+        )
+        return response
+
+    def get_meeting_info(self, bot_id: str) -> dict:
+        """Get the information of a given meeting bot.
+
+        :param str bot_id: ID returned when recording was initiated
+        :return: Information of the meeting bot
+        :rtype: dict
+        """
+
+        return self.get(path=f"{ApiPath.collection}/default/{ApiPath.meeting}/{bot_id}")
