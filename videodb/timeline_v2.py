@@ -201,8 +201,6 @@ class Clip:
 
 
 class Track:
-    clips: List[Clip]
-
     def __init__(self, clips: List[Clip] = []):
         self.clips = clips
 
