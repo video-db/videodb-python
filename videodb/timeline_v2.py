@@ -11,7 +11,6 @@ class Fit(str, Enum):
     crop = "crop"
     cover = "cover"
     contain = "contain"
-    none = "none"
 
 
 class Position(str, Enum):
