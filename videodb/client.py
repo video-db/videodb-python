@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class Connection(HttpClient):
     """Connection class to interact with the VideoDB"""
 
-    def __init__(self, api_key: str, base_url: str) -> "Connection":
+    def __init__(self, api_key: str, base_url: str, **kwargs) -> "Connection":
         """Initializes a new instance of the Connection class with specified API credentials.
 
         Note: Users should not initialize this class directly.
@@ -44,7 +44,7 @@ class Connection(HttpClient):
         self.api_key = api_key
         self.base_url = base_url
         self.collection_id = "default"
-        super().__init__(api_key=api_key, base_url=base_url, version=__version__)
+        super().__init__(api_key=api_key, base_url=base_url, version=__version__, **kwargs)
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
         """Get a collection object by its ID.
