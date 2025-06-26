@@ -491,6 +491,7 @@ class Collection:
         bot_name: str,
         meeting_name: str,
         callback_url: str,
+        callback_data: dict = {},
         time_zone: str = "UTC",
     ) -> dict:
         """Record a meeting and upload it to this collection.
@@ -499,6 +500,7 @@ class Collection:
         :param str bot_name: Name of the recorder bot
         :param str meeting_name: Name of the meeting
         :param str callback_url: URL to receive callback once recording is done
+        :param dict callback_data: Data to be sent in the callback (optional)
         :param str time_zone: Time zone for the meeting (default ``UTC``)
         :return: Response data from the API
         :rtype: dict
@@ -511,6 +513,7 @@ class Collection:
                 "bot_name": bot_name,
                 "meeting_name": meeting_name,
                 "callback_url": callback_url,
+                "callback_data": callback_data,
                 "time_zone": time_zone,
             },
         )
