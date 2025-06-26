@@ -133,7 +133,6 @@ class ImageAsset(BaseAsset):
         return {
             "type": self.type,
             "id": self.id,
-            "trim": self.trim,
             "crop": self.crop.to_json(),
         }
 
