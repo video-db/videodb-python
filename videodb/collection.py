@@ -507,7 +507,7 @@ class Collection:
         """
 
         return self._connection.post(
-            path=f"/collection/{self.id}/{ApiPath.meeting}/{ApiPath.record}",
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.meeting}/{ApiPath.record}",
             data={
                 "link": link,
                 "bot_name": bot_name,
