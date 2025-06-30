@@ -1,4 +1,4 @@
-from videodb._upload import upload
+from videodb._upload import upload, VideodbError
 
 
 class DummyConn:
@@ -16,7 +16,17 @@ class DummyConn:
         return {"id": "m-1", **(data or {})}
 
 
-def test_upload_infers_url():
+def test_upload_infers_url_from_source():
     conn = DummyConn()
-    upload(conn, file_path="https://example.com/video.mp4")
+    upload(conn, source="https://example.com/video.mp4")
     assert conn.data["url"] == "https://example.com/video.mp4"
+
+
+def test_upload_source_conflict():
+    conn = DummyConn()
+    try:
+        upload(conn, source="/tmp/file.mp4", file_path="/tmp/file.mp4")
+    except VideodbError:
+        assert True
+    else:
+        assert False, "Expected VideodbError"

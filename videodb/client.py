@@ -256,8 +256,9 @@ class Connection(HttpClient):
 
     def upload(
         self,
-        file_path: str = None,
-        url: str = None,
+        source: str | None = None,
+        file_path: str | None = None,
+        url: str | None = None,
         media_type: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -265,9 +266,10 @@ class Connection(HttpClient):
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file.
 
-        The method automatically detects if ``file_path`` is a URL or a local
-        path when only one of ``file_path`` or ``url`` is provided.
+        The method automatically detects if ``source``/``file_path`` is a URL
+        or a local path when only one of ``file_path`` or ``url`` is provided.
 
+        :param str source: Local path or URL of the file to upload (optional)
         :param str file_path: Path to the file to upload (optional)
         :param str url: URL of the file to upload (optional)
         :param MediaType media_type: MediaType object (optional)
@@ -279,12 +281,13 @@ class Connection(HttpClient):
         """
         upload_data = upload(
             self,
-            file_path,
-            url,
-            media_type,
-            name,
-            description,
-            callback_url,
+            source,
+            file_path=file_path,
+            url=url,
+            media_type=media_type,
+            name=name,
+            description=description,
+            callback_url=callback_url,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):

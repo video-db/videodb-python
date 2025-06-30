@@ -428,6 +428,7 @@ class Collection:
 
     def upload(
         self,
+        source: str | None = None,
         file_path: str = None,
         url: Optional[str] = None,
         media_type: Optional[str] = None,
@@ -437,9 +438,10 @@ class Collection:
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file to the collection.
 
-        The method automatically detects if ``file_path`` is a URL or a local
-        path when only one of ``file_path`` or ``url`` is provided.
+        The method automatically detects if ``source``/``file_path`` is a URL
+        or a local path when only one of ``file_path`` or ``url`` is provided.
 
+        :param str source: Local path or URL of the file to be uploaded
         :param str file_path: Path to the file to be uploaded
         :param str url: URL of the file to be uploaded
         :param MediaType media_type: MediaType object (optional)
@@ -451,12 +453,13 @@ class Collection:
         """
         upload_data = upload(
             self._connection,
-            file_path,
-            url,
-            media_type,
-            name,
-            description,
-            callback_url,
+            source,
+            file_path=file_path,
+            url=url,
+            media_type=media_type,
+            name=name,
+            description=description,
+            callback_url=callback_url,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):

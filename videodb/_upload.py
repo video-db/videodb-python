@@ -22,13 +22,28 @@ def _is_url(path: str) -> bool:
 
 def upload(
     _connection,
-    file_path: str = None,
-    url: str = None,
+    source: str | None = None,
+    file_path: str | None = None,
+    url: str | None = None,
     media_type: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     callback_url: Optional[str] = None,
 ) -> dict:
+    """Upload a file or URL.
+
+    ``source`` can be used as a generic argument which accepts either a local
+    file path or a URL. ``file_path`` and ``url`` remain for backward
+    compatibility and should not be used together with ``source``.
+    """
+    if source and (file_path or url):
+        raise VideodbError("source cannot be used with file_path or url")
+
+    if source and not file_path and not url:
+        if _is_url(source):
+            url = source
+        else:
+            file_path = source
     if file_path and not url and _is_url(file_path):
         url = file_path
         file_path = None

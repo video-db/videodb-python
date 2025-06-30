@@ -74,7 +74,9 @@ conn = videodb.connect(api_key="YOUR_API_KEY")
 Now that you have established a connection to VideoDB, you can upload your videos using `conn.upload()`.
 You can directly upload from `youtube`, `any public url`, `S3 bucket` or a `local file path`. A default collection is created when you create your first connection.
 
-`upload` method returns a `Video` object.
+`upload` method returns a `Video` object. You can simply pass a single string
+representing either a local file path or a URL. For explicit calls, use the
+``source`` parameter.
 
 ```python
 # Upload a video by url
