@@ -428,12 +428,12 @@ class Collection:
 
     def upload(
         self,
-        source: str | None = None,
+        source: Optional[str] = None,
         media_type: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
-        file_path: str = None,
+        file_path: Optional[str] = None,
         url: Optional[str] = None,
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file to the collection.
