@@ -1,6 +1,6 @@
 """About information for videodb sdk"""
 
-__version__ = "0.2.17"
+__version__ = "0.2.18"
 __title__ = "videodb"
 __author__ = "videodb"
 __email__ = "contact@videodb.io"

@@ -429,12 +429,12 @@ class Collection:
     def upload(
         self,
         source: str | None = None,
-        file_path: str = None,
-        url: Optional[str] = None,
         media_type: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
+        file_path: str = None,
+        url: Optional[str] = None,
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file to the collection.
 
@@ -442,24 +442,24 @@ class Collection:
         or a local path when only one of ``file_path`` or ``url`` is provided.
 
         :param str source: Local path or URL of the file to be uploaded
-        :param str file_path: Path to the file to be uploaded
-        :param str url: URL of the file to be uploaded
         :param MediaType media_type: MediaType object (optional)
         :param str name: Name of the file (optional)
         :param str description: Description of the file (optional)
         :param str callback_url: URL to receive the callback (optional)
+        :param str file_path: Path to the file to be uploaded
+        :param str url: URL of the file to be uploaded
         :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
         :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
         """
         upload_data = upload(
             self._connection,
             source,
-            file_path=file_path,
-            url=url,
             media_type=media_type,
             name=name,
             description=description,
             callback_url=callback_url,
+            file_path=file_path,
+            url=url,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):

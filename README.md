@@ -75,8 +75,9 @@ Now that you have established a connection to VideoDB, you can upload your video
 You can directly upload from `youtube`, `any public url`, `S3 bucket` or a `local file path`. A default collection is created when you create your first connection.
 
 `upload` method returns a `Video` object. You can simply pass a single string
-representing either a local file path or a URL. For explicit calls, use the
-``source`` parameter.
+representing either a local file path or a URL. The optional second positional
+argument is `media_type`, keeping backwards compatibility. For explicit calls,
+use the ``source`` parameter.
 
 ```python
 # Upload a video by url

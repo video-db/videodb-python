@@ -1,4 +1,5 @@
 from videodb._upload import upload, VideodbError
+from videodb._constants import MediaType
 
 
 class DummyConn:
@@ -30,3 +31,10 @@ def test_upload_source_conflict():
         assert True
     else:
         assert False, "Expected VideodbError"
+
+
+def test_upload_media_type_positional():
+    conn = DummyConn()
+    upload(conn, "https://example.com/video.mp4", MediaType.video)
+    assert conn.data["url"] == "https://example.com/video.mp4"
+    assert conn.data["media_type"] == MediaType.video

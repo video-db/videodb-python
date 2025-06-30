@@ -23,12 +23,12 @@ def _is_url(path: str) -> bool:
 def upload(
     _connection,
     source: str | None = None,
-    file_path: str | None = None,
-    url: str | None = None,
     media_type: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     callback_url: Optional[str] = None,
+    file_path: str | None = None,
+    url: str | None = None,
 ) -> dict:
     """Upload a file or URL.
 
