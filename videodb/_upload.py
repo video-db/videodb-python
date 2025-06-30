@@ -1,7 +1,9 @@
 import requests
 
 from typing import Optional
+from urllib.parse import urlparse
 from requests import HTTPError
+import os
 
 
 from videodb._constants import (
@@ -13,6 +15,11 @@ from videodb.exceptions import (
 )
 
 
+def _is_url(path: str) -> bool:
+    parsed = urlparse(path)
+    return all([parsed.scheme in ("http", "https"), parsed.netloc])
+
+
 def upload(
     _connection,
     file_path: str = None,
@@ -22,6 +29,14 @@ def upload(
     description: Optional[str] = None,
     callback_url: Optional[str] = None,
 ) -> dict:
+    if file_path and not url and _is_url(file_path):
+        url = file_path
+        file_path = None
+
+    if not file_path and url and not _is_url(url) and os.path.exists(url):
+        file_path = url
+        url = None
+
     if not file_path and not url:
         raise VideodbError("Either file_path or url is required")
     if file_path and url:

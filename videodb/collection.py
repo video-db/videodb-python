@@ -437,6 +437,9 @@ class Collection:
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file to the collection.
 
+        The method automatically detects if ``file_path`` is a URL or a local
+        path when only one of ``file_path`` or ``url`` is provided.
+
         :param str file_path: Path to the file to be uploaded
         :param str url: URL of the file to be uploaded
         :param MediaType media_type: MediaType object (optional)
