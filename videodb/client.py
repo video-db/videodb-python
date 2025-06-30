@@ -266,16 +266,13 @@ class Connection(HttpClient):
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file.
 
-        The method automatically detects if ``source``/``file_path`` is a URL
-        or a local path when only one of ``file_path`` or ``url`` is provided.
-
         :param str source: Local path or URL of the file to upload (optional)
         :param MediaType media_type: MediaType object (optional)
         :param str name: Name of the file (optional)
         :param str description: Description of the file (optional)
         :param str callback_url: URL to receive the callback (optional)
-        :param str file_path: Path to the file to upload (optional)
-        :param str url: URL of the file to upload (optional)
+        :param str file_path: Path to the file to upload (optional) 
+        :param str url: URL of the file to upload (optional) 
         :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
         :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
         """
