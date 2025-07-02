@@ -5,6 +5,7 @@ from enum import Enum
 class AssetType(str, Enum):
     video = "video"
     image = "image"
+    audio = "audio"
 
 
 class Fit(str, Enum):
