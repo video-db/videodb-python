@@ -137,7 +137,26 @@ class ImageAsset(BaseAsset):
         }
 
 
-AnyAsset = Union[VideoAsset, ImageAsset]
+class AudioAsset(BaseAsset):
+    """The AudioAsset is used to create audio sequences from audio files. The src must be a publicly accessible URL to an audio resource"""
+
+    type = AssetType.audio
+
+    def __init__(self, id: str, trim: int = 0, volume: float = 1):
+        self.id = id
+        self.trim = trim
+        self.volume = volume
+
+    def to_json(self):
+        return {
+            "type": self.type,
+            "id": self.id,
+            "trim": self.trim,
+            "volume": self.volume,
+        }
+
+
+AnyAsset = Union[VideoAsset, ImageAsset, AudioAsset]
 
 
 class Clip:
