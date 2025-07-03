@@ -32,8 +32,16 @@ def upload(
 ) -> dict:
     """Upload a file or URL.
 
-    ``source`` can be used as a generic argument which accepts either a local
-    file path or a URL.
+    :param _connection: Connection object for API calls
+    :param str source: Local path or URL of the file to be uploaded
+    :param str media_type: MediaType object (optional)
+    :param str name: Name of the file (optional)
+    :param str description: Description of the file (optional)
+    :param str callback_url: URL to receive the callback (optional)
+    :param str file_path: Path to the file to be uploaded
+    :param str url: URL of the file to be uploaded
+    :return: Dictionary containing upload response data
+    :rtype: dict
     """
     if source and (file_path or url):
         raise VideodbError("source cannot be used with file_path or url")
