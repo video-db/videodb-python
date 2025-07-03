@@ -18,6 +18,7 @@ from videodb._utils._http_client import HttpClient
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
+from videodb.meeting import Meeting
 
 from videodb._upload import (
     upload,
@@ -299,7 +300,7 @@ class Connection(HttpClient):
         callback_url: str,
         callback_data: dict = {},
         time_zone: str = "UTC",
-    ) -> dict:
+    ) -> Meeting:
         """Record a meeting and upload it to the default collection.
 
         :param str link: Meeting link
@@ -308,8 +309,8 @@ class Connection(HttpClient):
         :param str callback_url: URL to receive callback once recording is done
         :param dict callback_data: Data to be sent in the callback (optional)
         :param str time_zone: Time zone for the meeting (default ``UTC``)
-        :return: Response data from the API
-        :rtype: dict
+        :return: :class:`Meeting <Meeting>` object representing the recording bot
+        :rtype: :class:`videodb.meeting.Meeting`
         """
 
         response = self.post(
@@ -323,14 +324,5 @@ class Connection(HttpClient):
                 "time_zone": time_zone,
             },
         )
-        return response
-
-    def get_meeting_info(self, bot_id: str) -> dict:
-        """Get the information of a given meeting bot.
-
-        :param str bot_id: ID returned when recording was initiated
-        :return: Information of the meeting bot
-        :rtype: dict
-        """
-
-        return self.get(path=f"{ApiPath.collection}/default/{ApiPath.meeting}/{bot_id}")
+        meeting_id = response.get("meeting_id")
+        return Meeting(self, id=meeting_id, collection_id="default", **response)
