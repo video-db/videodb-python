@@ -56,7 +56,7 @@ class Meeting:
         return self.status in ["done"]
 
     def wait_for_status(
-        self, target_status: str, timeout: int = 14400, interval: int = 300
+        self, target_status: str, timeout: int = 14400, interval: int = 120
     ) -> bool:
         """Wait for the meeting to reach a specific status.
 

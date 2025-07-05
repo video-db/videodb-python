@@ -489,9 +489,9 @@ class Collection:
     def record_meeting(
         self,
         link: str,
-        bot_name: str,
-        meeting_name: str,
-        callback_url: str,
+        bot_name: str = None,
+        meeting_name: str = None,
+        callback_url: str = None,
         callback_data: dict = {},
         time_zone: str = "UTC",
     ) -> Meeting:
