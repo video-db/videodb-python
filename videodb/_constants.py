@@ -77,6 +77,7 @@ class ApiPath:
     alert = "alert"
     generate_url = "generate_url"
     generate = "generate"
+    text = "text"
     web = "web"
     translate = "translate"
     dub = "dub"

@@ -358,6 +358,30 @@ class Collection:
         if video_data:
             return Video(self._connection, **video_data)
 
+    def generate_text(
+        self,
+        prompt: str,
+        model_name: Literal["basic", "pro", "ultra"] = "basic",
+        response_type: Literal["text", "json"] = "text",
+    ) -> Union[str, dict]:
+        """Generate text from a prompt using genai offering.
+
+        :param str prompt: Prompt for the text generation
+        :param str model_name: Model name to use ("basic", "pro" or "ultra")
+        :param str response_type: Desired response type ("text" or "json")
+        :return: Generated text response
+        :rtype: Union[str, dict]
+        """
+
+        return self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.text}",
+            data={
+                "prompt": prompt,
+                "model_name": model_name,
+                "response_type": response_type,
+            },
+        )
+
     def dub_video(
         self, video_id: str, language_code: str, callback_url: Optional[str] = None
     ) -> Video:
