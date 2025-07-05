@@ -58,6 +58,7 @@ def connect(
     api_key: str = None,
     base_url: Optional[str] = VIDEO_DB_API,
     log_level: Optional[int] = logging.INFO,
+    **kwargs,
 ) -> Connection:
     """A client for interacting with a videodb via REST API
 
@@ -76,4 +77,4 @@ def connect(
             "No API key provided. Set an API key either as an environment variable (VIDEO_DB_API_KEY) or pass it as an argument."
         )
 
-    return Connection(api_key, base_url)
+    return Connection(api_key, base_url, **kwargs)
