@@ -18,6 +18,7 @@ from videodb._utils._http_client import HttpClient
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
+from videodb.meeting import Meeting
 
 from videodb._upload import (
     upload,
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 class Connection(HttpClient):
     """Connection class to interact with the VideoDB"""
 
-    def __init__(self, api_key: str, base_url: str) -> "Connection":
+    def __init__(self, api_key: str, base_url: str, **kwargs) -> "Connection":
         """Initializes a new instance of the Connection class with specified API credentials.
 
         Note: Users should not initialize this class directly.
@@ -44,7 +45,7 @@ class Connection(HttpClient):
         self.api_key = api_key
         self.base_url = base_url
         self.collection_id = "default"
-        super().__init__(api_key=api_key, base_url=base_url, version=__version__)
+        super().__init__(api_key=api_key, base_url=base_url, version=__version__, **kwargs)
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
         """Get a collection object by its ID.
@@ -293,3 +294,38 @@ class Connection(HttpClient):
             return Audio(self, **upload_data)
         elif media_id.startswith("img-"):
             return Image(self, **upload_data)
+
+    def record_meeting(
+        self,
+        link: str,
+        bot_name: str,
+        meeting_name: str,
+        callback_url: str,
+        callback_data: dict = {},
+        time_zone: str = "UTC",
+    ) -> Meeting:
+        """Record a meeting and upload it to the default collection.
+
+        :param str link: Meeting link
+        :param str bot_name: Name of the recorder bot
+        :param str meeting_name: Name of the meeting
+        :param str callback_url: URL to receive callback once recording is done
+        :param dict callback_data: Data to be sent in the callback (optional)
+        :param str time_zone: Time zone for the meeting (default ``UTC``)
+        :return: :class:`Meeting <Meeting>` object representing the recording bot
+        :rtype: :class:`videodb.meeting.Meeting`
+        """
+
+        response = self.post(
+            path=f"{ApiPath.collection}/default/{ApiPath.meeting}/{ApiPath.record}",
+            data={
+                "link": link,
+                "bot_name": bot_name,
+                "meeting_name": meeting_name,
+                "callback_url": callback_url,
+                "callback_data": callback_data,
+                "time_zone": time_zone,
+            },
+        )
+        meeting_id = response.get("meeting_id")
+        return Meeting(self, id=meeting_id, collection_id="default", **response)
