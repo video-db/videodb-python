@@ -6,6 +6,7 @@ class AssetType(str, Enum):
     video = "video"
     image = "image"
     audio = "audio"
+    text = "text"
 
 
 class Fit(str, Enum):
@@ -37,6 +38,36 @@ class Filter(str, Enum):
     lighten = "lighten"
     muted = "muted"
     negative = "negative"
+
+
+class TextAlignment(str, Enum):
+    """Place the text in one of nine predefined positions of the background."""
+
+    top = "top"
+    top_right = "top_right"
+    right = "right"
+    bottom_right = "bottom_right"
+    bottom = "bottom"
+    bottom_left = "bottom_left"
+    left = "left"
+    top_left = "top_left"
+    center = "center"
+
+
+class HorizontalAlignment(str, Enum):
+    """Horizontal text alignment options."""
+
+    left = "left"
+    center = "center"
+    right = "right"
+
+
+class VerticalAlignment(str, Enum):
+    """Vertical text alignment options."""
+
+    top = "top"
+    center = "center"
+    bottom = "bottom"
 
 
 class Offset:
@@ -157,7 +188,197 @@ class AudioAsset(BaseAsset):
         }
 
 
-AnyAsset = Union[VideoAsset, ImageAsset, AudioAsset]
+class Font:
+    """Font styling properties for text assets."""
+
+    def __init__(
+        self,
+        family: str = "Clear Sans",
+        size: int = 48,
+        color: str = "#FFFFFF",
+        opacity: float = 1.0,
+        weight: Optional[int] = None,
+    ):
+        if size < 1:
+            raise ValueError("size must be at least 1")
+        if not (0.0 <= opacity <= 1.0):
+            raise ValueError("opacity must be between 0.0 and 1.0")
+        if weight is not None and not (100 <= weight <= 900):
+            raise ValueError("weight must be between 100 and 900")
+
+        self.family = family
+        self.size = size
+        self.color = color
+        self.opacity = opacity
+        self.weight = weight
+
+    def to_json(self):
+        data = {
+            "family": self.family,
+            "size": self.size,
+            "color": self.color,
+            "opacity": self.opacity,
+        }
+        if self.weight is not None:
+            data["weight"] = self.weight
+        return data
+
+
+class Border:
+    """Text border properties."""
+
+    def __init__(self, color: str = "#000000", width: float = 0.0):
+        if width < 0.0:
+            raise ValueError("width must be non-negative")
+        self.color = color
+        self.width = width
+
+    def to_json(self):
+        return {
+            "color": self.color,
+            "width": self.width,
+        }
+
+
+class Shadow:
+    """Text shadow properties."""
+
+    def __init__(self, color: str = "#000000", x: float = 0.0, y: float = 0.0):
+        if x < 0.0:
+            raise ValueError("x must be non-negative")
+        if y < 0.0:
+            raise ValueError("y must be non-negative")
+        self.color = color
+        self.x = x
+        self.y = y
+
+    def to_json(self):
+        return {
+            "color": self.color,
+            "x": self.x,
+            "y": self.y,
+        }
+
+
+class Background:
+    """Text background styling properties."""
+
+    def __init__(
+        self,
+        width: float = 0.0,
+        height: float = 0.0,
+        color: str = "#000000",
+        border_width: float = 0.0,
+        opacity: float = 1.0,
+        text_alignment: TextAlignment = TextAlignment.center,
+    ):
+        if width < 0.0:
+            raise ValueError("width must be non-negative")
+        if height < 0.0:
+            raise ValueError("height must be non-negative")
+        if border_width < 0.0:
+            raise ValueError("border_width must be non-negative")
+        if not (0.0 <= opacity <= 1.0):
+            raise ValueError("opacity must be between 0.0 and 1.0")
+
+        self.width = width
+        self.height = height
+        self.color = color
+        self.border_width = border_width
+        self.opacity = opacity
+        self.text_alignment = text_alignment
+
+    def to_json(self):
+        return {
+            "width": self.width,
+            "height": self.height,
+            "color": self.color,
+            "border_width": self.border_width,
+            "opacity": self.opacity,
+            "text_alignment": self.text_alignment.value,
+        }
+
+
+class Alignment:
+    """Text alignment properties."""
+
+    def __init__(
+        self,
+        horizontal: HorizontalAlignment = HorizontalAlignment.center,
+        vertical: VerticalAlignment = VerticalAlignment.center,
+    ):
+        self.horizontal = horizontal
+        self.vertical = vertical
+
+    def to_json(self):
+        return {
+            "horizontal": self.horizontal.value,
+            "vertical": self.vertical.value,
+        }
+
+
+class TextAsset(BaseAsset):
+    """The TextAsset is used to create text sequences from text strings with full control over the text styling and positioning."""
+
+    type = AssetType.text
+
+    def __init__(
+        self,
+        text: str,
+        font: Optional[Font] = None,
+        border: Optional[Border] = None,
+        shadow: Optional[Shadow] = None,
+        background: Optional[Background] = None,
+        alignment: Optional[Alignment] = None,
+        tabsize: int = 4,
+        line_spacing: float = 0,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+    ):
+        if tabsize < 1:
+            raise ValueError("tabsize must be at least 1")
+        if line_spacing < 0.0:
+            raise ValueError("line_spacing must be non-negative")
+        if width is not None and width < 1:
+            raise ValueError("width must be at least 1")
+        if height is not None and height < 1:
+            raise ValueError("height must be at least 1")
+
+        self.text = text
+        self.font = font if font is not None else Font()
+        self.border = border
+        self.shadow = shadow
+        self.background = background
+        self.alignment = alignment if alignment is not None else Alignment()
+        self.tabsize = tabsize
+        self.line_spacing = line_spacing
+        self.width = width
+        self.height = height
+
+    def to_json(self):
+        data = {
+            "type": self.type,
+            "text": self.text,
+            "font": self.font.to_json(),
+            "alignment": self.alignment.to_json(),
+            "tabsize": self.tabsize,
+            "line_spacing": self.line_spacing,
+        }
+        if self.border:
+            data["border"] = self.border.to_json()
+        if self.shadow:
+            data["shadow"] = self.shadow.to_json()
+        if self.background:
+            data["background"] = self.background.to_json()
+        if self.width is not None:
+            data["width"] = self.width
+        if self.height is not None:
+            data["height"] = self.height
+
+        return data
+
+
+AnyAsset = Union[VideoAsset, ImageAsset, AudioAsset, TextAsset]
 
 
 class Clip:
