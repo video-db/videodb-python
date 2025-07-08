@@ -619,18 +619,14 @@ class Video:
         # TODO: Add type check for Meeting
         from videodb.meeting import Meeting
 
-        try:
-            meeting_data = self._connection.get(
-                path=f"{ApiPath.video}/{self.id}/{ApiPath.meeting}"
+        meeting_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.meeting}"
+        )
+        if meeting_data:
+            return Meeting(
+                self._connection,
+                id=meeting_data.get("meeting_id"),
+                collection_id=self.collection_id,
+                **meeting_data,
             )
-            if meeting_data:
-                return Meeting(
-                    self._connection,
-                    id=meeting_data.get("meeting_id"),
-                    collection_id=self.collection_id,
-                    **meeting_data,
-                )
-            return None
-        except Exception:
-            # Return None if no meeting is associated or API call fails
-            return None
+        return None

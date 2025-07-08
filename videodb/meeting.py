@@ -1,4 +1,4 @@
-from videodb._constants import ApiPath
+from videodb._constants import ApiPath, MeetingStatus
 
 from videodb.exceptions import (
     VideodbError,
@@ -6,7 +6,18 @@ from videodb.exceptions import (
 
 
 class Meeting:
-    """Meeting class representing a meeting recording bot."""
+    """Meeting class representing a meeting recording bot.
+
+    :ivar str id: Unique identifier for the meeting
+    :ivar str collection_id: ID of the collection this meeting belongs to
+    :ivar str bot_name: Name of the meeting recording bot
+    :ivar str name: Name of the meeting
+    :ivar str meeting_url: URL of the meeting
+    :ivar str status: Current status of the meeting
+    :ivar str time_zone: Time zone of the meeting
+    :ivar str video_id: ID of the recorded video
+    :ivar dict speaker_timeline: Timeline of speakers in the meeting
+    """
 
     def __init__(self, _connection, id: str, collection_id: str, **kwargs) -> None:
         self._connection = _connection
@@ -18,7 +29,12 @@ class Meeting:
         return f"Meeting(id={self.id}, collection_id={self.collection_id}, name={self.name}, status={self.status}, bot_name={self.bot_name})"
 
     def _update_attributes(self, data: dict) -> None:
-        """Update instance attributes from API response data."""
+        """Update instance attributes from API response data.
+
+        :param dict data: Dictionary containing attribute data from API response
+        :return: None
+        :rtype: None
+        """
         self.bot_name = data.get("bot_name")
         self.name = data.get("meeting_name")
         self.meeting_url = data.get("meeting_url")
@@ -30,11 +46,9 @@ class Meeting:
     def refresh(self) -> "Meeting":
         """Refresh meeting data from the server.
 
-        Returns:
-            self: The Meeting instance with updated data
-
-        Raises:
-            APIError: If the API request fails
+        :return: The Meeting instance with updated data
+        :rtype: Meeting
+        :raises VideodbError: If the API request fails
         """
         response = self._connection.get(
             path=f"{ApiPath.collection}/{self.collection_id}/{ApiPath.meeting}/{self.id}"
@@ -49,26 +63,32 @@ class Meeting:
 
     @property
     def is_active(self) -> bool:
-        """Check if the meeting is currently active."""
-        return self.status in ["initializing", "processing"]
+        """Check if the meeting is currently active.
+
+        :return: True if meeting is initializing or processing, False otherwise
+        :rtype: bool
+        """
+        return self.status in [MeetingStatus.initializing, MeetingStatus.processing]
 
     @property
     def is_completed(self) -> bool:
-        """Check if the meeting has completed."""
-        return self.status in ["done"]
+        """Check if the meeting has completed.
+
+        :return: True if meeting is done, False otherwise
+        :rtype: bool
+        """
+        return self.status == MeetingStatus.done
 
     def wait_for_status(
         self, target_status: str, timeout: int = 14400, interval: int = 120
     ) -> bool:
         """Wait for the meeting to reach a specific status.
 
-        Args:
-            target_status: The status to wait for
-            timeout: Maximum time to wait in seconds
-            interval: Time between status checks in seconds
-
-        Returns:
-            bool: True if status reached, False if timeout
+        :param str target_status: The status to wait for
+        :param int timeout: Maximum time to wait in seconds (default: 14400)
+        :param int interval: Time between status checks in seconds (default: 120)
+        :return: True if status reached, False if timeout
+        :rtype: bool
         """
         import time
 

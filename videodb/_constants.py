@@ -91,6 +91,12 @@ class Status:
     in_progress = "in progress"
 
 
+class MeetingStatus:
+    initializing = "initializing"
+    processing = "processing"
+    done = "done"
+
+
 class HttpClientDefaultValues:
     max_retries = 1
     timeout = 30
