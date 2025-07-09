@@ -299,7 +299,7 @@ class Connection(HttpClient):
 
     def record_meeting(
         self,
-        link: str,
+        meeting_url: str,
         bot_name: str = None,
         bot_image_url: str = None,
         meeting_name: str = None,
@@ -309,7 +309,7 @@ class Connection(HttpClient):
     ) -> Meeting:
         """Record a meeting and upload it to the default collection.
 
-        :param str link: Meeting link
+        :param str meeting_url: Meeting url
         :param str bot_name: Name of the recorder bot
         :param str bot_image_url: URL of the recorder bot image
         :param str meeting_name: Name of the meeting
@@ -323,7 +323,7 @@ class Connection(HttpClient):
         response = self.post(
             path=f"{ApiPath.collection}/default/{ApiPath.meeting}/{ApiPath.record}",
             data={
-                "link": link,
+                "meeting_url": meeting_url,
                 "bot_name": bot_name,
                 "bot_image_url": bot_image_url,
                 "meeting_name": meeting_name,
