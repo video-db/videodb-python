@@ -26,7 +26,7 @@ class Meeting:
         self._update_attributes(kwargs)
 
     def __repr__(self) -> str:
-        return f"Meeting(id={self.id}, collection_id={self.collection_id}, name={self.name}, status={self.status}, bot_name={self.bot_name})"
+        return f"Meeting(id={self.id}, collection_id={self.collection_id}, name={self.name}, status={self.status}, bot_name={self.bot_name}, meeting_url={self.meeting_url})"
 
     def _update_attributes(self, data: dict) -> None:
         """Update instance attributes from API response data.

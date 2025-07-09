@@ -517,6 +517,7 @@ class Collection:
         self,
         link: str,
         bot_name: str = None,
+        bot_image_url: str = None,
         meeting_name: str = None,
         callback_url: str = None,
         callback_data: dict = {},
@@ -526,6 +527,7 @@ class Collection:
 
         :param str link: Meeting link
         :param str bot_name: Name of the recorder bot
+        :param str bot_image_url: URL of the recorder bot image
         :param str meeting_name: Name of the meeting
         :param str callback_url: URL to receive callback once recording is done
         :param dict callback_data: Data to be sent in the callback (optional)
@@ -539,6 +541,7 @@ class Collection:
             data={
                 "link": link,
                 "bot_name": bot_name,
+                "bot_image_url": bot_image_url,
                 "meeting_name": meeting_name,
                 "callback_url": callback_url,
                 "callback_data": callback_data,
@@ -546,4 +549,17 @@ class Collection:
             },
         )
         meeting_id = response.get("meeting_id")
-        return Meeting(self._connection, id=meeting_id, collection_id=self.id, **response)
+        return Meeting(
+            self._connection, id=meeting_id, collection_id=self.id, **response
+        )
+
+    def get_meeting(self, meeting_id: str) -> Meeting:
+        """Get a meeting by its ID.
+
+        :param str meeting_id: ID of the meeting
+        :return: :class:`Meeting <Meeting>` object
+        :rtype: :class:`videodb.meeting.Meeting`
+        """
+        meeting = Meeting(self._connection, id=meeting_id, collection_id=self.id)
+        meeting.refresh()
+        return meeting

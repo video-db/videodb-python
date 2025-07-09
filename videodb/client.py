@@ -45,7 +45,9 @@ class Connection(HttpClient):
         self.api_key = api_key
         self.base_url = base_url
         self.collection_id = "default"
-        super().__init__(api_key=api_key, base_url=base_url, version=__version__, **kwargs)
+        super().__init__(
+            api_key=api_key, base_url=base_url, version=__version__, **kwargs
+        )
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
         """Get a collection object by its ID.
@@ -272,8 +274,8 @@ class Connection(HttpClient):
         :param str name: Name of the file (optional)
         :param str description: Description of the file (optional)
         :param str callback_url: URL to receive the callback (optional)
-        :param str file_path: Path to the file to upload (optional) 
-        :param str url: URL of the file to upload (optional) 
+        :param str file_path: Path to the file to upload (optional)
+        :param str url: URL of the file to upload (optional)
         :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
         :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
         """
@@ -298,9 +300,10 @@ class Connection(HttpClient):
     def record_meeting(
         self,
         link: str,
-        bot_name: str,
-        meeting_name: str,
-        callback_url: str,
+        bot_name: str = None,
+        bot_image_url: str = None,
+        meeting_name: str = None,
+        callback_url: str = None,
         callback_data: dict = {},
         time_zone: str = "UTC",
     ) -> Meeting:
@@ -308,6 +311,7 @@ class Connection(HttpClient):
 
         :param str link: Meeting link
         :param str bot_name: Name of the recorder bot
+        :param str bot_image_url: URL of the recorder bot image
         :param str meeting_name: Name of the meeting
         :param str callback_url: URL to receive callback once recording is done
         :param dict callback_data: Data to be sent in the callback (optional)
@@ -321,6 +325,7 @@ class Connection(HttpClient):
             data={
                 "link": link,
                 "bot_name": bot_name,
+                "bot_image_url": bot_image_url,
                 "meeting_name": meeting_name,
                 "callback_url": callback_url,
                 "callback_data": callback_data,
@@ -329,3 +334,14 @@ class Connection(HttpClient):
         )
         meeting_id = response.get("meeting_id")
         return Meeting(self, id=meeting_id, collection_id="default", **response)
+
+    def get_meeting(self, meeting_id: str) -> Meeting:
+        """Get a meeting by its ID.
+
+        :param str meeting_id: ID of the meeting
+        :return: :class:`Meeting <Meeting>` object
+        :rtype: :class:`videodb.meeting.Meeting`
+        """
+        meeting = Meeting(self, id=meeting_id, collection_id="default")
+        meeting.refresh()
+        return meeting
