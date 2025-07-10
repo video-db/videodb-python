@@ -304,7 +304,7 @@ class Connection(HttpClient):
         bot_image_url: str = None,
         meeting_title: str = None,
         callback_url: str = None,
-        callback_data: dict = {},
+        callback_data: Optional[dict] = None,
         time_zone: str = "UTC",
     ) -> Meeting:
         """Record a meeting and upload it to the default collection.
@@ -319,6 +319,8 @@ class Connection(HttpClient):
         :return: :class:`Meeting <Meeting>` object representing the recording bot
         :rtype: :class:`videodb.meeting.Meeting`
         """
+        if callback_data is None:
+            callback_data = {}
 
         response = self.post(
             path=f"{ApiPath.collection}/default/{ApiPath.meeting}/{ApiPath.record}",

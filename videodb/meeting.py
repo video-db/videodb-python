@@ -4,6 +4,9 @@ from videodb.exceptions import (
     VideodbError,
 )
 
+DEFAULT_MEETING_TIMEOUT = 14400  # 4 hours
+DEFAULT_POLLING_INTERVAL = 120  # 2 minutes
+
 
 class Meeting:
     """Meeting class representing a meeting recording bot.
@@ -80,7 +83,10 @@ class Meeting:
         return self.status == MeetingStatus.done
 
     def wait_for_status(
-        self, target_status: str, timeout: int = 14400, interval: int = 120
+        self,
+        target_status: str,
+        timeout: int = DEFAULT_MEETING_TIMEOUT,
+        interval: int = DEFAULT_POLLING_INTERVAL,
     ) -> bool:
         """Wait for the meeting to reach a specific status.
 

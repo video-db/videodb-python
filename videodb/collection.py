@@ -520,7 +520,7 @@ class Collection:
         bot_image_url: str = None,
         meeting_title: str = None,
         callback_url: str = None,
-        callback_data: dict = {},
+        callback_data: Optional[dict] = None,
         time_zone: str = "UTC",
     ) -> Meeting:
         """Record a meeting and upload it to this collection.
@@ -535,6 +535,8 @@ class Collection:
         :return: :class:`Meeting <Meeting>` object representing the recording bot
         :rtype: :class:`videodb.meeting.Meeting`
         """
+        if callback_data is None:
+            callback_data = {}
 
         response = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.meeting}/{ApiPath.record}",
