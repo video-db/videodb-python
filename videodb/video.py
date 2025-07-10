@@ -249,6 +249,30 @@ class Video:
         )
         return self.transcript_text
 
+    def generate_transcript(
+        self,
+        force: bool = None,
+    ) -> str:
+        """Generate transcript for the video.
+
+        :param bool force: Force generate new transcript
+        :return: Full transcript text as string
+        :rtype: str
+        """
+        transcript_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
+            data={
+                "force": True if force else False,
+            },
+        )
+        transcript = transcript_data.get("word_timestamps", [])
+        if transcript:
+            return {
+                "success": True,
+                "message": "Transcript generated successfully",
+            }
+        return transcript_data
+
     def translate_transcript(
         self,
         language: str,
