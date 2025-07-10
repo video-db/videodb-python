@@ -77,15 +77,24 @@ class ApiPath:
     alert = "alert"
     generate_url = "generate_url"
     generate = "generate"
+    text = "text"
     web = "web"
     translate = "translate"
     dub = "dub"
     transcode = "transcode"
+    meeting = "meeting"
+    record = "record"
 
 
 class Status:
     processing = "processing"
     in_progress = "in progress"
+
+
+class MeetingStatus:
+    initializing = "initializing"
+    processing = "processing"
+    done = "done"
 
 
 class HttpClientDefaultValues:

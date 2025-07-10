@@ -12,6 +12,7 @@ from videodb._constants import (
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
+from videodb.meeting import Meeting
 from videodb.rtstream import RTStream
 from videodb.search import SearchFactory, SearchResult
 
@@ -357,6 +358,30 @@ class Collection:
         if video_data:
             return Video(self._connection, **video_data)
 
+    def generate_text(
+        self,
+        prompt: str,
+        model_name: Literal["basic", "pro", "ultra"] = "basic",
+        response_type: Literal["text", "json"] = "text",
+    ) -> Union[str, dict]:
+        """Generate text from a prompt using genai offering.
+
+        :param str prompt: Prompt for the text generation
+        :param str model_name: Model name to use ("basic", "pro" or "ultra")
+        :param str response_type: Desired response type ("text" or "json")
+        :return: Generated text response
+        :rtype: Union[str, dict]
+        """
+
+        return self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.text}",
+            data={
+                "prompt": prompt,
+                "model_name": model_name,
+                "response_type": response_type,
+            },
+        )
+
     def dub_video(
         self, video_id: str, language_code: str, callback_url: Optional[str] = None
     ) -> Video:
@@ -428,32 +453,35 @@ class Collection:
 
     def upload(
         self,
-        file_path: str = None,
-        url: Optional[str] = None,
+        source: Optional[str] = None,
         media_type: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         callback_url: Optional[str] = None,
+        file_path: Optional[str] = None,
+        url: Optional[str] = None,
     ) -> Union[Video, Audio, Image, None]:
         """Upload a file to the collection.
 
-        :param str file_path: Path to the file to be uploaded
-        :param str url: URL of the file to be uploaded
+        :param str source: Local path or URL of the file to be uploaded
         :param MediaType media_type: MediaType object (optional)
         :param str name: Name of the file (optional)
         :param str description: Description of the file (optional)
         :param str callback_url: URL to receive the callback (optional)
+        :param str file_path: Path to the file to be uploaded
+        :param str url: URL of the file to be uploaded
         :return: :class:`Video <Video>`, or :class:`Audio <Audio>`, or :class:`Image <Image>` object
         :rtype: Union[ :class:`videodb.video.Video`, :class:`videodb.audio.Audio`, :class:`videodb.image.Image`]
         """
         upload_data = upload(
             self._connection,
-            file_path,
-            url,
-            media_type,
-            name,
-            description,
-            callback_url,
+            source,
+            media_type=media_type,
+            name=name,
+            description=description,
+            callback_url=callback_url,
+            file_path=file_path,
+            url=url,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):
@@ -484,3 +512,56 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}", data={"is_public": False}
         )
         self.is_public = False
+
+    def record_meeting(
+        self,
+        meeting_url: str,
+        bot_name: str = None,
+        bot_image_url: str = None,
+        meeting_title: str = None,
+        callback_url: str = None,
+        callback_data: Optional[dict] = None,
+        time_zone: str = "UTC",
+    ) -> Meeting:
+        """Record a meeting and upload it to this collection.
+
+        :param str meeting_url: Meeting url
+        :param str bot_name: Name of the recorder bot
+        :param str bot_image_url: URL of the recorder bot image
+        :param str meeting_title: Name of the meeting
+        :param str callback_url: URL to receive callback once recording is done
+        :param dict callback_data: Data to be sent in the callback (optional)
+        :param str time_zone: Time zone for the meeting (default ``UTC``)
+        :return: :class:`Meeting <Meeting>` object representing the recording bot
+        :rtype: :class:`videodb.meeting.Meeting`
+        """
+        if callback_data is None:
+            callback_data = {}
+
+        response = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.meeting}/{ApiPath.record}",
+            data={
+                "meeting_url": meeting_url,
+                "bot_name": bot_name,
+                "bot_image_url": bot_image_url,
+                "meeting_title": meeting_title,
+                "callback_url": callback_url,
+                "callback_data": callback_data,
+                "time_zone": time_zone,
+            },
+        )
+        meeting_id = response.get("meeting_id")
+        return Meeting(
+            self._connection, id=meeting_id, collection_id=self.id, **response
+        )
+
+    def get_meeting(self, meeting_id: str) -> Meeting:
+        """Get a meeting by its ID.
+
+        :param str meeting_id: ID of the meeting
+        :return: :class:`Meeting <Meeting>` object
+        :rtype: :class:`videodb.meeting.Meeting`
+        """
+        meeting = Meeting(self._connection, id=meeting_id, collection_id=self.id)
+        meeting.refresh()
+        return meeting
