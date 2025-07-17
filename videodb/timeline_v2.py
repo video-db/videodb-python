@@ -130,8 +130,8 @@ class VideoAsset(BaseAsset):
     ):
         if trim < 0:
             raise ValueError("trim must be non-negative")
-        if not (0 <= volume <= 2):
-            raise ValueError("volume must be between 0 and 2")
+        if not (0 <= volume <= 5):
+            raise ValueError("volume must be between 0 and 5")
 
         self.id = id
         self.trim = trim
