@@ -45,6 +45,8 @@ class Meeting:
         self.time_zone = data.get("time_zone")
         self.video_id = data.get("video_id")
         self.speaker_timeline = data.get("speaker_timeline")
+        self.realtime_stream = data.get("realtime_stream")
+        self.realtime_stream_url = data.get("realtime_stream_url")
 
     def refresh(self) -> "Meeting":
         """Refresh meeting data from the server.
