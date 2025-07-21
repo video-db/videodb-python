@@ -94,6 +94,7 @@ class Status:
 class MeetingStatus:
     initializing = "initializing"
     processing = "processing"
+    joined = "joined"
     done = "done"
 
 
