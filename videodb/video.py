@@ -434,13 +434,41 @@ class Video:
         """
         if not collection_id:
             raise ValueError("collection_id is required")
-        scenes_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
-            params={"collection_id": self.collection_id},
-        )
-        if not scenes_data:
+
+        all_scenes_data = []
+        page = 1
+        while True:
+            scenes_data = self._connection.get(
+                path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
+                params={
+                    "collection_id": self.collection_id,
+                    "paginate": True,
+                    "page_size": 1000,
+                    "page": page
+                },
+            )
+            
+            if not scenes_data:
+                break
+
+            all_scenes_data.append(scenes_data)
+            
+            if not scenes_data.get("next_page"):
+                break
+                
+            page = scenes_data["next_page"]
+
+        if not all_scenes_data:
             return None
-        return self._format_scene_collection(scenes_data.get("scene_collection"))
+
+        # Merge all paginated data
+        merged_data = all_scenes_data[0]
+        for data in all_scenes_data[1:]:
+            merged_data["scene_collection"]["scenes"].extend(
+                data["scene_collection"]["scenes"]
+            )
+
+        return self._format_scene_collection(merged_data.get("scene_collection"))
 
     def list_scene_collection(self):
         """List all the scene collections.
@@ -546,13 +574,43 @@ class Video:
         :return: The scene index records
         :rtype: list
         """
-        index_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
-            params={"collection_id": self.collection_id},
-        )
-        if not index_data:
+        if not scene_index_id:
+            raise ValueError("scene_index_id is required")
+
+        all_index_data = []
+        page = 1
+        while True:
+            index_data = self._connection.get(
+                path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
+                params={
+                    "collection_id": self.collection_id,
+                    "paginate": True,
+                    "page_size": 1000,
+                    "page": page
+                },
+            )
+            
+            if not index_data:
+                break
+
+            all_index_data.append(index_data)
+            
+            if not index_data.get("next_page"):
+                break
+                
+            page = index_data["next_page"]
+
+        if not all_index_data:
             return None
-        return index_data.get("scene_index_records", [])
+
+        # Merge all paginated data
+        merged_data = all_index_data[0]
+        for data in all_index_data[1:]:
+            merged_data["scene_index_records"].extend(
+                data["scene_index_records"]
+            )
+
+        return merged_data.get("scene_index_records", [])
 
     def delete_scene_index(self, scene_index_id: str) -> None:
         """Delete the scene index.
