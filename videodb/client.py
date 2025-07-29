@@ -4,6 +4,8 @@ from typing import (
     Optional,
     Union,
     List,
+    Dict,
+    Any,
 )
 from videodb.__about__ import __version__
 from videodb._constants import (
@@ -19,6 +21,7 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.prompt import Prompt
 
 from videodb._upload import (
     upload,
@@ -347,3 +350,147 @@ class Connection(HttpClient):
         meeting = Meeting(self, id=meeting_id, collection_id="default")
         meeting.refresh()
         return meeting
+
+    def list_prompts(self) -> List[Prompt]:
+        """List all user prompt templates.
+
+        :return: List of :class:`Prompt <Prompt>` objects
+        :rtype: List[:class:`videodb.prompt.Prompt`]
+        """
+        prompts_data = self.get(path=f"{ApiPath.prompts}/")
+        if not prompts_data:
+            return []
+
+        # Extract the actual prompts list from the response
+        prompts_list = prompts_data.get("prompts", [])
+
+        prompts = []
+        for prompt in prompts_list:
+            data = prompt.copy()
+            prompt_id = data.pop("prompt_id")
+            prompts.append(Prompt(self, prompt_id, **data))
+        return prompts
+
+    def create_prompt(
+        self, name: str, content: str, description: Optional[str] = None
+    ) -> Prompt:
+        """Create a new prompt template.
+
+        :param str name: Name of the prompt
+        :param str content: Content/text of the prompt
+        :param str description: Description of the prompt (optional)
+        :return: :class:`Prompt <Prompt>` object
+        :rtype: :class:`videodb.prompt.Prompt`
+        """
+        data = {"name": name, "content": content}
+        if description:
+            data["description"] = description
+
+        prompt_data = self.post(path=f"{ApiPath.prompts}/", data=data)
+        kwargs = prompt_data.copy()
+        prompt_id = kwargs.pop("prompt_id")
+        return Prompt(self, prompt_id, **kwargs)
+
+    def get_prompt(
+        self, prompt_id: str, version: Optional[int] = None
+    ) -> Optional[Prompt]:
+        """Get a prompt by its ID.
+
+        :param str prompt_id: ID of the prompt
+        :param int version: Specific version to retrieve (optional)
+        :return: :class:`Prompt <Prompt>` object
+        :rtype: Optional[:class:`videodb.prompt.Prompt`]
+        """
+        params = {}
+        if version is not None:
+            params["version"] = version
+
+        prompt_data = self.get(path=f"{ApiPath.prompts}/{prompt_id}", params=params)
+        if not prompt_data:
+            return None
+
+        kwargs = prompt_data.copy()
+        extracted_prompt_id = kwargs.pop("prompt_id")
+        return Prompt(self, extracted_prompt_id, **kwargs)
+
+    def get_prompt_by_name(
+        self, name: str, version: Optional[int] = None
+    ) -> Optional[Prompt]:
+        """Get a prompt by its name.
+
+        :param str name: Name of the prompt
+        :param int version: Specific version to retrieve (optional)
+        :return: :class:`Prompt <Prompt>` object
+        :rtype: Optional[:class:`videodb.prompt.Prompt`]
+        """
+        params = {}
+        if version is not None:
+            params["version"] = version
+
+        prompt_data = self.get(path=f"{ApiPath.prompts}/by-name/{name}", params=params)
+        if not prompt_data:
+            return None
+
+        kwargs = prompt_data.copy()
+        prompt_id = kwargs.pop("prompt_id")
+        return Prompt(self, prompt_id, **kwargs)
+
+    def update_prompt(
+        self,
+        prompt_id: str,
+        content: str,
+        description: Optional[str] = None,
+        changelog: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update a prompt and create a new version.
+
+        :param str prompt_id: ID of the prompt to update
+        :param str content: New content for the prompt
+        :param str description: Updated description (optional)
+        :param str changelog: Changelog for this version (optional)
+        :return: Update operation result
+        :rtype: Dict[str, Any]
+        """
+        data = {"content": content}
+        if description is not None:
+            data["description"] = description
+        if changelog:
+            data["changelog"] = changelog
+
+        prompt_data = self.put(path=f"{ApiPath.prompts}/{prompt_id}", data=data)
+        return {"success": True, "data": prompt_data}
+
+    def delete_prompt(self, prompt_id: str) -> Dict[str, Any]:
+        """Delete a prompt.
+
+        :param str prompt_id: ID of the prompt to delete
+        :return: Delete operation result
+        :rtype: Dict[str, Any]
+        """
+        response = self.delete(path=f"{ApiPath.prompts}/{prompt_id}")
+        return {"success": True, "data": response}
+
+    def get_prompt_versions(self, prompt_id: str) -> Dict[str, Any]:
+        """Get all versions of a prompt.
+
+        :param str prompt_id: ID of the prompt
+        :return: List of all prompt versions
+        :rtype: Dict[str, Any]
+        """
+        versions_data = self.get(
+            path=f"{ApiPath.prompts}/{prompt_id}/{ApiPath.versions}"
+        )
+        return {"success": True, "data": versions_data}
+
+    def set_prompt_active_version(self, prompt_id: str, version: int) -> Dict[str, Any]:
+        """Set the active version of a prompt.
+
+        :param str prompt_id: ID of the prompt
+        :param int version: Version number to set as active
+        :return: Operation result
+        :rtype: Dict[str, Any]
+        """
+        response_data = self.post(
+            path=f"{ApiPath.prompts}/{prompt_id}/{ApiPath.versions}/{version}", data={}
+        )
+        return {"success": True, "data": response_data}

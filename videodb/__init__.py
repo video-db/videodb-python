@@ -22,6 +22,7 @@ from videodb._constants import (
     AudioConfig,
 )
 from videodb.client import Connection
+from videodb.prompt import Prompt
 from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
@@ -51,6 +52,7 @@ __all__ = [
     "ResizeMode",
     "VideoConfig",
     "AudioConfig",
+    "Prompt",
 ]
 
 
