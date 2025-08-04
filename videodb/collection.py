@@ -392,6 +392,7 @@ class Collection:
         rerank_params: dict = SemanticSearchDefaultValues.rerank_params,
         sort_docs_on: str = SemanticSearchDefaultValues.sort_docs_on,
         filter: List[Dict[str, Any]] = [],
+        prompt_id: Optional[str] = None,
     ) -> SearchResult:
         """Search for a query in the collection.
 
@@ -404,6 +405,7 @@ class Collection:
         :param bool rerank: Rerank search results (optional)
         :param dict rerank_params: Parameters for reranking (optional)
         :param str sort_docs_on: Parameter to specify what metric to sort the docs of video on
+        :param str prompt_id: ID of the prompt to use for search (optional)
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
@@ -420,7 +422,8 @@ class Collection:
             rerank=rerank,
             rerank_params=rerank_params,
             filter=filter,
-            sort_docs_on=sort_docs_on
+            sort_docs_on=sort_docs_on,
+            prompt_id=prompt_id,
         )
 
     def search_title(self, query) -> List[Video]:
