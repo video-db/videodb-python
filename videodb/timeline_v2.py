@@ -66,8 +66,7 @@ class HorizontalAlignment(str, Enum):
 class CaptionBorderStyle(str, Enum):
     """Border style properties for caption assets."""
 
-    no_border = "no_border"
-    opaque_box = "opaque_box"
+    outline_and_shadow = "outline_and_shadow"
     outline = "outline"
 
 
@@ -460,7 +459,7 @@ class BorderAndShadow:
 
     def __init__(
         self,
-        style: CaptionBorderStyle = CaptionBorderStyle.no_border,
+        style: CaptionBorderStyle = CaptionBorderStyle.outline_and_shadow,
         outline: int = 1,
         outline_color: str = "&H00000000",
         shadow: int = 0,
