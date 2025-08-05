@@ -7,6 +7,7 @@ class AssetType(str, Enum):
     image = "image"
     audio = "audio"
     text = "text"
+    caption = "caption"
 
 
 class Fit(str, Enum):
@@ -60,6 +61,40 @@ class HorizontalAlignment(str, Enum):
     left = "left"
     center = "center"
     right = "right"
+
+
+class CaptionBorderStyle(int, Enum):
+    """Border style properties for caption assets."""
+
+    no_border = 1
+    opaque_box = 3
+    outline = 4
+
+
+class CaptionAlignment(int, Enum):
+    """Caption alignment properties for caption assets."""
+
+    bottom_left = 1
+    bottom_center = 2
+    bottom_right = 3
+    middle_left = 9
+    middle_center = 10
+    middle_right = 11
+    top_left = 5
+    top_center = 6
+    top_right = 7
+
+
+class CaptionAnimation(str, Enum):
+    """Caption animation properties for caption assets."""
+
+    float_in_bottom = "float_in_bottom"
+    box_highlight = "box_highlight"
+    color_highlight = "color_highlight"
+    reveal = "reveal"
+    karioke = "karioke"
+    impact = "impact"
+    supersize = "supersize"
 
 
 class VerticalAlignment(str, Enum):
@@ -378,7 +413,138 @@ class TextAsset(BaseAsset):
         return data
 
 
-AnyAsset = Union[VideoAsset, ImageAsset, AudioAsset, TextAsset]
+class FontStyling:
+    """Font styling properties for caption assets."""
+
+    def __init__(
+        self,
+        name: str = "Clear Sans",
+        size: int = 30,
+        bold: bool = False,
+        italic: bool = False,
+        underline: bool = False,
+        strikeout: bool = False,
+        scale_x: float = 1.0,
+        scale_y: float = 1.0,
+        spacing: float = 0.0,
+        angle: float = 0.0,
+    ):
+        self.name = name
+        self.size = size
+        self.bold = bold
+        self.italic = italic
+        self.underline = underline
+        self.strikeout = strikeout
+        self.scale_x = scale_x
+        self.scale_y = scale_y
+        self.spacing = spacing
+        self.angle = angle
+
+    def to_json(self):
+        return {
+            "font_name": self.name,
+            "font_size": self.size,
+            "bold": self.bold,
+            "italic": self.italic,
+            "underline": self.underline,
+            "strikeout": self.strikeout,
+            "scale_x": self.scale_x,
+            "scale_y": self.scale_y,
+            "spacing": self.spacing,
+            "angle": self.angle,
+        }
+
+
+class BorderAndShadow:
+    """Border and shadow properties for caption assets."""
+
+    def __init__(
+        self,
+        style: CaptionBorderStyle = CaptionBorderStyle.no_border,
+        outline: int = 1,
+        outline_color: str = "&H00000000",
+        shadow: int = 0,
+    ):
+        self.style = style
+        self.outline = outline
+        self.outline_color = outline_color
+        self.shadow = shadow
+
+    def to_json(self):
+        return {
+            "style": self.style.value,
+            "outline": self.outline,
+            "outline_color": self.outline_color,
+            "shadow": self.shadow,
+        }
+
+
+class Positioning:
+    """Positioning properties for caption assets."""
+
+    def __init__(
+        self,
+        alignment: CaptionAlignment = CaptionAlignment.bottom_center,
+        margin_l: int = 30,
+        margin_r: int = 30,
+        margin_v: int = 30,
+    ):
+        self.alignment = alignment
+        self.margin_l = margin_l
+        self.margin_r = margin_r
+        self.margin_v = margin_v
+
+    def to_json(self):
+        return {
+            "alignment": self.alignment.value,
+            "margin_l": self.margin_l,
+            "margin_r": self.margin_r,
+            "margin_v": self.margin_v,
+        }
+
+
+class CaptionAsset(BaseAsset):
+    """The CaptionAsset is used to create captions from text strings with full styling and ass support."""
+
+    type = AssetType.caption
+
+    def __init__(
+        self,
+        src: str = "auto",
+        font: Optional[FontStyling] = None,
+        primary_color: str = "&H00FFFFFF",
+        secondary_color: str = "&H000000FF",
+        back_color: str = "&H00000000",
+        border: Optional[BorderAndShadow] = None,
+        position: Optional[Positioning] = None,
+        animation: Optional[CaptionAnimation] = None,
+    ):
+        self.src = src
+        self.font = font if font is not None else FontStyling()
+        self.primary_color = primary_color
+        self.secondary_color = secondary_color
+        self.back_color = back_color
+        self.border = border if border is not None else BorderAndShadow()
+        self.position = position if position is not None else Positioning()
+        self.animation = animation
+
+    def to_json(self):
+        data = {
+            "type": self.type,
+            "src": self.src,
+            "font": self.font.to_json(),
+            "primary_color": self.primary_color,
+            "secondary_color": self.secondary_color,
+            "back_color": self.back_color,
+            "border": self.border.to_json(),
+            "position": self.position.to_json(),
+        }
+        if self.animation:
+            data["animation"] = self.animation.value
+        return data
+
+
+AnyAsset = Union[VideoAsset, ImageAsset, AudioAsset, TextAsset, CaptionAsset]
 
 
 class Clip:
