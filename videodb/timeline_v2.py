@@ -63,32 +63,32 @@ class HorizontalAlignment(str, Enum):
     right = "right"
 
 
-class CaptionBorderStyle(int, Enum):
+class CaptionBorderStyle(str, Enum):
     """Border style properties for caption assets."""
 
-    no_border = 1
-    opaque_box = 3
-    outline = 4
+    no_border = "no_border"
+    opaque_box = "opaque_box"
+    outline = "outline"
 
 
-class CaptionAlignment(int, Enum):
+class CaptionAlignment(str, Enum):
     """Caption alignment properties for caption assets."""
 
-    bottom_left = 1
-    bottom_center = 2
-    bottom_right = 3
-    middle_left = 9
-    middle_center = 10
-    middle_right = 11
-    top_left = 5
-    top_center = 6
-    top_right = 7
+    bottom_left = "bottom_left"
+    bottom_center = "bottom_center"
+    bottom_right = "bottom_right"
+    middle_left = "middle_left"
+    middle_center = "middle_center"
+    middle_right = "middle_right"
+    top_left = "top_left"
+    top_center = "top_center"
+    top_right = "top_right"
 
 
 class CaptionAnimation(str, Enum):
     """Caption animation properties for caption assets."""
 
-    float_in_bottom = "float_in_bottom"
+    # float_in_bottom = "float_in_bottom"
     box_highlight = "box_highlight"
     color_highlight = "color_highlight"
     reveal = "reveal"
@@ -424,8 +424,8 @@ class FontStyling:
         italic: bool = False,
         underline: bool = False,
         strikeout: bool = False,
-        scale_x: float = 1.0,
-        scale_y: float = 1.0,
+        scale_x: float = 100,
+        scale_y: float = 100,
         spacing: float = 0.0,
         angle: float = 0.0,
     ):
