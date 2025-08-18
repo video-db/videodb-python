@@ -650,3 +650,8 @@ class TimelineV2:
         self.stream_url = stream_data.get("stream_url")
         self.player_url = stream_data.get("player_url")
         return stream_data.get("stream_url", None)
+
+    def download_stream(self, stream_url: str):
+        return self.connection.post(
+            path="timeline_v2/download", data={"stream_url": stream_url}
+        )
