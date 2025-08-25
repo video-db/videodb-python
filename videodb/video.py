@@ -585,7 +585,7 @@ class Video:
                 params={
                     "collection_id": self.collection_id,
                     "paginate": True,
-                    "page_size": 1000,
+                    "page_size": 500,
                     "page": page
                 },
             )
