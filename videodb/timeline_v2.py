@@ -22,10 +22,10 @@ class Position(str, Enum):
     left = "left"
     right = "right"
     center = "center"
-    top_left = "top-left"
-    top_right = "top-right"
-    bottom_left = "bottom-left"
-    bottom_right = "bottom-right"
+    top_left = "top_left"
+    top_right = "top_right"
+    bottom_left = "bottom_left"
+    bottom_right = "bottom_right"
 
 
 class Filter(str, Enum):
