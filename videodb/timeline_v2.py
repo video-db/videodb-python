@@ -67,7 +67,7 @@ class CaptionBorderStyle(str, Enum):
     """Border style properties for caption assets."""
 
     outline_and_shadow = "outline_and_shadow"
-    outline = "outline"
+    opaque_box = "opaque_box"
 
 
 class CaptionAlignment(str, Enum):
