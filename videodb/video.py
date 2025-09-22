@@ -386,6 +386,9 @@ class Video:
         extraction_config: dict = {},
         force: bool = False,
         callback_url: str = None,
+        offset: Optional[int] = 0,
+        limit: Optional[int] = 5000,
+        fetch_all: Optional[bool] = True,
     ) -> Optional[SceneCollection]:
         """Extract the scenes of the video.
 
@@ -408,6 +411,9 @@ class Video:
                   each detected shot. Default is 1.
         :param bool force: (optional) Force to extract the scenes
         :param str callback_url: (optional) URL to receive the callback
+        :param int offset: (optional) Number of scenes to skip (default: 0)
+        :param int limit: (optional) Maximum number of scenes to return (default: 5000)
+        :param bool fetch_all: (optional) Whether to fetch all scenes using pagination (default: True)
         :raises InvalidRequestError: If the extraction fails
         :return: The scene collection, :class:`SceneCollection <SceneCollection>` object
         :rtype: :class:`videodb.scene.SceneCollection`
@@ -420,27 +426,102 @@ class Video:
                 "force": force,
                 "callback_url": callback_url,
             },
+            wait_for_processing=False
         )
         if not scenes_data:
             return None
-        return self._format_scene_collection(scenes_data.get("scene_collection"))
+        
+        scene_collection_id = scenes_data.get("scene_collection_id")
+        if scene_collection_id:
+            return self.get_scene_collection(
+                collection_id=scene_collection_id,
+                offset=offset,
+                limit=limit,
+                fetch_all=fetch_all,
+            )
+        else:
+            return self._format_scene_collection(scenes_data.get("scene_collection"))
 
-    def get_scene_collection(self, collection_id: str) -> Optional[SceneCollection]:
+
+    def get_scene_collection(
+        self,
+        collection_id: str,
+        offset: Optional[int] = 0,
+        limit: Optional[int] = 5000,
+        fetch_all: Optional[bool] = True,
+    ) -> Optional[SceneCollection]:
         """Get the scene collection.
 
         :param str collection_id: The id of the scene collection
+        :param int offset: Number of scenes to skip (default: None for no pagination)
+        :param int limit: Maximum number of scenes to return (default: None for all scenes)
+        :param bool fetch_all: Whether to fetch all scenes using pagination (default: True)
         :return: The scene collection
         :rtype: :class:`videodb.scene.SceneCollection`
+        :raises ValueError: If collection_id is not provided or pagination parameters are invalid
         """
         if not collection_id:
             raise ValueError("collection_id is required")
-        scenes_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
-            params={"collection_id": self.collection_id},
-        )
-        if not scenes_data:
-            return None
-        return self._format_scene_collection(scenes_data.get("scene_collection"))
+
+        if offset is not None and offset < 0:
+            raise ValueError("offset must be non-negative")
+
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be greater than 0")
+
+        if fetch_all:
+            all_scenes_data = []
+            current_offset = offset
+            page_limit = limit
+
+            while True:
+                params = {
+                    "collection_id": self.collection_id,
+                    "offset": current_offset,
+                    "limit": page_limit,
+                }
+
+                scenes_data = self._connection.get(
+                    path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
+                    params=params,
+                )
+
+                if not scenes_data:
+                    break
+
+                all_scenes_data.append(scenes_data)
+
+                next_offset = scenes_data.get("next_offset")
+                if not next_offset or next_offset <= current_offset:
+                    break
+
+                current_offset = next_offset
+
+            if not all_scenes_data:
+                return None
+
+            merged_data = all_scenes_data[0].copy()
+            for data in all_scenes_data[1:]:
+                scenes = data.get("scene_collection", {}).get("scenes", [])
+                merged_data["scene_collection"]["scenes"].extend(scenes)
+
+            return self._format_scene_collection(merged_data.get("scene_collection"))
+        else:
+            params = {"collection_id": self.collection_id}
+            if offset is not None:
+                params["offset"] = offset
+            if limit is not None:
+                params["limit"] = limit
+            
+            scenes_data = self._connection.get(
+                path=f"{ApiPath.video}/{self.id}/{ApiPath.scenes}/{collection_id}",
+                params=params,
+            )
+
+            if not scenes_data:
+                return None
+
+            return self._format_scene_collection(scenes_data.get("scene_collection"))
 
     def list_scene_collection(self):
         """List all the scene collections.
@@ -539,20 +620,85 @@ class Video:
         )
         return index_data.get("scene_indexes", [])
 
-    def get_scene_index(self, scene_index_id: str) -> Optional[List]:
+    def get_scene_index(
+        self,
+        scene_index_id: str,
+        offset: Optional[int] = 0,
+        limit: Optional[int] = 5000,
+        fetch_all: Optional[bool] = True,
+    ) -> Optional[List]:
         """Get the scene index.
 
         :param str scene_index_id: The id of the scene index
+        :param int offset: Number of records to skip (default: 0)
+        :param int limit: Maximum number of records to return (default: 5000)
+        :param bool fetch_all: Whether to fetch all records using pagination (default: True)
         :return: The scene index records
         :rtype: list
+        :raises ValueError: If scene_index_id is not provided or pagination parameters are invalid
         """
-        index_data = self._connection.get(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
-            params={"collection_id": self.collection_id},
-        )
-        if not index_data:
-            return None
-        return index_data.get("scene_index_records", [])
+        if not scene_index_id:
+            raise ValueError("scene_index_id is required")
+
+        if offset is not None and offset < 0:
+            raise ValueError("offset must be non-negative")
+
+        if limit is not None and limit <= 0:
+            raise ValueError("limit must be greater than 0")
+
+        if fetch_all:
+            all_index_data = []
+            current_offset = offset
+            page_limit = limit
+
+            while True:
+                params = {
+                    "collection_id": self.collection_id,
+                    "offset": current_offset,
+                    "limit": page_limit,
+                }
+
+                index_data = self._connection.get(
+                    path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
+                    params=params,
+                )
+
+                if not index_data:
+                    break
+
+                all_index_data.append(index_data)
+
+                next_offset = index_data.get("next_offset")
+                if not next_offset or next_offset <= current_offset:
+                    break
+
+                current_offset = next_offset
+
+            if not all_index_data:
+                return None
+
+            merged_data = all_index_data[0].copy()
+            for data in all_index_data[1:]:
+                records = data.get("scene_index_records", [])
+                merged_data["scene_index_records"].extend(records)
+
+            return merged_data.get("scene_index_records", [])
+        else:
+            params = {"collection_id": self.collection_id}
+            if offset is not None:
+                params["offset"] = offset
+            if limit is not None:
+                params["limit"] = limit
+            
+            index_data = self._connection.get(
+                path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}",
+                params=params,
+            )
+
+            if not index_data:
+                return None
+
+            return index_data.get("scene_index_records", [])
 
     def delete_scene_index(self, scene_index_id: str) -> None:
         """Delete the scene index.

@@ -86,11 +86,14 @@ class HttpClient:
         """
         try:
             url = f"{base_url or self.base_url}/{path}"
+            wait_for_processing = kwargs.pop("wait_for_processing", True)
             timeout = kwargs.pop("timeout", HttpClientDefaultValues.timeout)
             request_headers = {**self.session.headers, **(headers or {})}
             response = method(url, headers=request_headers, timeout=timeout, **kwargs)
             response.raise_for_status()
-            return self._parse_response(response)
+            return self._parse_response(
+                response, wait_for_processing=wait_for_processing
+            )
 
         except requests.exceptions.RequestException as e:
             self._handle_request_error(e)
@@ -158,7 +161,7 @@ class HttpClient:
             self.show_progress = False
         return response_json.get("response") or response_json
 
-    def _parse_response(self, response: requests.Response):
+    def _parse_response(self, response: requests.Response, wait_for_processing=True):
         """Parse the response from the api"""
         try:
             response_json = response.json()
@@ -170,6 +173,7 @@ class HttpClient:
             elif (
                 response_json.get("status") == Status.processing
                 and response_json.get("request_type", "sync") == "sync"
+                and wait_for_processing
             ):
                 if self.show_progress:
                     self.progress_bar = tqdm(
