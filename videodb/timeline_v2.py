@@ -3,6 +3,8 @@ from enum import Enum
 
 
 class AssetType(str, Enum):
+    """The type of asset to display for the duration of the Clip."""
+
     video = "video"
     image = "image"
     audio = "audio"
@@ -11,12 +13,16 @@ class AssetType(str, Enum):
 
 
 class Fit(str, Enum):
+    """The fit mode to apply to the asset."""
+
     crop = "crop"
     cover = "cover"
     contain = "contain"
 
 
 class Position(str, Enum):
+    """The position of the asset on the timeline."""
+
     top = "top"
     bottom = "bottom"
     left = "left"
@@ -547,7 +553,7 @@ AnyAsset = Union[VideoAsset, ImageAsset, AudioAsset, TextAsset, CaptionAsset]
 
 
 class Clip:
-    """A clip is a container for a specific type of asset, i.e. a title, image, video, audio or html. You use a Clip to define when an asset will display on the timeline, how long it will play for and transitions, filters and effects to apply to it."""
+    """A clip is a container for a specific type of asset, i.e. a title, image, video, audio or caption. You use a Clip to define when an asset will display on the timeline, how long it will play for and transitions, filters and effects to apply to it."""
 
     def __init__(
         self,
