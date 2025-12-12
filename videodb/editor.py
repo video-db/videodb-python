@@ -1,6 +1,8 @@
 from typing import List, Optional, Union
 from enum import Enum
 
+from videodb._constants import ApiPath
+
 
 class AssetType(str, Enum):
     """The type of asset to display for the duration of the Clip."""
@@ -93,11 +95,10 @@ class CaptionAlignment(str, Enum):
 class CaptionAnimation(str, Enum):
     """Caption animation properties for caption assets."""
 
-    # float_in_bottom = "float_in_bottom"
     box_highlight = "box_highlight"
     color_highlight = "color_highlight"
     reveal = "reveal"
-    karioke = "karioke"
+    karaoke = "karaoke"
     impact = "impact"
     supersize = "supersize"
 
@@ -139,14 +140,16 @@ class Crop:
 
 
 class Transition:
-    def __init__(self, in_: str = None, out: str = None):
+    def __init__(self, in_: str = None, out: str = None, duration: int = 0.5):
         self.in_ = in_
         self.out = out
+        self.duration = duration
 
     def to_json(self):
         return {
             "in": self.in_,
             "out": self.out,
+            "duration": self.duration,
         }
 
 
@@ -164,17 +167,17 @@ class VideoAsset(BaseAsset):
     def __init__(
         self,
         id: str,
-        trim: int = 0,
+        start: int = 0,
         volume: float = 1,
         crop: Optional[Crop] = None,
     ):
-        if trim < 0:
-            raise ValueError("trim must be non-negative")
+        if start < 0:
+            raise ValueError("start must be non-negative")
         if not (0 <= volume <= 5):
             raise ValueError("volume must be between 0 and 5")
 
         self.id = id
-        self.trim = trim
+        self.start = start
         self.volume = volume
         self.crop = crop if crop is not None else Crop()
 
@@ -182,7 +185,7 @@ class VideoAsset(BaseAsset):
         return {
             "type": self.type,
             "id": self.id,
-            "trim": self.trim,
+            "start": self.start,
             "volume": self.volume,
             "crop": self.crop.to_json(),
         }
@@ -193,12 +196,8 @@ class ImageAsset(BaseAsset):
 
     type = AssetType.image
 
-    def __init__(self, id: str, trim: int = 0, crop: Optional[Crop] = None):
-        if trim < 0:
-            raise ValueError("trim must be non-negative")
-
+    def __init__(self, id: str, crop: Optional[Crop] = None):
         self.id = id
-        self.trim = trim
         self.crop = crop if crop is not None else Crop()
 
     def to_json(self):
@@ -214,16 +213,16 @@ class AudioAsset(BaseAsset):
 
     type = AssetType.audio
 
-    def __init__(self, id: str, trim: int = 0, volume: float = 1):
+    def __init__(self, id: str, start: int = 0, volume: float = 1):
         self.id = id
-        self.trim = trim
+        self.start = start
         self.volume = volume
 
     def to_json(self):
         return {
             "type": self.type,
             "id": self.id,
-            "trim": self.trim,
+            "start": self.start,
             "volume": self.volume,
         }
 
@@ -558,8 +557,7 @@ class Clip:
     def __init__(
         self,
         asset: AnyAsset,
-        start: Union[float, int],
-        length: Union[float, int],
+        duration: Union[float, int],
         transition: Optional[Transition] = None,
         effect: Optional[str] = None,
         filter: Optional[Filter] = None,
@@ -568,19 +566,15 @@ class Clip:
         fit: Optional[Fit] = Fit.crop,
         position: Position = Position.center,
         offset: Optional[Offset] = None,
+        z_index: int = 0,
     ):
-        if start < 0:
-            raise ValueError("start must be non-negative")
-        if length <= 0:
-            raise ValueError("length must be positive")
         if not (0 <= scale <= 10):
             raise ValueError("scale must be between 0 and 10")
         if not (0 <= opacity <= 1):
             raise ValueError("opacity must be between 0 and 1")
 
         self.asset = asset
-        self.start = start
-        self.length = length
+        self.duration = duration
         self.transition = transition
         self.effect = effect
         self.filter = filter
@@ -589,18 +583,19 @@ class Clip:
         self.fit = fit
         self.position = position
         self.offset = offset if offset is not None else Offset()
+        self.z_index = z_index
 
     def to_json(self):
         json = {
             "asset": self.asset.to_json(),
-            "start": self.start,
-            "length": self.length,
+            "duration": self.duration,
             "effect": self.effect,
             "scale": self.scale,
             "opacity": self.opacity,
             "fit": self.fit,
             "position": self.position,
             "offset": self.offset.to_json(),
+            "z_index": self.z_index,
         }
 
         if self.transition:
@@ -611,16 +606,30 @@ class Clip:
         return json
 
 
-class Track:
-    def __init__(self, clips: List[Clip] = []):
-        self.clips = clips
+class TrackItem:
+    def __init__(self, start: int, clip: Clip):
+        self.start = start
+        self.clip = clip
 
-    def add_clip(self, clip: Clip):
-        self.clips.append(clip)
+    def to_json(self):
+        return {
+            "start": self.start,
+            "clip": self.clip.to_json(),
+        }
+
+
+class Track:
+    def __init__(self, z_index: int = 0):
+        self.clips: List[TrackItem] = []
+        self.z_index: int = z_index
+
+    def add_clip(self, start: int, clip: Clip):
+        self.clips.append(TrackItem(start, clip))
 
     def to_json(self):
         return {
             "clips": [clip.to_json() for clip in self.clips],
+            "z_index": self.z_index,
         }
 
 
@@ -636,9 +645,6 @@ class TimelineV2:
     def add_track(self, track: Track):
         self.tracks.append(track)
 
-    def add_clip(self, track_index: int, clip: Clip):
-        self.tracks[track_index].clips.append(clip)
-
     def to_json(self):
         return {
             "timeline": {
@@ -649,8 +655,10 @@ class TimelineV2:
         }
 
     def generate_stream(self):
+        """Generate a stream from the timeline."""
+
         stream_data = self.connection.post(
-            path="editor",
+            path=ApiPath.editor,
             data=self.to_json(),
         )
         self.stream_url = stream_data.get("stream_url")
@@ -658,6 +666,8 @@ class TimelineV2:
         return stream_data.get("stream_url", None)
 
     def download_stream(self, stream_url: str):
+        """Download a stream from the timeline."""
+        
         return self.connection.post(
-            path="timeline_v2/download", data={"stream_url": stream_url}
+            path=f"{ApiPath.editor}/{ApiPath.download}", data={"stream_url": stream_url}
         )

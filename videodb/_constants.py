@@ -81,6 +81,7 @@ class ApiPath:
     translate = "translate"
     dub = "dub"
     transcode = "transcode"
+    editor = "editor"
 
 
 class Status:
