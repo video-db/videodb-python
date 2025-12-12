@@ -34,6 +34,7 @@ class HttpClient:
         base_url: str,
         version: str,
         max_retries: Optional[int] = HttpClientDefaultValues.max_retries,
+        **kwargs,
     ) -> None:
         """Create a new http client instance
 
@@ -52,11 +53,13 @@ class HttpClient:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
         self.version = version
+        kwargs = self._format_headers(kwargs)
         self.session.headers.update(
             {
                 "x-access-token": api_key,
                 "x-videodb-client": f"videodb-python/{self.version}",
                 "Content-Type": "application/json",
+                **kwargs,
             }
         )
         self.base_url = base_url
@@ -197,6 +200,14 @@ class HttpClient:
             raise InvalidRequestError(
                 f"Invalid request: {response.text}", response
             ) from None
+
+    def _format_headers(self, headers: dict):
+        """Format the headers"""
+        formatted_headers = {}
+        for key, value in headers.items():
+            key = key.lower().replace("_", "-")
+            formatted_headers[f"x-{key}"] = value
+        return formatted_headers
 
     def get(
         self, path: str, show_progress: Optional[bool] = False, **kwargs

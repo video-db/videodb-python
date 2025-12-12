@@ -249,6 +249,30 @@ class Video:
         )
         return self.transcript_text
 
+    def generate_transcript(
+        self,
+        force: bool = None,
+    ) -> str:
+        """Generate transcript for the video.
+
+        :param bool force: Force generate new transcript
+        :return: Full transcript text as string
+        :rtype: str
+        """
+        transcript_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
+            data={
+                "force": True if force else False,
+            },
+        )
+        transcript = transcript_data.get("word_timestamps", [])
+        if transcript:
+            return {
+                "success": True,
+                "message": "Transcript generated successfully",
+            }
+        return transcript_data
+
     def translate_transcript(
         self,
         language: str,
@@ -608,3 +632,25 @@ class Video:
         :rtype: str
         """
         return play_stream(self.stream_url)
+
+    def get_meeting(self):
+        """Get meeting information associated with the video.
+
+        :return: :class:`Meeting <Meeting>` object if meeting is associated, None otherwise
+        :rtype: Optional[:class:`videodb.meeting.Meeting`]
+        :raises InvalidRequestError: If the API request fails
+        """
+        # TODO: Add type check for Meeting
+        from videodb.meeting import Meeting
+
+        meeting_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.meeting}"
+        )
+        if meeting_data:
+            return Meeting(
+                self._connection,
+                id=meeting_data.get("meeting_id"),
+                collection_id=self.collection_id,
+                **meeting_data,
+            )
+        return None

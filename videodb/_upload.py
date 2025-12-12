@@ -1,7 +1,9 @@
 import requests
 
 from typing import Optional
+from urllib.parse import urlparse
 from requests import HTTPError
+import os
 
 
 from videodb._constants import (
@@ -13,15 +15,50 @@ from videodb.exceptions import (
 )
 
 
+def _is_url(path: str) -> bool:
+    parsed = urlparse(path)
+    return all([parsed.scheme in ("http", "https"), parsed.netloc])
+
+
 def upload(
     _connection,
-    file_path: str = None,
-    url: str = None,
+    source: Optional[str] = None,
     media_type: Optional[str] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     callback_url: Optional[str] = None,
+    file_path: Optional[str] = None,
+    url: Optional[str] = None,
 ) -> dict:
+    """Upload a file or URL.
+
+    :param _connection: Connection object for API calls
+    :param str source: Local path or URL of the file to be uploaded
+    :param str media_type: MediaType object (optional)
+    :param str name: Name of the file (optional)
+    :param str description: Description of the file (optional)
+    :param str callback_url: URL to receive the callback (optional)
+    :param str file_path: Path to the file to be uploaded
+    :param str url: URL of the file to be uploaded
+    :return: Dictionary containing upload response data
+    :rtype: dict
+    """
+    if source and (file_path or url):
+        raise VideodbError("source cannot be used with file_path or url")
+
+    if source and not file_path and not url:
+        if _is_url(source):
+            url = source
+        else:
+            file_path = source
+    if file_path and not url and _is_url(file_path):
+        url = file_path
+        file_path = None
+
+    if not file_path and url and not _is_url(url) and os.path.exists(url):
+        file_path = url
+        url = None
+
     if not file_path and not url:
         raise VideodbError("Either file_path or url is required")
     if file_path and url:

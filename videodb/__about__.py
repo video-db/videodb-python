@@ -1,4 +1,4 @@
-""" About information for videodb sdk"""
+"""About information for videodb sdk"""
 
 
 
