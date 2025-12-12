@@ -91,7 +91,7 @@ class Status:
 
 class HttpClientDefaultValues:
     max_retries = 1
-    timeout = 30
+    timeout = 59
     backoff_factor = 0.1
     status_forcelist = [502, 503, 504]
 
