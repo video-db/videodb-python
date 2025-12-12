@@ -15,7 +15,12 @@ class AssetType(str, Enum):
 
 
 class Fit(str, Enum):
-    """The fit mode to apply to the asset."""
+    """Set how the asset should be scaled to fit the viewport using one of the following options:
+    crop (default) - scale the asset to fill the viewport while maintaining the aspect ratio. The asset will be cropped if it exceeds the bounds of the viewport.
+
+    cover - stretch the asset to fill the viewport without maintaining the aspect ratio.
+    contain - fit the entire asset within the viewport while maintaining the original aspect ratio.
+    none - preserves the original asset dimensions and does not apply any scaling."""
 
     crop = "crop"
     cover = "cover"
@@ -23,7 +28,7 @@ class Fit(str, Enum):
 
 
 class Position(str, Enum):
-    """The position of the asset on the timeline."""
+    """Place the asset in one of nine predefined positions of the viewport. This is most effective for when the asset is scaled and you want to position the element to a specific position."""
 
     top = "top"
     bottom = "bottom"
@@ -607,6 +612,8 @@ class Clip:
 
 
 class TrackItem:
+    """Clip wrapper"""
+
     def __init__(self, start: int, clip: Clip):
         self.start = start
         self.clip = clip
@@ -619,11 +626,15 @@ class TrackItem:
 
 
 class Track:
+    """A track contains an array of clips. Tracks are layered on top of each other in the order in the array. The top most track will render on top of those below it."""
+
     def __init__(self, z_index: int = 0):
         self.clips: List[TrackItem] = []
         self.z_index: int = z_index
 
     def add_clip(self, start: int, clip: Clip):
+        """Add a clip to the track."""
+
         self.clips.append(TrackItem(start, clip))
 
     def to_json(self):
@@ -633,7 +644,9 @@ class Track:
         }
 
 
-class TimelineV2:
+class Timeline:
+    """A timeline represents the contents of a video edit over time, an audio edit over time, in seconds, or an image layout. A timeline consists of layers called tracks. Tracks are composed of titles, images, audio, html or video segments referred to as clips which are placed along the track at specific starting point and lasting for a specific amount of time."""
+
     def __init__(self, connection):
         self.connection = connection
         self.background: str = "#000000"
@@ -667,7 +680,7 @@ class TimelineV2:
 
     def download_stream(self, stream_url: str):
         """Download a stream from the timeline."""
-        
+
         return self.connection.post(
             path=f"{ApiPath.editor}/{ApiPath.download}", data={"stream_url": stream_url}
         )
