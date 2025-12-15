@@ -811,11 +811,11 @@ class Positioning:
 
 
 class CaptionAsset(BaseAsset):
-    """The CaptionAsset is used to create captions from text strings.
+    """The CaptionAsset is used to create auto-generated or custom captions.
 
     Provides full styling and ASS (Advanced SubStation Alpha) subtitle format support.
 
-    :ivar str src: Caption source ("auto" for auto-generated or custom text)
+    :ivar str src: Caption source ("auto" for auto-generated or base64 encoded ass string)
     :ivar FontStyling font: Font styling properties
     :ivar str primary_color: Primary text color in ASS format (e.g., "&H00FFFFFF")
     :ivar str secondary_color: Secondary text color in ASS format
@@ -840,7 +840,7 @@ class CaptionAsset(BaseAsset):
     ):
         """Initialize a CaptionAsset instance.
 
-        :param str src: Caption source (default: "auto")
+        :param str src: Caption source ("auto" for auto-generated or base64 encoded ass string)
         :param FontStyling font: (optional) Font styling properties
         :param str primary_color: Primary text color in ASS format (default: "&H00FFFFFF")
         :param str secondary_color: Secondary text color in ASS format (default: "&H000000FF")
