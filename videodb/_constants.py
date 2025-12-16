@@ -90,6 +90,7 @@ class ApiPath:
     transcode = "transcode"
     meeting = "meeting"
     record = "record"
+    editor = "editor"
 
 
 class Status:
