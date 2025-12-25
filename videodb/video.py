@@ -233,9 +233,6 @@ class Video:
         self,
         start: int = None,
         end: int = None,
-        segmenter: str = Segmenter.word,
-        length: int = 1,
-        force: bool = None,
     ) -> str:
         """Get plain text transcript for the video.
 
@@ -245,9 +242,7 @@ class Video:
         :return: Full transcript text as string
         :rtype: str
         """
-        self._fetch_transcript(
-            start=start, end=end, segmenter=segmenter, length=length, force=force
-        )
+        self._fetch_transcript(start=start, end=end)
         return self.transcript_text
 
     def generate_transcript(
