@@ -16,8 +16,8 @@ class AssetType(str, Enum):
 
 class Fit(str, Enum):
     """Set how the asset should be scaled to fit the viewport using one of the following options:
-    crop (default) - scale the asset to fill the viewport while maintaining the aspect ratio. The asset will be cropped if it exceeds the bounds of the viewport.
 
+    crop (default) - scale the asset to fill the viewport while maintaining the aspect ratio. The asset will be cropped if it exceeds the bounds of the viewport.
     cover - stretch the asset to fill the viewport without maintaining the aspect ratio.
     contain - fit the entire asset within the viewport while maintaining the original aspect ratio.
     none - preserves the original asset dimensions and does not apply any scaling."""
@@ -25,6 +25,7 @@ class Fit(str, Enum):
     crop = "crop"
     cover = "cover"
     contain = "contain"
+    none = None
 
 
 class Position(str, Enum):
