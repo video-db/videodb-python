@@ -3,6 +3,7 @@ from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     IndexType,
+    ReframeMode,
     SceneExtractionType,
     SearchType,
     Segmenter,
@@ -232,9 +233,6 @@ class Video:
         self,
         start: int = None,
         end: int = None,
-        segmenter: str = Segmenter.word,
-        length: int = 1,
-        force: bool = None,
     ) -> str:
         """Get plain text transcript for the video.
 
@@ -244,9 +242,7 @@ class Video:
         :return: Full transcript text as string
         :rtype: str
         """
-        self._fetch_transcript(
-            start=start, end=end, segmenter=segmenter, length=length, force=force
-        )
+        self._fetch_transcript(start=start, end=end)
         return self.transcript_text
 
     def generate_transcript(
@@ -654,3 +650,77 @@ class Video:
                 **meeting_data,
             )
         return None
+
+    def reframe(
+        self,
+        start: Optional[float] = None,
+        end: Optional[float] = None,
+        target: Union[str, Dict[str, int]] = "vertical",
+        mode: str = ReframeMode.smart,
+        callback_url: Optional[str] = None,
+    ) -> Optional["Video"]:
+        """Reframe video to a new aspect ratio with optional object tracking.
+
+        :param float start: Start time in seconds (optional)
+        :param float end: End time in seconds (optional)
+        :param Union[str, dict] target: Target format - preset string (e.g., "vertical", "square", "landscape") or {"width": int, "height": int}
+        :param str mode: Reframing mode - "simple" or "smart" (default: "smart")
+        :param str callback_url: URL to receive callback when processing completes (optional)
+        :raises InvalidRequestError: If the reframe request fails
+        :return: :class:`Video <Video>` object if no callback_url, None otherwise
+        :rtype: Optional[:class:`videodb.video.Video`]
+        """
+        reframe_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.reframe}",
+            data={
+                "start": start,
+                "end": end,
+                "target": target,
+                "mode": mode,
+                "callback_url": callback_url,
+            },
+        )
+
+        if callback_url:
+            return None
+
+        if reframe_data:
+            return Video(self._connection, **reframe_data)
+
+    def smart_vertical_reframe(
+        self,
+        start: Optional[float] = None,
+        end: Optional[float] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional["Video"]:
+        """Convenience method for object-aware vertical reframing.
+
+        Equivalent to calling reframe(target="vertical", mode="smart").
+
+        :param float start: Start time in seconds (optional)
+        :param float end: End time in seconds (optional)
+        :param str callback_url: URL to receive callback when processing completes (optional)
+        :return: :class:`Video <Video>` object if no callback_url, None otherwise
+        :rtype: Optional[:class:`videodb.video.Video`]
+        """
+        return self.reframe(
+            start=start,
+            end=end,
+            target="vertical",
+            mode=ReframeMode.smart,
+            callback_url=callback_url,
+        )
+
+    def download(self, name: Optional[str] = None) -> dict:
+        """Download the video from its stream URL.
+
+        :param str name: Name for the downloaded file (optional, defaults to video name)
+        :raises InvalidRequestError: If the download request fails
+        :return: Download response data
+        :rtype: dict
+        """
+        if not self.stream_url:
+            raise ValueError("Video does not have a stream_url")
+
+        download_name = name or self.name or f"video_{self.id}"
+        return self._connection.download(self.stream_url, download_name)

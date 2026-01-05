@@ -33,6 +33,11 @@ class Workflows:
     add_subtitles = "add_subtitles"
 
 
+class ReframeMode:
+    simple = "simple"
+    smart = "smart"
+
+
 class SemanticSearchDefaultValues:
     result_threshold = 5
     score_threshold = 0.2
@@ -84,6 +89,8 @@ class ApiPath:
     transcode = "transcode"
     meeting = "meeting"
     record = "record"
+    editor = "editor"
+    reframe = "reframe"
 
 
 class Status:
