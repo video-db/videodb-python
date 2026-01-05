@@ -36,207 +36,678 @@
 
 # VideoDB Python SDK
 
-VideoDB Python SDK allows you to interact with the VideoDB serverless database. Manage videos as intelligent data, not files. It's scalable, cost-efficient & optimized for AI applications and LLM integration.
+VideoDB Python SDK provides programmatic access to VideoDB's serverless video infrastructure. Build AI applications that understand and process video as structured data with support for semantic search, scene extraction, transcript generation, and multimodal content generation.
 
-<!-- Documentation -->
-<!-- ## Documentation
-The documentation for the package can be found [here](https://videodb.io/) -->
+## 📑 Table of Contents
 
-<!-- Installation -->
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+    - [Establishing a Connection](#establishing-a-connection)
+    - [Uploading Media](#uploading-media)
+    - [Viewing and Streaming Videos](#viewing-and-streaming-videos)
+    - [Searching Inside Videos](#searching-inside-videos)
+    - [Working with Transcripts](#working-with-transcripts)
+    - [Scene Extraction and Indexing](#scene-extraction-and-indexing)
+    - [Adding Subtitles](#adding-subtitles)
+    - [Generating Thumbnails](#generating-thumbnails)
+- [Working with Collections](#working-with-collections)
+    - [Audio and Image Management](#audio-and-image-management)
+- [Advanced Features](#advanced-features)
+    - [Realtime Video Editor](#realtime-video-editor)
+    - [Real-Time Streams (RTStream)](#real-time-streams-rtstream)
+    - [Meeting Recording](#meeting-recording)
+    - [Generative Media](#generative-media)
+    - [Video Dubbing and Translation](#video-dubbing-and-translation)
+    - [Transcoding](#transcoding)
+    - [YouTube Integration](#youtube-integration)
+    - [Billing and Usage](#billing-and-usage)
+    - [Download Streams](#download-streams)
+- [Configuration Options](#configuration-options)
+    - [Subtitle Customization](#subtitle-customization)
+    - [Text Overlay Styling](#text-overlay-styling)
+- [Error Handling](#error-handling)
+- [API Reference](#api-reference)
+- [Examples and Tutorials](#examples-and-tutorials)
+- [Contributing](#contributing)
+- [Resources](#resources)
+- [License](#license)
 
 ## Installation
 
-To install the package, run the following command in your terminal:
-
-```
+```bash
 pip install videodb
 ```
 
-<!-- USAGE EXAMPLES -->
+**Requirements:**
+- Python 3.8 or higher
+- Dependencies: `requests>=2.25.1`, `backoff>=2.2.1`, `tqdm>=4.66.1`
 
 ## Quick Start
 
-### Creating a Connection
+### Establishing a Connection
 
-Get an API key from the [VideoDB console](https://console.videodb.io). Free for first 50 uploads _(No credit card required)_.
+Get your API key from [VideoDB Console](https://console.videodb.io). Free for first 50 uploads (no credit card required).
 
 ```python
 import videodb
+
+# Connect using API key
 conn = videodb.connect(api_key="YOUR_API_KEY")
+
+# Or set environment variable VIDEO_DB_API_KEY
+# conn = videodb.connect()
 ```
 
-## Working with a Single Video
+### Uploading Media
 
----
-
-### ⬆️ Uploading a Video
-
-Now that you have established a connection to VideoDB, you can upload your videos using `conn.upload()`.
-You can directly upload from `youtube`, `any public url`, `S3 bucket` or a `local file path`. A default collection is created when you create your first connection.
-
-`upload` method returns a `Video` object. You can simply pass a single string
-representing either a local file path or a URL.
+Upload videos, audio files, or images from various sources:
 
 ```python
-# Upload a video by url
-video = conn.upload("https://www.youtube.com/watch?v=WDv4AWk0J3U")
+# Upload video from YouTube URL
+video = conn.upload(url="https://www.youtube.com/watch?v=VIDEO_ID")
 
-# Upload a video from file system
-video_f = conn.upload("./my_video.mp4")
+# Upload from public URL
+video = conn.upload(url="https://example.com/video.mp4")
 
+# Upload from local file
+video = conn.upload(file_path="./my_video.mp4")
+
+# Upload with metadata
+video = conn.upload(
+    file_path="./video.mp4",
+    name="My Video",
+    description="Video description"
+)
 ```
 
-### 📺 View your Video
+The `upload()` method returns `Video`, `Audio`, or `Image` objects based on the media type.
 
-Once uploaded, your video is immediately available for viewing in 720p resolution. ⚡️
-
-- Generate a streamable url for the video using video.generate_stream()
-- Preview the video using video.play(). This will open the video in your default browser/notebook
+### Viewing and Streaming Videos
 
 ```python
-video.generate_stream()
+# Generate stream URL
+stream_url = video.generate_stream()
+
+# Play stream using VideoDB player
+videodb.play_stream(stream_url)
+
+# Play in browser/notebook
 video.play()
 ```
 
-### ⛓️ Stream Specific Sections of Videos
+### Searching Inside Videos
 
-You can easily clip specific sections of a video by passing a timeline of the start and end timestamps (in seconds) as a parameter.
-For example, this will generate and play a compilation of the first `10 seconds` and the clip between the `120th` and the `140th` second.
-
-```python
-stream_link = video.generate_stream(timeline=[[0,10], [120,140]])
-play_stream(stream_link)
-```
-
-### 🔍 Search Inside a Video
-
-To search bits inside a video, you have to `index` the video first. This can be done by a simple command.
-_P.S. Indexing may take some time for longer videos._
+Index and search video content semantically:
 
 ```python
+from videodb import SearchType, IndexType
+
+# Index spoken words for semantic search
 video.index_spoken_words()
-result = video.search("Morning Sunlight")
-result.play()
-video.get_transcript()
-```
 
-`Videodb` is launching more indexing options in upcoming versions. As of now you can try the `semantic` index - Index by spoken words.
+# Search for content
+results = video.search("morning sunlight")
 
-In the future you'll be able to index videos using:
+# Access search results
+shots = results.get_shots()
+for shot in shots:
+    print(f"Found at {shot.start}s - {shot.end}s: {shot.text}")
 
-1. **Scene** - Visual concepts and events.
-2. **Faces**.
-3. **Specific domain Index** like Football, Baseball, Drone footage, Cricket etc.
-
-### Viewing Search Results
-
-`video.search()` returns a `SearchResults` object, which contains the sections or as we call them, `shots` of videos which semantically match your search query.
-
-- `result.get_shots()` Returns a list of Shot(s) that matched the search query.
-- `result.play()` Returns a playable url for the video (similar to video.play(); you can open this link in the browser, or embed it into your website using an iframe).
-
-## RAG: Search inside Multiple Videos
-
----
-
-`VideoDB` can store and search inside multiple videos with ease. By default, videos are uploaded to your default collection.
-
-### 🔄 Using Collection to Upload Multiple Videos
-
-```python
-# Get the default collection
-coll = conn.get_collection()
-
-# Upload Videos to a collection
-coll.upload("https://www.youtube.com/watch?v=lsODSDmY4CY")
-coll.upload("https://www.youtube.com/watch?v=vZ4kOr38JhY")
-coll.upload("https://www.youtube.com/watch?v=uak_dXHh6s4")
-```
-
-- `conn.get_collection()` : Returns a Collection object; the default collection.
-- `coll.get_videos()` : Returns a list of Video objects; all videos in the collections.
-- `coll.get_video(video_id)`: Returns a Video object, corresponding video from the provided `video_id`.
-- `coll.delete_video(video_id)`: Deletes the video from the Collection.
-
-### 📂 Search Inside Collection
-
-You can simply Index all the videos in a collection and use the search method to find relevant results.
-Here we are indexing the spoken content of a collection and performing semantic search.
-
-```python
-# Index all videos in collection
-for video in coll.get_videos():
-    video.index_spoken_words()
-
-# search in the collection of videos
-results = coll.search(query = "What is Dopamine?")
+# Play compiled results
 results.play()
 ```
 
-The result here has all the matching bits in a single stream from your collection. You can use these results in your application right away.
+**Search Types:**
+- `SearchType.semantic` - Semantic search (default)
+- `SearchType.keyword` - Keyword-based search  
+- `SearchType.scene` - Visual scene search
 
-### 🌟 Explore the Video object
-
-There are multiple methods available on a Video Object, that can be helpful for your use-case.
-
-**Get the Transcript**
+### Working with Transcripts
 
 ```python
-# words with timestamps
-text_json = video.get_transcript()
+# Generate transcript
+video.generate_transcript()
+
+# Get transcript with timestamps
+transcript = video.get_transcript()
+
+# Get plain text transcript
 text = video.get_transcript_text()
-print(text)
+
+# Get transcript for specific time range
+transcript = video.get_transcript(start=10, end=60)
+
+# Translate transcript
+translated = video.translate_transcript(
+    language="Spanish",
+    additional_notes="Formal tone"
+)
 ```
 
-**Add Subtitles to a video**
+**Segmentation Options:**
+- `videodb.Segmenter.word` - Word-level timestamps
+- `videodb.Segmenter.sentence` - Sentence-level timestamps
+- `videodb.Segmenter.time` - Time-based segments
 
-It returns a new stream instantly with subtitles added to the video.
+### Scene Extraction and Indexing
+
+Extract and analyze scenes from videos:
 
 ```python
-new_stream = video.add_subtitle()
-play_stream(new_stream)
+from videodb import SceneExtractionType
+
+# Extract scenes using shot detection
+scene_collection = video.extract_scenes(
+    extraction_type=SceneExtractionType.shot_based,
+    extraction_config={"threshold": 20, "frame_count": 1}
+)
+
+# Extract scenes at time intervals
+scene_collection = video.extract_scenes(
+    extraction_type=SceneExtractionType.time_based,
+    extraction_config={
+        "time": 10,
+        "frame_count": 1,
+        "select_frames": ["first"]
+    }
+)
+
+# Index scenes for semantic search
+scene_index_id = video.index_scenes(
+    extraction_type=SceneExtractionType.shot_based,
+    prompt="Describe the visual content of this scene"
+)
+
+# Search within scenes
+results = video.search(
+    query="outdoor landscape",
+    search_type=SearchType.scene,
+    index_type=IndexType.scene
+)
+
+# List scene indexes
+scene_indexes = video.list_scene_index()
+
+# Get specific scene index
+scenes = video.get_scene_index(scene_index_id)
+
+# Delete scene collection
+video.delete_scene_collection(scene_collection.id)
 ```
 
-**Get Thumbnail of a Video:**
+### Adding Subtitles
 
-`video.generate_thumbnail()`: Returns a thumbnail image of video.
+```python
+from videodb import SubtitleStyle
 
-**Delete a video:**
+# Add subtitles with default style
+stream_url = video.add_subtitle()
 
-`video.delete()`: Deletes the video.
+# Customize subtitle appearance
+style = SubtitleStyle(
+    font_name="Arial",
+    font_size=24,
+    primary_colour="&H00FFFFFF",
+    bold=True
+)
+stream_url = video.add_subtitle(style=style)
+```
 
-Checkout more examples and tutorials 👉 [Build with VideoDB](https://docs.videodb.io/build-with-videodb-35) to explore what you can build with `VideoDB`.
+### Generating Thumbnails
 
----
+```python
+# Get default thumbnail
+thumbnail_url = video.generate_thumbnail()
 
-<!-- ROADMAP -->
+# Generate thumbnail at specific timestamp
+thumbnail_image = video.generate_thumbnail(time=30.5)
 
-## Roadmap
+# Get all thumbnails
+thumbnails = video.get_thumbnails()
+```
 
-- Adding More Indexes : `Face`, `Scene`, `Security`, `Events`, and `Sports`
-- Give prompt support to generate thumbnails using GenAI.
-- Give prompt support to access content.
-- Give prompt support to edit videos.
-- See the [open issues](https://github.com/video-db/videodb-python/issues) for a list of proposed features (and known issues).
+## Working with Collections
 
----
+Organize and search across multiple videos:
 
-<!-- CONTRIBUTING -->
+```python
+# Get default collection
+coll = conn.get_collection()
+
+# Create new collection
+coll = conn.create_collection(
+    name="My Collection",
+    description="Collection description",
+    is_public=False
+)
+
+# List all collections
+collections = conn.get_collections()
+
+# Update collection
+coll = conn.update_collection(
+    id="collection_id",
+    name="Updated Name",
+    description="Updated description"
+)
+
+# Upload to collection
+video = coll.upload(url="https://example.com/video.mp4")
+
+# Get videos in collection
+videos = coll.get_videos()
+video = coll.get_video(video_id)
+
+# Search across collection
+results = coll.search(query="specific content")
+
+# Search by title
+results = coll.search_title("video title")
+
+# Make collection public/private
+coll.make_public()
+coll.make_private()
+
+# Delete collection
+coll.delete()
+```
+
+### Audio and Image Management
+
+```python
+# Get audio files
+audios = coll.get_audios()
+audio = coll.get_audio(audio_id)
+
+# Generate audio URL
+audio_url = audio.generate_url()
+
+# Get images
+images = coll.get_images()
+image = coll.get_image(image_id)
+
+# Generate image URL
+image_url = image.generate_url()
+
+# Delete media
+audio.delete()
+image.delete()
+```
+
+## Advanced Features
+
+### Realtime Video Editor
+
+Build multi-track video compositions programmatically using VideoDB's 4-layer architecture: **Assets** (raw media), **Clips** (how assets appear), **Tracks** (timeline lanes), and **Timeline** (final canvas).
+
+**Example: Video with background music**
+
+```python
+from videodb import connect
+from videodb.editor import Timeline, Track, Clip, VideoAsset, AudioAsset
+
+conn = connect(api_key="YOUR_API_KEY")
+video = conn.upload(url="https://www.youtube.com/watch?v=VIDEO_ID")
+audio = conn.upload(file_path="./music.mp3")
+
+# Create timeline
+timeline = Timeline(conn)
+
+# Video track
+video_track = Track()
+video_asset = VideoAsset(id=video.id, start=10)
+video_clip = Clip(asset=video_asset, duration=30)
+video_track.add_clip(0, video_clip)
+
+# Audio track
+audio_track = Track()
+audio_asset = AudioAsset(id=audio.id, start=0, volume=0.3)
+audio_clip = Clip(asset=audio_asset, duration=30)
+audio_track.add_clip(0, audio_clip)
+
+# Compose and render
+timeline.add_track(video_track)
+timeline.add_track(audio_track)
+stream_url = timeline.generate_stream()
+```
+
+**Asset Types:**
+- `VideoAsset` - Video clips with trim control (`start`, `volume`)
+- `AudioAsset` - Background music, voiceovers, sound effects
+- `ImageAsset` - Logos, watermarks, static overlays
+- `TextAsset` - Custom text with typography (`Font`, `Background`, `Alignment`)
+- `CaptionAsset` - Auto-generated subtitles synced to speech
+
+**Clip Controls:**
+- **Position & Scale**: `position=Position.topRight`, `scale=0.5`, `offset=Offset(x=0.1, y=-0.2)`
+- **Visual Effects**: `opacity=0.8`, `fit=Fit.cover`, `filter=Filter.greyscale`
+- **Transitions**: `transition=Transition(in_="fade", out="fade", duration=1)`
+
+**Track Layering:**
+- Clips on the same track play sequentially
+- Clips on different tracks at the same time play simultaneously (overlays)
+
+For advanced patterns (picture-in-picture, multi-audio layers, auto-captions), see the [Editor SDK documentation](https://docs.videodb.io/realtime-video-editor-sdk-44).
+
+### Real-Time Streams (RTStream)
+
+Process live video streams in real-time:
+
+```python
+from videodb import SceneExtractionType
+
+# Connect to real-time stream
+rtstream = coll.connect_rtstream(
+    url="rtsp://example.com/stream",
+    name="Live Stream"
+)
+
+# Start or Stop processing
+rtstream.stop()
+rtstream.start()
+
+# Index scenes from stream
+scene_index = rtstream.index_scenes(
+    extraction_type=SceneExtractionType.time_based,
+    extraction_config={"time": 2, "frame_count": 5},
+    prompt="Describe the scene"
+)
+
+# Start or Stop scene indexing
+scene_index.stop()
+scene_index.start()
+
+# Get scenes
+scenes = scene_index.get_scenes(page=1, page_size=100)
+
+# Create alerts for events
+alert_id = scene_index.create_alert(
+    event_id=event_id,
+    callback_url="https://example.com/callback"
+)
+
+# Enable/disable alerts
+
+scene_index.disable_alert(alert_id)
+scene_index.enable_alert(alert_id)
+
+
+# List streams
+streams = coll.list_rtstreams()
+```
+
+### Meeting Recording
+
+Record and process virtual meetings:
+
+```python
+# Start meeting recording
+meeting = conn.record_meeting(
+    meeting_url="https://meet.google.com/xxx-yyyy-zzz",
+    bot_name="Recorder Bot",
+    meeting_title="Team Meeting",
+    callback_url="https://example.com/callback"
+)
+
+# Check meeting status
+meeting.refresh()
+print(meeting.status)  # initializing, processing, or done
+
+# Wait for completion
+meeting.wait_for_status("done", timeout=14400, interval=120)
+
+# Get meeting details
+if meeting.is_completed:
+    video_id = meeting.video_id
+    video = coll.get_video(video_id)
+    
+# Get meeting from video
+meeting_info = video.get_meeting()
+```
+
+### Generative Media
+
+Generate images, audio, and videos using AI:
+
+```python
+# Generate image
+image = coll.generate_image(
+    prompt="A beautiful sunset over mountains",
+    aspect_ratio="16:9"
+)
+
+# Generate music
+audio = coll.generate_music(
+    prompt="Upbeat electronic music",
+    duration=30
+)
+
+# Generate sound effects
+audio = coll.generate_sound_effect(
+    prompt="Door closing sound",
+    duration=2
+)
+
+# Generate voice from text
+audio = coll.generate_voice(
+    text="Hello, welcome to VideoDB",
+    voice_name="Default"
+)
+
+# Generate video
+video = coll.generate_video(
+    prompt="A cat playing with a ball",
+    duration=5
+)
+
+# Generate text using LLM
+response = coll.generate_text(
+    prompt="Summarize this content",
+    model_name="pro",  # basic, pro, or ultra
+    response_type="text"  # text or json
+)
+```
+
+### Video Dubbing and Translation
+
+```python
+# Dub video to another language
+dubbed_video = coll.dub_video(
+    video_id=video.id,
+    language_code="es",
+    callback_url="https://example.com/callback"
+)
+```
+
+### Transcoding
+
+```python
+from videodb import TranscodeMode, VideoConfig, AudioConfig
+
+# Start transcoding job
+job_id = conn.transcode(
+    source="https://example.com/video.mp4",
+    callback_url="https://example.com/callback",
+    mode=TranscodeMode.economy,
+    video_config=VideoConfig(resolution=1080, quality=23),
+    audio_config=AudioConfig(mute=False)
+)
+
+# Check transcode status
+status = conn.get_transcode_details(job_id)
+```
+
+### YouTube Integration
+
+```python
+# Search YouTube
+results = conn.youtube_search(
+    query="machine learning tutorial",
+    result_threshold=10,
+    duration="medium"
+)
+
+for result in results:
+    print(result["title"], result["url"])
+```
+
+### Billing and Usage
+
+```python
+# Check usage
+usage = conn.check_usage()
+
+# Get invoices
+invoices = conn.get_invoices()
+```
+
+### Download Streams
+
+```python
+# Download compiled stream
+download_info = conn.download(
+    stream_link="https://stream.videodb.io/...",
+    name="my_compilation"
+)
+```
+
+## Configuration Options
+
+### Subtitle Customization
+
+```python
+from videodb import SubtitleStyle, SubtitleAlignment, SubtitleBorderStyle
+
+style = SubtitleStyle(
+    font_name="Arial",
+    font_size=18,
+    primary_colour="&H00FFFFFF",      # White
+    secondary_colour="&H000000FF",     # Blue
+    outline_colour="&H00000000",       # Black
+    back_colour="&H00000000",          # Black
+    bold=False,
+    italic=False,
+    underline=False,
+    strike_out=False,
+    scale_x=1.0,
+    scale_y=1.0,
+    spacing=0,
+    angle=0,
+    border_style=SubtitleBorderStyle.outline,
+    outline=1.0,
+    shadow=0.0,
+    alignment=SubtitleAlignment.bottom_center,
+    margin_l=10,
+    margin_r=10,
+    margin_v=10
+)
+```
+
+### Text Overlay Styling
+
+```python
+from videodb import TextStyle
+
+style = TextStyle(
+    fontsize=24,
+    fontcolor="black",
+    font="Sans",
+    box=True,
+    boxcolor="white",
+    boxborderw="10"
+)
+```
+
+## Error Handling
+
+```python
+from videodb.exceptions import (
+    VideodbError,
+    AuthenticationError,
+    InvalidRequestError,
+    SearchError
+)
+
+try:
+    conn = videodb.connect(api_key="invalid_key")
+except AuthenticationError as e:
+    print(f"Authentication failed: {e}")
+
+try:
+    video = conn.upload(url="invalid_url")
+except InvalidRequestError as e:
+    print(f"Invalid request: {e}")
+
+try:
+    results = video.search("query")
+except SearchError as e:
+    print(f"Search error: {e}")
+```
+
+## API Reference
+
+### Core Objects
+
+- **Connection**: Main client for API interaction
+- **Collection**: Container for organizing media
+- **Video**: Video file with processing methods
+- **Audio**: Audio file representation
+- **Image**: Image file representation
+- **Timeline**: Multi-track video editor
+- **SearchResult**: Search results with shots
+- **Shot**: Time-segmented video clip
+- **Scene**: Visual scene with frames
+- **SceneCollection**: Collection of extracted scenes
+- **Meeting**: Meeting recording session
+- **RTStream**: Real-time stream processor
+
+### Constants and Enums
+
+- `IndexType`: `spoken_word`, `scene`
+- `SearchType`: `semantic`, `keyword`, `scene`
+- `SceneExtractionType`: `shot_based`, `time_based`
+- `Segmenter`: `word`, `sentence`, `time`
+- `TranscodeMode`: `lightning`, `economy`
+- `MediaType`: `video`, `audio`, `image`
+
+For detailed API documentation, visit [docs.videodb.io](https://docs.videodb.io).
+
+## Examples and Tutorials
+
+Explore practical examples and use cases in the [VideoDB Cookbook](https://github.com/video-db/videodb-cookbook):
+
+- Semantic video search
+- Scene-based indexing and retrieval
+- Custom video compilations
+- Meeting transcription and analysis
+- Real-time stream processing
+- Multi-language video dubbing
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are welcome! To contribute:
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## Resources
+
+- **Documentation**: [docs.videodb.io](https://docs.videodb.io)
+- **Console**: [console.videodb.io](https://console.videodb.io)
+- **Examples**: [github.com/video-db/videodb-cookbook](https://github.com/video-db/videodb-cookbook)
+- **Community**: [Discord](https://discord.gg/py9P639jGz)
+- **Issues**: [GitHub Issues](https://github.com/video-db/videodb-python/issues)
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE) file for details.
 
 ---
 
 <!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
 [pypi-shield]: https://img.shields.io/pypi/v/videodb?style=for-the-badge
 [pypi-url]: https://pypi.org/project/videodb/
