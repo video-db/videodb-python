@@ -53,7 +53,7 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
 - [Working with Collections](#working-with-collections)
     - [Audio and Image Management](#audio-and-image-management)
 - [Advanced Features](#advanced-features)
-    - [Timeline Builder](#timeline-builder)
+    - [Realtime Video Editor](#realtime-video-editor)
     - [Real-Time Streams (RTStream)](#real-time-streams-rtstream)
     - [Meeting Recording](#meeting-recording)
     - [Generative Media](#generative-media)
@@ -128,12 +128,11 @@ The `upload()` method returns `Video`, `Audio`, or `Image` objects based on the 
 # Generate stream URL
 stream_url = video.generate_stream()
 
+# Play stream using VideoDB player
+videodb.play_stream(stream_url)
+
 # Play in browser/notebook
 video.play()
-
-# Stream specific sections (timestamps in seconds)
-stream_url = video.generate_stream(timeline=[[0, 10], [120, 140]])
-videodb.play_stream(stream_url)
 ```
 
 ### Searching Inside Videos
@@ -337,50 +336,58 @@ image.delete()
 
 ## Advanced Features
 
-### Timeline Builder
+### Realtime Video Editor
 
-Create custom video compilations programmatically:
+Build multi-track video compositions programmatically using VideoDB's 4-layer architecture: **Assets** (raw media), **Clips** (how assets appear), **Tracks** (timeline lanes), and **Timeline** (final canvas).
+
+**Example: Video with background music**
 
 ```python
-from videodb.timeline import Timeline
-from videodb.asset import VideoAsset, AudioAsset, ImageAsset, TextAsset
-from videodb import TextStyle
+from videodb import connect
+from videodb.editor import Timeline, Track, Clip, VideoAsset, AudioAsset
 
+conn = connect(api_key="YOUR_API_KEY")
+video = conn.upload(url="https://www.youtube.com/watch?v=VIDEO_ID")
+audio = conn.upload(file_path="./music.mp3")
+
+# Create timeline
 timeline = Timeline(conn)
 
-# Add video clips
-video_asset = VideoAsset(asset_id=video.id, start=0, end=30)
-timeline.add_inline(video_asset)
+# Video track
+video_track = Track()
+video_asset = VideoAsset(id=video.id, start=10)
+video_clip = Clip(asset=video_asset, duration=30)
+video_track.add_clip(0, video_clip)
 
-# Add audio overlay
-audio_asset = AudioAsset(
-    asset_id=audio.id,
-    start=0,
-    end=10,
-    fade_in_duration=2,
-    fade_out_duration=2
-)
-timeline.add_overlay(start=0, asset=audio_asset)
+# Audio track
+audio_track = Track()
+audio_asset = AudioAsset(id=audio.id, start=0, volume=0.3)
+audio_clip = Clip(asset=audio_asset, duration=30)
+audio_track.add_clip(0, audio_clip)
 
-# Add image overlay
-image_asset = ImageAsset(
-    asset_id=image.id,
-    width=200,
-    height=200,
-    x=10,
-    y=10,
-    duration=5
-)
-timeline.add_overlay(start=5, asset=image_asset)
-
-# Add text overlay
-text_style = TextStyle(fontsize=24, fontcolor="white")
-text_asset = TextAsset(text="Hello World", duration=3, style=text_style)
-timeline.add_overlay(start=0, asset=text_asset)
-
-# Generate compiled stream
+# Compose and render
+timeline.add_track(video_track)
+timeline.add_track(audio_track)
 stream_url = timeline.generate_stream()
 ```
+
+**Asset Types:**
+- `VideoAsset` - Video clips with trim control (`start`, `volume`)
+- `AudioAsset` - Background music, voiceovers, sound effects
+- `ImageAsset` - Logos, watermarks, static overlays
+- `TextAsset` - Custom text with typography (`Font`, `Background`, `Alignment`)
+- `CaptionAsset` - Auto-generated subtitles synced to speech
+
+**Clip Controls:**
+- **Position & Scale**: `position=Position.topRight`, `scale=0.5`, `offset=Offset(x=0.1, y=-0.2)`
+- **Visual Effects**: `opacity=0.8`, `fit=Fit.cover`, `filter=Filter.greyscale`
+- **Transitions**: `transition=Transition(in_="fade", out="fade", duration=1)`
+
+**Track Layering:**
+- Clips on the same track play sequentially
+- Clips on different tracks at the same time play simultaneously (overlays)
+
+For advanced patterns (picture-in-picture, multi-audio layers, auto-captions), see the [Editor SDK documentation](https://docs.videodb.io/realtime-video-editor-sdk-44).
 
 ### Real-Time Streams (RTStream)
 
@@ -646,7 +653,7 @@ except SearchError as e:
 - **Video**: Video file with processing methods
 - **Audio**: Audio file representation
 - **Image**: Image file representation
-- **Timeline**: Video compilation builder
+- **Timeline**: Multi-track video editor
 - **SearchResult**: Search results with shots
 - **Shot**: Time-segmented video clip
 - **Scene**: Visual scene with frames
