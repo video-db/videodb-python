@@ -1,7 +1,15 @@
+import json
+import requests
+
 from typing import List, Optional, Union
 from enum import Enum
 
 from videodb._constants import ApiPath
+from videodb.exceptions import InvalidRequestError
+
+
+# Max payload size before uploading as file (4MB to stay safely under 4MB limit)
+MAX_PAYLOAD_SIZE = 4 * 1024 * 1024
 
 
 class AssetType(str, Enum):
@@ -1100,16 +1108,60 @@ class Timeline:
         Makes an API request to render the timeline and generate streaming URLs.
         Updates the stream_url and player_url instance variables.
 
+        If the timeline data exceeds the max payload size, it will be uploaded
+        as a file first to avoid HTTP content length limits.
+
         :return: The stream URL of the generated video
         :rtype: str
         """
-        stream_data = self.connection.post(
-            path=ApiPath.editor,
-            data=self.to_json(),
-        )
+        timeline_data = self.to_json()
+        json_str = json.dumps(timeline_data)
+        payload_size = len(json_str.encode("utf-8"))
+
+        if payload_size > MAX_PAYLOAD_SIZE:
+            # Upload timeline data as a file to avoid HTTP content length limits
+            timeline_url = self._upload_timeline_data(json_str)
+            stream_data = self.connection.post(
+                path=ApiPath.editor,
+                data={"timeline_url": timeline_url},
+            )
+        else:
+            stream_data = self.connection.post(
+                path=ApiPath.editor,
+                data=timeline_data,
+            )
+
         self.stream_url = stream_data.get("stream_url")
         self.player_url = stream_data.get("player_url")
         return stream_data.get("stream_url", None)
+
+    def _upload_timeline_data(self, json_str: str) -> str:
+        """Upload timeline JSON data as a file and return the URL.
+
+        :param str json_str: The JSON string of timeline data to upload
+        :return: The URL of the uploaded file
+        :rtype: str
+        :raises InvalidRequestError: If upload fails
+        """
+        # Get a presigned upload URL
+        upload_url_data = self.connection.get(
+            path=f"{ApiPath.collection}/{self.connection.collection_id}/{ApiPath.upload_url}",
+            params={"name": "timeline_data.json"},
+        )
+        upload_url = upload_url_data.get("upload_url")
+
+        # Upload the JSON data as a file
+        try:
+            files = {"file": ("timeline_data.json", json_str, "application/json")}
+            response = requests.post(upload_url, files=files)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise InvalidRequestError(
+                f"Failed to upload timeline data: {str(e)}",
+                getattr(e, "response", None),
+            ) from None
+
+        return upload_url
 
     def download_stream(self, stream_url: str) -> dict:
         """Download a stream from the timeline.
