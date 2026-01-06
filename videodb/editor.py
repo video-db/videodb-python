@@ -8,8 +8,7 @@ from videodb._constants import ApiPath
 from videodb.exceptions import InvalidRequestError
 
 
-# Max payload size before uploading as file (4MB to stay safely under 4MB limit)
-MAX_PAYLOAD_SIZE = 4 * 1024 * 1024
+MAX_PAYLOAD_SIZE = 100 * 1024
 
 
 class AssetType(str, Enum):
