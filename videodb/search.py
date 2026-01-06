@@ -45,6 +45,9 @@ class SearchResult:
                         doc.get("end"),
                         doc.get("text"),
                         doc.get("score"),
+                        scene_index_id=doc.get("scene_index_id"),
+                        scene_index_name=doc.get("scene_index_name"),
+                        metadata=doc.get("metadata"),
                     )
                 )
 
