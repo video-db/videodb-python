@@ -38,7 +38,6 @@ class Meeting:
             f"bot_name={self.bot_name}, "
             f"meeting_url={self.meeting_url})"
         )
-        return f"Meeting(id={self.id}, collection_id={self.collection_id}, meeting_title={self.meeting_title}, status={self.status}, bot_name={self.bot_name}, meeting_url={self.meeting_url})"
 
     def _update_attributes(self, data: dict) -> None:
         """Update instance attributes from API response data.
