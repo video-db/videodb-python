@@ -96,6 +96,7 @@ class ApiPath:
     record = "record"
     editor = "editor"
     reframe = "reframe"
+    clip = "clip"
 
 
 class Status:
