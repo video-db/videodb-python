@@ -7,6 +7,7 @@ from videodb._constants import (
     SceneExtractionType,
     SearchType,
     Segmenter,
+    SegmentationType,
     SubtitleStyle,
     Workflows,
 )
@@ -297,12 +298,14 @@ class Video:
     def index_spoken_words(
         self,
         language_code: Optional[str] = None,
+        segmentation_type: Optional[SegmentationType] = SegmentationType.sentence,
         force: bool = False,
         callback_url: str = None,
     ) -> None:
         """Semantic indexing of spoken words in the video.
 
         :param str language_code: (optional) Language code of the video
+        :param SegmentationType segmentation_type: (optional) Segmentation type used for indexing, :class:`SegmentationType <SegmentationType>` object
         :param bool force: (optional) Force to index the video
         :param str callback_url: (optional) URL to receive the callback
         :raises InvalidRequestError: If the video is already indexed
@@ -314,6 +317,7 @@ class Video:
             data={
                 "index_type": IndexType.spoken_word,
                 "language_code": language_code,
+                "segmentation_type": segmentation_type,
                 "force": force,
                 "callback_url": callback_url,
             },

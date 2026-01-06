@@ -49,6 +49,11 @@ class Segmenter:
     sentence = "sentence"
 
 
+class SegmentationType:
+    sentence = "sentence"
+    llm = "llm"
+
+
 class ApiPath:
     collection = "collection"
     upload = "upload"
