@@ -356,7 +356,6 @@ class Font:
     :ivar int size: Font size in pixels
     :ivar str color: Font color in hex format (e.g., "#FFFFFF")
     :ivar float opacity: Font opacity (0.0 to 1.0)
-    :ivar int weight: (optional) Font weight (100 to 900)
     """
 
     def __init__(
@@ -365,7 +364,6 @@ class Font:
         size: int = 48,
         color: str = "#FFFFFF",
         opacity: float = 1.0,
-        weight: Optional[int] = None,
     ):
         """Initialize a Font instance.
 
@@ -373,21 +371,17 @@ class Font:
         :param int size: Font size in pixels (default: 48)
         :param str color: Font color in hex format (default: "#FFFFFF")
         :param float opacity: Font opacity between 0.0 and 1.0 (default: 1.0)
-        :param int weight: (optional) Font weight between 100 and 900
-        :raises ValueError: If size < 1, opacity not in [0.0, 1.0], or weight not in [100, 900]
+        :raises ValueError: If size < 1, opacity not in [0.0, 1.0]
         """
         if size < 1:
             raise ValueError("size must be at least 1")
         if not (0.0 <= opacity <= 1.0):
             raise ValueError("opacity must be between 0.0 and 1.0")
-        if weight is not None and not (100 <= weight <= 900):
-            raise ValueError("weight must be between 100 and 900")
 
         self.family = family
         self.size = size
         self.color = color
         self.opacity = opacity
-        self.weight = weight
 
     def to_json(self) -> dict:
         """Convert the font settings to a JSON-serializable dictionary.
@@ -401,8 +395,6 @@ class Font:
             "color": self.color,
             "opacity": self.opacity,
         }
-        if self.weight is not None:
-            data["weight"] = self.weight
         return data
 
 
