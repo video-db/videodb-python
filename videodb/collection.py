@@ -482,6 +482,7 @@ class Collection:
             callback_url=callback_url,
             file_path=file_path,
             url=url,
+            collection_id=self.id,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):
