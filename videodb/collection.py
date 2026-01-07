@@ -521,7 +521,6 @@ class Collection:
         bot_name: str = None,
         bot_image_url: str = None,
         meeting_title: str = None,
-        realtime_stream: bool = False,
         callback_url: str = None,
         callback_data: Optional[dict] = None,
         time_zone: str = "UTC",
@@ -532,7 +531,6 @@ class Collection:
         :param str bot_name: Name of the recorder bot
         :param str bot_image_url: URL of the recorder bot image
         :param str meeting_title: Name of the meeting
-        :param bool realtime_stream: Whether to stream the meeting in realtime
         :param str callback_url: URL to receive callback once recording is done
         :param dict callback_data: Data to be sent in the callback (optional)
         :param str time_zone: Time zone for the meeting (default ``UTC``)
@@ -549,7 +547,6 @@ class Collection:
                 "bot_name": bot_name,
                 "bot_image_url": bot_image_url,
                 "meeting_title": meeting_title,
-                "realtime_stream": realtime_stream,
                 "callback_url": callback_url,
                 "callback_data": callback_data,
                 "time_zone": time_zone,
