@@ -167,7 +167,7 @@ class Collection:
         )
 
     def connect_rtstream(
-        self, url: str, name: str, sample_rate: int = None
+        self, url: str, name: str, sample_rate: int = None, audio: bool = False
     ) -> RTStream:
         """Connect to an rtstream.
 
@@ -182,6 +182,7 @@ class Collection:
                 "collection_id": self.id,
                 "url": url,
                 "name": name,
+                "audio": audio,
                 "sample_rate": sample_rate,
             },
         )
@@ -482,6 +483,7 @@ class Collection:
             callback_url=callback_url,
             file_path=file_path,
             url=url,
+            collection_id=self.id,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):

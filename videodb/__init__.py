@@ -20,6 +20,8 @@ from videodb._constants import (
     ResizeMode,
     VideoConfig,
     AudioConfig,
+    ReframeMode,
+    SegmentationType,
 )
 from videodb.client import Connection
 from videodb.exceptions import (
@@ -51,6 +53,8 @@ __all__ = [
     "ResizeMode",
     "VideoConfig",
     "AudioConfig",
+    "ReframeMode",
+    "SegmentationType",
 ]
 
 

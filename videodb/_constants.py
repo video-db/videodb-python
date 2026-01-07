@@ -49,6 +49,11 @@ class Segmenter:
     sentence = "sentence"
 
 
+class SegmentationType:
+    sentence = "sentence"
+    llm = "llm"
+
+
 class ApiPath:
     collection = "collection"
     upload = "upload"
@@ -91,6 +96,7 @@ class ApiPath:
     record = "record"
     editor = "editor"
     reframe = "reframe"
+    clip = "clip"
 
 
 class Status:
@@ -101,6 +107,7 @@ class Status:
 class MeetingStatus:
     initializing = "initializing"
     processing = "processing"
+    joined = "joined"
     done = "done"
 
 

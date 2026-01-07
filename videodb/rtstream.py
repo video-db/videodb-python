@@ -299,3 +299,41 @@ class RTStream:
             name=index_data.get("name"),
             status=index_data.get("status"),
         )
+
+    def get_transcript(
+        self,
+        page=1,
+        page_size=100,
+        start=None,
+        end=None,
+        since=None,
+        engine=None,
+    ):
+        """Get transcription data from the rtstream.
+
+        :param int page: Page number (default: 1)
+        :param int page_size: Items per page (default: 100, max: 1000)
+        :param float start: Start timestamp filter (optional)
+        :param float end: End timestamp filter (optional)
+        :param float since: For polling - only get transcriptions after this timestamp (optional)
+        :param str engine: Transcription engine (default: "AAIS")
+        :return: Transcription data with segments and metadata
+        :rtype: dict
+        """
+        params = {
+            "engine": engine,
+            "page": page,
+            "page_size": page_size,
+        }
+        if start is not None:
+            params["start"] = start
+        if end is not None:
+            params["end"] = end
+        if since is not None:
+            params["since"] = since
+
+        transcription_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
+            params=params,
+        )
+        return transcription_data
