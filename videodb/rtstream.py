@@ -8,6 +8,37 @@ from videodb._constants import (
 from videodb._utils._video import play_stream
 
 
+class RTStreamSearchResult:
+    """RTStreamSearchResult class to interact with rtstream search results
+
+    :ivar str collection_id: ID of the collection this rtstream belongs to
+    :ivar List[RTStreamShot] shots: List of shots in the search result
+    """
+
+    def __init__(
+        self,
+        collection_id: str,
+        shots: List["RTStreamShot"],
+    ) -> None:
+        self.collection_id = collection_id
+        self.shots = shots
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamSearchResult("
+            f"collection_id={self.collection_id}, "
+            f"shots={len(self.shots)})"
+        )
+
+    def get_shots(self) -> List["RTStreamShot"]:
+        """Get the list of shots from the search result.
+
+        :return: List of :class:`RTStreamShot <RTStreamShot>` objects
+        :rtype: List[:class:`videodb.rtstream.RTStreamShot`]
+        """
+        return self.shots
+
+
 class RTStreamShot:
     """RTStreamShot class for rtstream search results
 
@@ -488,7 +519,7 @@ class RTStream:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
         filter: Optional[List[Dict[str, Any]]] = None,
-    ) -> List[RTStreamShot]:
+    ) -> RTStreamSearchResult:
         """Search across scene index records for the rtstream.
 
         :param str query: Query to search for
@@ -497,8 +528,8 @@ class RTStream:
         :param float score_threshold: Minimum score threshold (optional)
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
         :param list filter: Additional metadata filters (optional)
-        :return: List of :class:`RTStreamShot <RTStreamShot>` objects
-        :rtype: List[:class:`videodb.rtstream.RTStreamShot`]
+        :return: :class:`RTStreamSearchResult <RTStreamSearchResult>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSearchResult`
         """
         data = {"query": query}
 
@@ -519,7 +550,7 @@ class RTStream:
         )
 
         results = search_data.get("results", [])
-        return [
+        shots = [
             RTStreamShot(
                 _connection=self._connection,
                 rtstream_id=self.id,
@@ -534,3 +565,7 @@ class RTStream:
             )
             for result in results
         ]
+        return RTStreamSearchResult(
+            collection_id=self.collection_id,
+            shots=shots,
+        )
