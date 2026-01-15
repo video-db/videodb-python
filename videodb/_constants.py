@@ -27,6 +27,7 @@ class IndexType:
 class SceneExtractionType:
     shot_based = "shot"
     time_based = "time"
+    transcript = "transcript"
 
 
 class Workflows:

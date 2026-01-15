@@ -1,7 +1,99 @@
+from typing import Optional, List, Dict, Any
+
 from videodb._constants import (
     ApiPath,
     SceneExtractionType,
+    Segmenter,
 )
+from videodb._utils._video import play_stream
+
+
+class RTStreamShot:
+    """RTStreamShot class for rtstream search results
+
+    :ivar str rtstream_id: ID of the rtstream
+    :ivar str rtstream_name: Name of the rtstream
+    :ivar float start: Start time in Unix timestamp
+    :ivar float end: End time in Unix timestamp
+    :ivar str text: Text content of the shot
+    :ivar float search_score: Search relevance score
+    :ivar str scene_index_id: ID of the scene index (optional)
+    :ivar str scene_index_name: Name of the scene index (optional)
+    :ivar dict metadata: Additional metadata (optional)
+    :ivar str stream_url: URL to stream the shot
+    :ivar str player_url: URL to play the shot in a player
+    """
+
+    def __init__(
+        self,
+        _connection,
+        rtstream_id: str,
+        start: float,
+        end: float,
+        rtstream_name: Optional[str] = None,
+        text: Optional[str] = None,
+        search_score: Optional[float] = None,
+        scene_index_id: Optional[str] = None,
+        scene_index_name: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
+        self._connection = _connection
+        self.rtstream_id = rtstream_id
+        self.rtstream_name = rtstream_name
+        self.start = start
+        self.end = end
+        self.text = text
+        self.search_score = search_score
+        self.scene_index_id = scene_index_id
+        self.scene_index_name = scene_index_name
+        self.metadata = metadata
+        self.stream_url = None
+        self.player_url = None
+
+    def __repr__(self) -> str:
+        repr_str = (
+            f"RTStreamShot("
+            f"rtstream_id={self.rtstream_id}, "
+            f"rtstream_name={self.rtstream_name}, "
+            f"start={self.start}, "
+            f"end={self.end}, "
+            f"text={self.text}, "
+            f"search_score={self.search_score}"
+        )
+        if self.scene_index_id:
+            repr_str += f", scene_index_id={self.scene_index_id}"
+        if self.scene_index_name:
+            repr_str += f", scene_index_name={self.scene_index_name}"
+        if self.metadata:
+            repr_str += f", metadata={self.metadata}"
+        repr_str += ")"
+        return repr_str
+
+    def generate_stream(self) -> str:
+        """Generate a stream url for the shot.
+
+        :return: The stream url
+        :rtype: str
+        """
+        if self.stream_url:
+            return self.stream_url
+
+        stream_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.stream}",
+            params={"start": int(self.start), "end": int(self.end)},
+        )
+        self.stream_url = stream_data.get("stream_url")
+        self.player_url = stream_data.get("player_url")
+        return self.stream_url
+
+    def play(self) -> str:
+        """Generate a stream url for the shot and open it in the default browser.
+
+        :return: The stream url
+        :rtype: str
+        """
+        self.generate_stream()
+        return play_stream(self.stream_url)
 
 
 class RTStreamSceneIndex:
@@ -256,6 +348,56 @@ class RTStream:
             status=index_data.get("status"),
         )
 
+    def index_spoken_words(
+        self,
+        prompt: str = None,
+        segmenter: str = Segmenter.word,
+        length: int = 10,
+        model_name: str = None,
+        model_config: dict = {},
+        name: str = None,
+    ):
+        """Index spoken words from the rtstream transcript.
+
+        :param str prompt: Prompt for summarizing transcript segments
+        :param Segmenter segmenter: Segmentation type (:class:`Segmenter.word`,
+            :class:`Segmenter.sentence`, :class:`Segmenter.time`)
+        :param int length: Length of segments (words, sentences, or seconds based on segmenter)
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the spoken words index
+        :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
+        """
+        extraction_config = {
+            "segmenter": segmenter,
+            "segmentation_value": length,
+        }
+
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data={
+                "extraction_type": SceneExtractionType.transcript,
+                "extraction_config": extraction_config,
+                "prompt": prompt,
+                "model_name": model_name,
+                "model_config": model_config,
+                "name": name,
+            },
+        )
+        if not index_data:
+            return None
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )
+
     def list_scene_indexes(self):
         """List all scene indexes for the rtstream.
 
@@ -337,3 +479,58 @@ class RTStream:
             params=params,
         )
         return transcription_data
+
+    def search(
+        self,
+        query: str,
+        index_id: Optional[str] = None,
+        result_threshold: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
+        filter: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[RTStreamShot]:
+        """Search across scene index records for the rtstream.
+
+        :param str query: Query to search for
+        :param str index_id: Filter by specific scene index (optional)
+        :param int result_threshold: Number of results to return (optional)
+        :param float score_threshold: Minimum score threshold (optional)
+        :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
+        :param list filter: Additional metadata filters (optional)
+        :return: List of :class:`RTStreamShot <RTStreamShot>` objects
+        :rtype: List[:class:`videodb.rtstream.RTStreamShot`]
+        """
+        data = {"query": query}
+
+        if index_id is not None:
+            data["scene_index_id"] = index_id
+        if result_threshold is not None:
+            data["result_threshold"] = result_threshold
+        if score_threshold is not None:
+            data["score_threshold"] = score_threshold
+        if dynamic_score_percentage is not None:
+            data["dynamic_score_percentage"] = dynamic_score_percentage
+        if filter is not None:
+            data["filter"] = filter
+
+        search_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.search}",
+            data=data,
+        )
+
+        results = search_data.get("results", [])
+        return [
+            RTStreamShot(
+                _connection=self._connection,
+                rtstream_id=self.id,
+                rtstream_name=self.name,
+                start=result.get("start"),
+                end=result.get("end"),
+                text=result.get("text"),
+                search_score=result.get("score"),
+                scene_index_id=result.get("scene_index_id"),
+                scene_index_name=result.get("scene_index_name"),
+                metadata=result.get("metadata"),
+            )
+            for result in results
+        ]

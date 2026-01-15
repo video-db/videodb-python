@@ -167,24 +167,37 @@ class Collection:
         )
 
     def connect_rtstream(
-        self, url: str, name: str, sample_rate: int = None, audio: bool = False
+        self,
+        url: str,
+        name: str,
+        sample_rate: int = None,
+        video: bool = None,
+        audio: bool = None,
     ) -> RTStream:
         """Connect to an rtstream.
 
         :param str url: URL of the rtstream
         :param str name: Name of the rtstream
-        :param int sample_rate: Sample rate of the rtstream (optional)
+        :param int sample_rate: Sample rate of the rtstream (optional, server default: 30)
+        :param bool video: Enable video streaming (optional, server default: True)
+        :param bool audio: Enable audio streaming (optional, server default: False)
         :return: :class:`RTStream <RTStream>` object
         """
+        data = {
+            "collection_id": self.id,
+            "url": url,
+            "name": name,
+        }
+        if sample_rate is not None:
+            data["sample_rate"] = sample_rate
+        if video is not None:
+            data["video"] = video
+        if audio is not None:
+            data["audio"] = audio
+
         rtstream_data = self._connection.post(
             path=f"{ApiPath.rtstream}",
-            data={
-                "collection_id": self.id,
-                "url": url,
-                "name": name,
-                "audio": audio,
-                "sample_rate": sample_rate,
-            },
+            data=data,
         )
         return RTStream(self._connection, **rtstream_data)
 
