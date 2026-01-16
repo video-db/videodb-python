@@ -26,6 +26,12 @@ from videodb._constants import (
 from videodb.client import Connection
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
+
+__all__ = [
+    "connect",
+    "CaptureSession",
+    "WebSocketConnection",
+]
 from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
