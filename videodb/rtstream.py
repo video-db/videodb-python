@@ -343,6 +343,7 @@ class RTStream:
         model_name=None,
         model_config={},
         name=None,
+        ws_connection_id: Optional[str] = None,
     ):
         """Index scenes from the rtstream.
 
@@ -352,19 +353,24 @@ class RTStream:
         :param str model_name: Name of the model
         :param dict model_config: Configuration for the model
         :param str name: Name of the scene index
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
+        data = {
+            "extraction_type": extraction_type,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
-            data={
-                "extraction_type": extraction_type,
-                "extraction_config": extraction_config,
-                "prompt": prompt,
-                "model_name": model_name,
-                "model_config": model_config,
-                "name": name,
-            },
+            data=data,
         )
         if not index_data:
             return None
@@ -387,6 +393,7 @@ class RTStream:
         model_name: str = None,
         model_config: dict = {},
         name: str = None,
+        ws_connection_id: Optional[str] = None,
     ):
         """Index spoken words from the rtstream transcript.
 
@@ -397,6 +404,7 @@ class RTStream:
         :param str model_name: Name of the model
         :param dict model_config: Configuration for the model
         :param str name: Name of the spoken words index
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -405,16 +413,20 @@ class RTStream:
             "segmentation_value": length,
         }
 
+        data = {
+            "extraction_type": SceneExtractionType.transcript,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
-            data={
-                "extraction_type": SceneExtractionType.transcript,
-                "extraction_config": extraction_config,
-                "prompt": prompt,
-                "model_name": model_name,
-                "model_config": model_config,
-                "name": name,
-            },
+            data=data,
         )
         if not index_data:
             return None
