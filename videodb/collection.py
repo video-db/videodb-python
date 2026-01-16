@@ -173,6 +173,8 @@ class Collection:
         sample_rate: int = None,
         video: bool = None,
         audio: bool = None,
+        enable_transcript: bool = None,
+        ws_connection_id: str = None,
     ) -> RTStream:
         """Connect to an rtstream.
 
@@ -181,6 +183,8 @@ class Collection:
         :param int sample_rate: Sample rate of the rtstream (optional, server default: 30)
         :param bool video: Enable video streaming (optional, server default: True)
         :param bool audio: Enable audio streaming (optional, server default: False)
+        :param bool enable_transcript: Enable real-time transcription (optional)
+        :param str ws_connection_id: WebSocket connection ID for receiving events (optional)
         :return: :class:`RTStream <RTStream>` object
         """
         data = {
@@ -194,6 +198,10 @@ class Collection:
             data["video"] = video
         if audio is not None:
             data["audio"] = audio
+        if enable_transcript is not None:
+            data["enable_transcript"] = enable_transcript
+        if ws_connection_id is not None:
+            data["ws_connection_id"] = ws_connection_id
 
         rtstream_data = self._connection.post(
             path=f"{ApiPath.rtstream}",
