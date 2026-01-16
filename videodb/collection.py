@@ -13,7 +13,7 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
-from videodb.rtstream import RTStream
+from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
 from videodb.search import SearchFactory, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -427,7 +427,9 @@ class Collection:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
         filter: List[Dict[str, Any]] = [],
-    ) -> SearchResult:
+        namespace: Optional[str] = None,
+        scene_index_id: Optional[str] = None,
+    ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
 
         :param str query: Query to search for
@@ -436,10 +438,50 @@ class Collection:
         :param int result_threshold: Number of results to return (optional)
         :param float score_threshold: Threshold score for the search (optional)
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
+        :param list filter: Additional metadata filters (optional)
+        :param str namespace: Search namespace (optional, "rtstream" to search RTStreams)
+        :param str scene_index_id: Filter by specific scene index (optional)
         :raise SearchError: If the search fails
-        :return: :class:`SearchResult <SearchResult>` object
-        :rtype: :class:`videodb.search.SearchResult`
+        :return: :class:`SearchResult <SearchResult>` or
+            :class:`RTStreamSearchResult <videodb.rtstream.RTStreamSearchResult>` object
+        :rtype: Union[:class:`videodb.search.SearchResult`,
+            :class:`videodb.rtstream.RTStreamSearchResult`]
         """
+        if namespace == "rtstream":
+            data = {"query": query}
+            if scene_index_id is not None:
+                data["scene_index_id"] = scene_index_id
+            if result_threshold is not None:
+                data["result_threshold"] = result_threshold
+            if score_threshold is not None:
+                data["score_threshold"] = score_threshold
+            if dynamic_score_percentage is not None:
+                data["dynamic_score_percentage"] = dynamic_score_percentage
+            if filter is not None:
+                data["filter"] = filter
+
+            search_data = self._connection.post(
+                path=f"{ApiPath.rtstream}/{ApiPath.collection}/{self.id}/{ApiPath.search}",
+                data=data,
+            )
+            results = search_data.get("results", [])
+            shots = [
+                RTStreamShot(
+                    _connection=self._connection,
+                    rtstream_id=result.get("rtstream_id") or result.get("id"),
+                    rtstream_name=result.get("rtstream_name"),
+                    start=result.get("start"),
+                    end=result.get("end"),
+                    text=result.get("text"),
+                    search_score=result.get("score"),
+                    scene_index_id=result.get("scene_index_id"),
+                    scene_index_name=result.get("scene_index_name"),
+                    metadata=result.get("metadata"),
+                )
+                for result in results
+            ]
+            return RTStreamSearchResult(collection_id=self.id, shots=shots)
+
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
             collection_id=self.id,
