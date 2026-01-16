@@ -19,6 +19,8 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.capture_session import CaptureSession
+from videodb.websocket_client import WebSocketConnection
 
 from videodb._upload import (
     upload,
@@ -347,3 +349,47 @@ class Connection(HttpClient):
         meeting = Meeting(self, id=meeting_id, collection_id="default")
         meeting.refresh()
         return meeting
+
+    def create_capture_session(
+        self,
+        end_user_id: str,
+        client_id: str,
+        collection_id: str = "default",
+        callback_url: str = None,
+    ) -> CaptureSession:
+        """Create a capture session.
+
+        :param str end_user_id: ID of the end user
+        :param str client_id: Client-provided session ID
+        :param str collection_id: ID of the collection (default: "default")
+        :param str callback_url: URL to receive callback (optional)
+        :return: :class:`CaptureSession <CaptureSession>` object
+        :rtype: :class:`videodb.capture_session.CaptureSession`
+        """
+        response = self.post(
+            path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}",
+            data={
+                "end_user_id": end_user_id,
+                "client_id": client_id,
+                "callback_url": callback_url,
+            },
+        )
+        session_id = response.get("session_id")
+        return CaptureSession(
+            self,
+            id=session_id,
+            collection_id=collection_id,
+            **response
+        )
+
+    def connect_websocket(self, collection_id: str = "default") -> WebSocketConnection:
+        """Connect to the VideoDB WebSocket service.
+
+        :param str collection_id: ID of the collection (default: "default")
+        :return: :class:`WebSocketConnection <WebSocketConnection>` object
+        :rtype: :class:`videodb.websocket_client.WebSocketConnection`
+        """
+        path = f"{ApiPath.collection}/{collection_id}/{ApiPath.websocket}"
+        response = self.get(path=path)
+        websocket_url = response.get("websocket_url")
+        return WebSocketConnection(url=websocket_url)

@@ -20,8 +20,18 @@ from videodb._constants import (
     ResizeMode,
     VideoConfig,
     AudioConfig,
+    ReframeMode,
+    SegmentationType,
 )
 from videodb.client import Connection
+from videodb.capture_session import CaptureSession
+from videodb.websocket_client import WebSocketConnection
+
+__all__ = [
+    "connect",
+    "CaptureSession",
+    "WebSocketConnection",
+]
 from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
@@ -51,6 +61,8 @@ __all__ = [
     "ResizeMode",
     "VideoConfig",
     "AudioConfig",
+    "ReframeMode",
+    "SegmentationType",
 ]
 
 

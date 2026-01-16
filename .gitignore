@@ -16,3 +16,4 @@ venv/
 .vscode/*
 example.ipynb
 example.py
+test_local.py

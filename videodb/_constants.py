@@ -27,6 +27,7 @@ class IndexType:
 class SceneExtractionType:
     shot_based = "shot"
     time_based = "time"
+    transcript = "transcript"
 
 
 class Workflows:
@@ -47,6 +48,11 @@ class Segmenter:
     time = "time"
     word = "word"
     sentence = "sentence"
+
+
+class SegmentationType:
+    sentence = "sentence"
+    llm = "llm"
 
 
 class ApiPath:
@@ -91,6 +97,11 @@ class ApiPath:
     record = "record"
     editor = "editor"
     reframe = "reframe"
+    clip = "clip"
+    capture = "capture"
+    session = "session"
+    token = "token"
+    websocket = "websocket"
 
 
 class Status:
@@ -101,6 +112,7 @@ class Status:
 class MeetingStatus:
     initializing = "initializing"
     processing = "processing"
+    joined = "joined"
     done = "done"
 
 
