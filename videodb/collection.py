@@ -429,10 +429,6 @@ class Collection:
         filter: List[Dict[str, Any]] = [],
         namespace: Optional[str] = None,
         scene_index_id: Optional[str] = None,
-        stitch: Optional[bool] = None,
-        rerank: Optional[bool] = None,
-        rerank_params: Optional[Dict[str, Any]] = None,
-        index_platform: Optional[str] = None,
     ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
 
@@ -445,10 +441,6 @@ class Collection:
         :param list filter: Additional metadata filters (optional)
         :param str namespace: Search namespace (optional, "rtstream" to search RTStreams)
         :param str scene_index_id: Filter by specific scene index (optional)
-        :param bool stitch: Merge adjacent results (optional)
-        :param bool rerank: Enable reranking (optional)
-        :param dict rerank_params: Reranking configuration (optional)
-        :param str index_platform: Vector index platform (optional)
         :raise SearchError: If the search fails
         :return: :class:`SearchResult <SearchResult>` or
             :class:`RTStreamSearchResult <videodb.rtstream.RTStreamSearchResult>` object
@@ -465,16 +457,8 @@ class Collection:
                 data["score_threshold"] = score_threshold
             if dynamic_score_percentage is not None:
                 data["dynamic_score_percentage"] = dynamic_score_percentage
-            if stitch is not None:
-                data["stitch"] = stitch
             if filter is not None:
                 data["filter"] = filter
-            if rerank is not None:
-                data["rerank"] = rerank
-            if rerank_params is not None:
-                data["rerank_params"] = rerank_params
-            if index_platform is not None:
-                data["index_platform"] = index_platform
 
             search_data = self._connection.post(
                 path=f"{ApiPath.rtstream}/{ApiPath.collection}/{self.id}/{ApiPath.search}",
