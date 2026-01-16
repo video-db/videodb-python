@@ -1,3 +1,4 @@
 requests==2.31.0
 backoff==2.2.1
 tqdm==4.66.1
+websockets>=12.0

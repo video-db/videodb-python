@@ -98,6 +98,10 @@ class ApiPath:
     editor = "editor"
     reframe = "reframe"
     clip = "clip"
+    capture = "capture"
+    session = "session"
+    token = "token"
+    websocket = "websocket"
 
 
 class Status:
