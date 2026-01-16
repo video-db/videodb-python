@@ -1,6 +1,4 @@
-from typing import Optional
 from videodb._constants import ApiPath
-from videodb.exceptions import VideodbError
 
 class CaptureSession:
     """CaptureSession class representing a capture session.
