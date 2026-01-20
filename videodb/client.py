@@ -353,34 +353,102 @@ class Connection(HttpClient):
     def create_capture_session(
         self,
         end_user_id: str,
-        client_id: str,
         collection_id: str = "default",
         callback_url: str = None,
+        ws_connection_id: str = None,
+        metadata: dict = None,
     ) -> CaptureSession:
         """Create a capture session.
 
         :param str end_user_id: ID of the end user
-        :param str client_id: Client-provided session ID
         :param str collection_id: ID of the collection (default: "default")
         :param str callback_url: URL to receive callback (optional)
+        :param str ws_connection_id: WebSocket connection ID (optional)
+        :param dict metadata: Custom metadata (optional)
         :return: :class:`CaptureSession <CaptureSession>` object
         :rtype: :class:`videodb.capture_session.CaptureSession`
         """
+        data = {
+            "end_user_id": end_user_id,
+        }
+        if callback_url:
+            data["callback_url"] = callback_url
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        if metadata:
+            data["metadata"] = metadata
+
         response = self.post(
             path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}",
-            data={
-                "end_user_id": end_user_id,
-                "client_id": client_id,
-                "callback_url": callback_url,
-            },
+            data=data,
         )
-        session_id = response.get("session_id")
+        # Extract id and collection_id from response to avoid duplicate arguments
+        session_id = response.pop("session_id", None) or response.pop("id", None)
+        response_collection_id = response.pop("collection_id", collection_id)
         return CaptureSession(
             self,
             id=session_id,
-            collection_id=collection_id,
+            collection_id=response_collection_id,
             **response
         )
+
+    def get_capture_session(
+        self, session_id: str, collection_id: str = "default"
+    ) -> CaptureSession:
+        """Get a capture session by its ID.
+
+        :param str session_id: ID of the capture session
+        :param str collection_id: ID of the collection (default: "default")
+        :return: :class:`CaptureSession <CaptureSession>` object
+        :rtype: :class:`videodb.capture_session.CaptureSession`
+        """
+        response = self.get(
+            path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}/{session_id}"
+        )
+        # Extract id and collection_id from response to avoid duplicate arguments
+        response.pop("id", None)  # Remove id from response
+        response_collection_id = response.pop("collection_id", collection_id)
+        return CaptureSession(
+            self,
+            id=session_id,
+            collection_id=response_collection_id,
+            **response
+        )
+
+    def list_capture_sessions(
+        self,
+        collection_id: str = "default",
+        status: str = None,
+    ) -> list[CaptureSession]:
+        """List capture sessions.
+
+        :param str collection_id: ID of the collection (default: "default")
+        :param str status: Filter sessions by status (optional)
+        :return: List of :class:`CaptureSession <CaptureSession>` objects
+        :rtype: list[:class:`videodb.capture_session.CaptureSession`]
+        """
+        params = {}
+        if status:
+            params["status"] = status
+
+        response = self.get(
+            path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}",
+            params=params,
+        )
+
+        sessions = []
+        for session_data in response.get("sessions", []):
+            session_id = session_data.pop("id", None) or session_data.pop(
+                "session_id", None
+            )
+            # Remove collection_id from data
+            session_data.pop("collection_id", None)
+            sessions.append(
+                CaptureSession(
+                    self, id=session_id, collection_id=collection_id, **session_data
+                )
+            )
+        return sessions
 
     def connect_websocket(self, collection_id: str = "default") -> WebSocketConnection:
         """Connect to the VideoDB WebSocket service.

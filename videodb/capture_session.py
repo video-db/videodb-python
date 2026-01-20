@@ -20,9 +20,9 @@ class CaptureSession:
         return (
             f"CaptureSession("
             f"id={self.id}, "
+            f"status={getattr(self, 'status', None)}, "
             f"collection_id={self.collection_id}, "
-            f"end_user_id={getattr(self, 'end_user_id', None)}, "
-            f"client_id={getattr(self, 'client_id', None)})"
+            f"end_user_id={getattr(self, 'end_user_id', None)})"
         )
 
     def _update_attributes(self, data: dict) -> None:
@@ -30,6 +30,10 @@ class CaptureSession:
         self.end_user_id = data.get("end_user_id")
         self.client_id = data.get("client_id")
         self.status = data.get("status")
+        self.callback_url = data.get("callback_url")
+        self.rtstreams = data.get("rtstreams", [])
+        self.exported_video_id = data.get("exported_video_id")
+        self.metadata = data.get("metadata", {})
 
     def generate_session_token(self, expires_in: int = 86400) -> str:
         """Generate a session token.

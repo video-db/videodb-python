@@ -321,6 +321,30 @@ class RTStream:
         )
         self.status = "stopped"
 
+    def start_transcript(self, socket_id: Optional[str] = None):
+        """Start transcription for the rtstream.
+
+        :param str socket_id: WebSocket connection ID for real-time updates (optional)
+        :return: None
+        :rtype: None
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}/{ApiPath.status}",
+            data={"action": "start", "socket_id": socket_id},
+        )
+
+    def stop_transcript(self, mode: str = "graceful"):
+        """Stop transcription for the rtstream.
+
+        :param str mode: Stop mode, "graceful" or "force" (default: "graceful")
+        :return: None
+        :rtype: None
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}/{ApiPath.status}",
+            data={"action": "stop", "mode": mode},
+        )
+
     def generate_stream(self, start, end):
         """Generate a stream from the rtstream.
 
@@ -343,7 +367,7 @@ class RTStream:
         model_name=None,
         model_config={},
         name=None,
-        ws_connection_id: Optional[str] = None,
+        socket_id: Optional[str] = None,
     ):
         """Index scenes from the rtstream.
 
@@ -353,7 +377,7 @@ class RTStream:
         :param str model_name: Name of the model
         :param dict model_config: Configuration for the model
         :param str name: Name of the scene index
-        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str socket_id: WebSocket connection ID for real-time updates (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -365,8 +389,8 @@ class RTStream:
             "model_config": model_config,
             "name": name,
         }
-        if ws_connection_id:
-            data["ws_connection_id"] = ws_connection_id
+        if socket_id:
+            data["socket_id"] = socket_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -393,7 +417,7 @@ class RTStream:
         model_name: str = None,
         model_config: dict = {},
         name: str = None,
-        ws_connection_id: Optional[str] = None,
+        socket_id: Optional[str] = None,
     ):
         """Index spoken words from the rtstream transcript.
 
@@ -404,7 +428,7 @@ class RTStream:
         :param str model_name: Name of the model
         :param dict model_config: Configuration for the model
         :param str name: Name of the spoken words index
-        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str socket_id: WebSocket connection ID for real-time updates (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -421,8 +445,8 @@ class RTStream:
             "model_config": model_config,
             "name": name,
         }
-        if ws_connection_id:
-            data["ws_connection_id"] = ws_connection_id
+        if socket_id:
+            data["socket_id"] = socket_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
