@@ -28,13 +28,16 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url=about["__url__"],
-    packages=find_packages(exclude=["tests", "tests.*"]),
+    packages=find_packages(exclude=["tests", "tests.*", "capture_bin", "videodb_capture_bin"]),
     python_requires=">=3.8",
     install_requires=[
         "requests>=2.25.1",
         "backoff>=2.2.1",
         "tqdm>=4.66.1",
     ],
+    extras_require={
+        "capture": ["videodb-capture-bin>=0.2.4"],
+    },
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3",
