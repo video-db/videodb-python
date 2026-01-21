@@ -64,31 +64,21 @@ class CaptureSession:
             if not rts_id:
                 continue
                 
-            media_types = rts_data.get("media_types", [])
+            # Names come standardized from backend (mic, screen, system_audio)
             name = (rts_data.get("name") or "").lower()
             
             is_match = False
             
-            if category == "displays":
-                if "video" in media_types:
-                    is_match = True
-            
-            elif category == "system_audio":
-                if "audio" in media_types:
-                    if "system" in name or "output" in name or "speaker" in name:
-                        is_match = True
-                        
-            elif category == "mics":
-                if "audio" in media_types:
-                    # Anything audio that isn't clearly system audio
-                    is_system = "system" in name or "output" in name or "speaker" in name
-                    if not is_system:
-                        is_match = True
+            if category == "mics" and "mic" in name:
+                is_match = True
+            elif category == "displays" and ("screen" in name or "display" in name):
+                is_match = True
+            elif category == "system_audio" and "system" in name:
+                is_match = True
+            elif category == "cameras" and "camera" in name:
+                is_match = True
             
             if is_match:
-                # Initialize RTStream object
-                # We need to construct minimal RTStream object
-                # Note: 'rtstream_id' in session payload maps to 'id' in RTStream
                 stream = RTStream(
                     self._connection,
                     id=rts_id,
