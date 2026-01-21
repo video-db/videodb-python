@@ -461,3 +461,16 @@ class Connection(HttpClient):
         response = self.get(path=path)
         websocket_url = response.get("websocket_url")
         return WebSocketConnection(url=websocket_url)
+
+    def generate_client_token(self, expires_in: int = 86400) -> str:
+        """Generate a client token for capture operations.
+
+        :param int expires_in: Expiration time in seconds (default: 86400)
+        :return: Client token string
+        :rtype: str
+        """
+        response = self.post(
+            path=f"{ApiPath.capture}/{ApiPath.session}/{ApiPath.token}",
+            data={"expires_in": expires_in},
+        )
+        return response.get("token")

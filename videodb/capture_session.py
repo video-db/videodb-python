@@ -1,5 +1,4 @@
 from typing import List
-from videodb._constants import ApiPath
 from videodb.rtstream import RTStream
 
 class CaptureSession:
@@ -37,19 +36,6 @@ class CaptureSession:
         self.exported_video_id = data.get("exported_video_id")
         self.metadata = data.get("metadata", {})
 
-    def generate_session_token(self, expires_in: int = 86400) -> str:
-        """Generate a session token.
-
-        :param int expires_in: Expiration time in seconds (default: 86400)
-        :return: Session token string
-        :rtype: str
-        """
-        response = self._connection.post(
-            path=f"{ApiPath.collection}/{self.collection_id}/{ApiPath.capture}/{ApiPath.session}/{self.id}/{ApiPath.token}",
-            data={"expires_in": expires_in}
-        )
-        return response.get("token")
-
     def get_rtstream(self, category: str) -> List[RTStream]:
         """Get list of RTStreams by category.
         
@@ -58,33 +44,36 @@ class CaptureSession:
         :rtype: List[:class:`videodb.rtstream.RTStream`]
         """
         filtered_streams = []
-        
+        print(self.rtstreams)
         for rts_data in self.rtstreams:
-            rts_id = rts_data.get("rtstream_id")
+            rts_id = rts_data.get("rtstream_id") or rts_data.get("id")
             if not rts_id:
                 continue
                 
-            # Names come standardized from backend (mic, screen, system_audio)
+            # Names can vary: "mic", "Microphone", "screen", "Screen Share", etc.
             name = (rts_data.get("name") or "").lower()
             
             is_match = False
             
             if category == "mics" and "mic" in name:
-                is_match = True
+                    is_match = True
             elif category == "displays" and ("screen" in name or "display" in name):
-                is_match = True
+                    is_match = True
             elif category == "system_audio" and "system" in name:
-                is_match = True
-            elif category == "cameras" and "camera" in name:
-                is_match = True
+                    is_match = True
+            elif category == "cameras":
+                if "camera" in name:
+                    is_match = True
             
             if is_match:
+                # Remove keys we pass explicitly to avoid duplicates
+                extra_data = {k: v for k, v in rts_data.items() if k not in ("id", "rtstream_id", "name", "collection_id")}
                 stream = RTStream(
                     self._connection,
                     id=rts_id,
                     collection_id=self.collection_id,
                     name=rts_data.get("name"),
-                    **rts_data
+                    **extra_data
                 )
                 filtered_streams.append(stream)
                 
