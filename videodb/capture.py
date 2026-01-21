@@ -2,7 +2,11 @@ import logging
 import asyncio
 import json
 import uuid
+import os
+import requests
 from typing import Optional, Dict, List, Any
+
+from videodb._constants import VIDEO_DB_API, ApiPath
 
 logger = logging.getLogger(__name__)
 
@@ -149,24 +153,82 @@ class VideoChannel(Channel):
         return f"VideoChannel(id={self.id}, name={self.name}, record={self.record})"
 
 
+class ChannelCollection:
+    """A collection of channels with convenience accessors."""
+
+    def __init__(self, channels: List[Channel] = None):
+        self._channels = channels or []
+
+    def __iter__(self):
+        return iter(self._channels)
+
+    def __len__(self):
+        return len(self._channels)
+
+    def __getitem__(self, index):
+        return self._channels[index]
+
+    def __repr__(self):
+        return f"ChannelCollection({self._channels})"
+
+    @property
+    def default(self) -> Optional[Channel]:
+        """Get the default (first) channel in this collection."""
+        return self._channels[0] if self._channels else None
+
+    @property
+    def primary(self) -> Optional[Channel]:
+        """Alias for default - get the primary channel."""
+        return self.default
+
+
+class Channels:
+    """Container for all available channels, grouped by type."""
+
+    def __init__(
+        self,
+        mics: List[AudioChannel] = None,
+        displays: List[VideoChannel] = None,
+        system_audio: List[AudioChannel] = None,
+    ):
+        self.mics = ChannelCollection(mics or [])
+        self.displays = ChannelCollection(displays or [])
+        self.system_audio = ChannelCollection(system_audio or [])
+
+    def __repr__(self):
+        return (
+            f"Channels("
+            f"mics={len(self.mics)}, "
+            f"displays={len(self.displays)}, "
+            f"system_audio={len(self.system_audio)})"
+        )
+
+    def all(self) -> List[Channel]:
+        """Return a flat list of all channels."""
+        return list(self.mics) + list(self.displays) + list(self.system_audio)
+
+
 class CaptureClient:
     """Client for managing local capture sessions."""
 
     def __init__(
         self,
-        session_id: str,
         session_token: str,
-        api_url: str = "https://api.videodb.io",
+        base_url: Optional[str] = None,
     ):
         """Initialize the capture client.
 
-        :param str session_id: Session ID from backend.
         :param str session_token: Session token from backend.
-        :param str api_url: VideoDB API endpoint URL.
+        :param str base_url: VideoDB API endpoint URL.
         """
-        self.session_id = session_id
         self.session_token = session_token
-        self.api_url = api_url
+        
+        if base_url is None:
+            base_url = os.environ.get("VIDEO_DB_API", VIDEO_DB_API)
+
+        self.base_url = base_url
+        self.session_id = None
+        self.callback_url = None
         self._proc = None
         self._futures: Dict[str, asyncio.Future] = {}
         self._binary_path = get_recorder_path()
@@ -176,11 +238,63 @@ class CaptureClient:
         return (
             f"CaptureClient("
             f"session_id={self.session_id}, "
-            f"api_url={self.api_url})"
+            f"base_url={self.base_url})"
         )
+
+    @classmethod
+    async def create(
+        cls,
+        session_token: str,
+        base_url: Optional[str] = None,
+    ) -> "CaptureClient":
+        """Factory method to create and initialize a CaptureClient.
+
+        This is the recommended way to create a CaptureClient as it
+        fetches the session_id from the backend during initialization.
+
+        :param str session_token: Session token from backend.
+        :param str base_url: VideoDB API endpoint URL.
+        :return: Initialized CaptureClient instance.
+        :rtype: CaptureClient
+        """
+        client = cls(session_token, base_url)
+        await client.fetch_session_id()
+        return client
+
+    async def fetch_session_id(self):
+        """Fetch session ID from backend using session token if not already present."""
+        if self.session_id:
+            return self.session_id
+
+        path = f"{ApiPath.capture}/{ApiPath.session}/by-token"
+        url = f"{self.base_url.rstrip('/')}/{path}"
+        headers = {"x-access-token": self.session_token}
+        
+        try:
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None, lambda: requests.get(url, headers=headers, timeout=10)
+            )
+            response.raise_for_status()
+            data = response.json()
+            if data.get("success"):
+                session_data = data.get("data", {})
+                self.session_id = session_data.get("streaming_session_id")
+                self.callback_url = session_data.get("callback_url")
+            
+            if not self.session_id:
+                raise RuntimeError(f"Failed to fetch session_id from token: {data.get('message', 'Unknown error')}")
+                
+            return self.session_id
+        except Exception as e:
+            logger.error(f"Failed to fetch session ID: {e}")
+            raise
 
     async def _ensure_process(self):
         """Ensure the recorder binary is running."""
+        # Fetch session_id once on first initialization
+        await self.fetch_session_id()
+
         if self._proc is not None and self._proc.returncode is None:
             return
 
@@ -196,7 +310,7 @@ class CaptureClient:
         asyncio.create_task(self._read_stderr_loop())
         
         # Initial handshake - pass apiUrl to binary
-        await self._send_command("init", {"apiUrl": self.api_url})
+        await self._send_command("init", {"apiUrl": self.base_url})
 
 
     async def _send_command(
@@ -327,53 +441,61 @@ class CaptureClient:
         
         return False
 
-    async def list_channels(self) -> List[Channel]:
+    async def list_channels(self) -> Channels:
         """Query the system for available audio and video channels.
 
-        :return: List of :class:`AudioChannel` and :class:`VideoChannel` objects.
-        :rtype: List[:class:`Channel`]
+        :return: Channels object with grouped collections (mics, displays, system_audio).
+        :rtype: Channels
         """
         response = await self._send_command("getChannels")
         raw_channels = response.get("channels", [])
         
-        channels = []
+        mics = []
+        displays = []
+        system_audio = []
+        
         for ch in raw_channels:
             c_type = ch.get("type")
             c_id = ch.get("channel_id") or ch.get("id")
-            c_name = ch.get("name")
+            c_name = ch.get("name", "")
             
             if not c_id:
                 logger.warning(f"Skipping channel with missing ID: {ch}")
                 continue
 
-            if c_type == "audio":
-                channels.append(AudioChannel(id=c_id, name=c_name, client=self))
-            elif c_type == "video":
-                channels.append(VideoChannel(id=c_id, name=c_name, client=self))
+            # Categorize based on type and name patterns
+            if c_type == "video":
+                displays.append(VideoChannel(id=c_id, name=c_name, client=self))
+            elif c_type == "audio":
+                # Distinguish between mic and system audio based on common patterns
+                name_lower = c_name.lower()
+                if "system" in name_lower or "output" in name_lower or "speaker" in name_lower:
+                    system_audio.append(AudioChannel(id=c_id, name=c_name, client=self))
+                else:
+                    mics.append(AudioChannel(id=c_id, name=c_name, client=self))
             else:
                 logger.debug(f"Unknown channel type '{c_type}' for channel '{c_name}'")
-                channels.append(Channel(id=c_id, name=c_name, type=c_type, client=self))
                 
-        return channels
+        return Channels(mics=mics, displays=displays, system_audio=system_audio)
 
-    async def start_capture(
+    async def start_capture_session(
         self,
         channels: List[Channel],
         primary_video_channel_id: Optional[str] = None,
         wss_connection_id: Optional[str] = None,
-        callback_url: Optional[str] = None,
     ) -> None:
         """Start the recording session.
 
         :param list[Channel] channels: List of Channel objects to record.
         :param str primary_video_channel_id: ID of the primary video channel.
         :param str wss_connection_id: WebSocket connection ID for real-time events.
-        :param str callback_url: Webhook URL for server-side notifications.
         :raises ValueError: If no channels are specified.
         :return: None.
         """
         if not channels:
             raise ValueError("At least one channel must be specified for capture.")
+
+        await self.fetch_session_id()
 
         payload = {
             "sessionId": self.session_id,
@@ -387,8 +509,8 @@ class CaptureClient:
         if wss_connection_id:
             payload["ws_connection_id"] = wss_connection_id
 
-        if callback_url:
-            payload["callbackUrl"] = callback_url
+        if self.callback_url:
+            payload["callbackUrl"] = self.callback_url
 
         await self._send_command("startRecording", payload)
 

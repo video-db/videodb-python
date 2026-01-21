@@ -26,7 +26,7 @@ from videodb._constants import (
 from videodb.client import Connection
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
-from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel
+from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, ChannelCollection, Channels
 
 __all__ = [
     "connect",
