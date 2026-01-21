@@ -1,4 +1,6 @@
+from typing import List, Optional
 from videodb._constants import ApiPath
+from videodb.rtstream import RTStream
 
 class CaptureSession:
     """CaptureSession class representing a capture session.
@@ -47,3 +49,53 @@ class CaptureSession:
             data={"expires_in": expires_in}
         )
         return response.get("token")
+
+    def get_rtstream(self, category: str) -> List[RTStream]:
+        """Get list of RTStreams by category.
+        
+        :param str category: Category to filter by ("mics", "displays", "system_audio")
+        :return: List of :class:`RTStream <RTStream>` objects
+        :rtype: List[:class:`videodb.rtstream.RTStream`]
+        """
+        filtered_streams = []
+        
+        for rts_data in self.rtstreams:
+            rts_id = rts_data.get("rtstream_id")
+            if not rts_id:
+                continue
+                
+            media_types = rts_data.get("media_types", [])
+            name = (rts_data.get("name") or "").lower()
+            
+            is_match = False
+            
+            if category == "displays":
+                if "video" in media_types:
+                    is_match = True
+            
+            elif category == "system_audio":
+                if "audio" in media_types:
+                    if "system" in name or "output" in name or "speaker" in name:
+                        is_match = True
+                        
+            elif category == "mics":
+                if "audio" in media_types:
+                    # Anything audio that isn't clearly system audio
+                    is_system = "system" in name or "output" in name or "speaker" in name
+                    if not is_system:
+                        is_match = True
+            
+            if is_match:
+                # Initialize RTStream object
+                # We need to construct minimal RTStream object
+                # Note: 'rtstream_id' in session payload maps to 'id' in RTStream
+                stream = RTStream(
+                    self._connection,
+                    id=rts_id,
+                    collection_id=self.collection_id,
+                    name=rts_data.get("name"),
+                    **rts_data
+                )
+                filtered_streams.append(stream)
+                
+        return filtered_streams

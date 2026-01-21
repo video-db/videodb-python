@@ -227,8 +227,8 @@ class CaptureClient:
             base_url = os.environ.get("VIDEO_DB_API", VIDEO_DB_API)
 
         self.base_url = base_url
+        self.base_url = base_url
         self.session_id = None
-        self.callback_url = None
         self._proc = None
         self._futures: Dict[str, asyncio.Future] = {}
         self._binary_path = get_recorder_path()
@@ -280,7 +280,6 @@ class CaptureClient:
             if data.get("success"):
                 session_data = data.get("data", {})
                 self.session_id = session_data.get("streaming_session_id")
-                self.callback_url = session_data.get("callback_url")
             
             if not self.session_id:
                 raise RuntimeError(f"Failed to fetch session_id from token: {data.get('message', 'Unknown error')}")
@@ -482,13 +481,11 @@ class CaptureClient:
         self,
         channels: List[Channel],
         primary_video_channel_id: Optional[str] = None,
-        wss_connection_id: Optional[str] = None,
     ) -> None:
         """Start the recording session.
 
         :param list[Channel] channels: List of Channel objects to record.
         :param str primary_video_channel_id: ID of the primary video channel.
-        :param str wss_connection_id: WebSocket connection ID for real-time events.
         :raises ValueError: If no channels are specified.
         :return: None.
         """
@@ -506,12 +503,6 @@ class CaptureClient:
         if primary_video_channel_id:
             payload["primary_video_channel_id"] = primary_video_channel_id
             
-        if wss_connection_id:
-            payload["ws_connection_id"] = wss_connection_id
-
-        if self.callback_url:
-            payload["callbackUrl"] = self.callback_url
-
         await self._send_command("startRecording", payload)
 
     async def stop_capture(self) -> None:

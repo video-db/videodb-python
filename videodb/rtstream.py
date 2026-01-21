@@ -465,6 +465,129 @@ class RTStream:
             status=index_data.get("status"),
         )
 
+    def index_audio(
+        self,
+        prompt: str = None,
+        batch_config: dict = None,
+        model_name: str = None,
+        model_config: dict = {},
+        name: str = None,
+        socket_id: Optional[str] = None,
+    ):
+        """Index audio from the rtstream transcript.
+
+        :param str prompt: Prompt for summarizing transcript segments
+        :param dict batch_config: Segmentation config with keys:
+            - "type": Segmentation type ("word", "sentence", or "time")
+            - "value": Segment length (words, sentences, or seconds)
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the audio index
+        :param str socket_id: WebSocket connection ID for real-time updates (optional)
+        :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
+        """
+        # Default batch_config
+        if batch_config is None:
+            batch_config = {"type": "word", "value": 10}
+
+        segmenter = batch_config.get("type", Segmenter.word)
+        segmentation_value = batch_config.get("value", 10)
+
+        extraction_config = {
+            "segmenter": segmenter,
+            "segmentation_value": segmentation_value,
+        }
+
+        data = {
+            "extraction_type": SceneExtractionType.transcript,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if socket_id:
+            data["socket_id"] = socket_id
+
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data=data,
+        )
+        if not index_data:
+            return None
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )
+
+    def index_visuals(
+        self,
+        prompt: str = None,
+        batch_config: dict = None,
+        model_name: str = None,
+        model_config: dict = {},
+        name: str = None,
+        socket_id: Optional[str] = None,
+    ):
+        """Index visuals (scenes) from the rtstream.
+
+        :param str prompt: Prompt for scene description
+        :param dict batch_config: Frame extraction config with keys:
+            - "type": Only "time" is supported
+            - "value": Window size in seconds
+            - "frame_count": Number of frames to extract per window
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the visual index
+        :param str socket_id: WebSocket connection ID for real-time updates (optional)
+        :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
+        """
+        # Default batch_config
+        if batch_config is None:
+            batch_config = {"type": "time", "value": 2, "frame_count": 5}
+
+        extraction_config = {
+            "time": batch_config.get("value", 2),
+            "frame_count": batch_config.get("frame_count", 5),
+        }
+
+        data = {
+            "extraction_type": SceneExtractionType.time_based,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if socket_id:
+            data["socket_id"] = socket_id
+
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data=data,
+        )
+        if not index_data:
+            return None
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )
+
+
     def list_scene_indexes(self):
         """List all scene indexes for the rtstream.
 
