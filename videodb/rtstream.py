@@ -321,28 +321,37 @@ class RTStream:
         )
         self.status = "stopped"
 
-    def start_transcript(self, socket_id: Optional[str] = None):
+    def start_transcript(
+        self, 
+        ws_connection_id: Optional[str] = None, 
+        engine: str = "assemblyai"
+    ) -> dict:
         """Start transcription for the rtstream.
 
-        :param str socket_id: WebSocket connection ID for real-time updates (optional)
-        :return: None
-        :rtype: None
+        :param str ws_connection_id: WebSocket connection ID for real-time transcript updates (optional)
+        :param str engine: Transcription engine (default: "assemblyai")
+        :return: Transcription status with start time
+        :rtype: dict
         """
-        self._connection.patch(
-            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}/{ApiPath.status}",
-            data={"action": "start", "socket_id": socket_id},
+        data = {"action": "start", "engine": engine}
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        
+        return self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
+            data=data,
         )
 
-    def stop_transcript(self, mode: str = "graceful"):
+    def stop_transcript(self, engine: str = "assemblyai") -> dict:
         """Stop transcription for the rtstream.
 
-        :param str mode: Stop mode, "graceful" or "force" (default: "graceful")
-        :return: None
-        :rtype: None
+        :param str engine: Transcription engine (default: "assemblyai")
+        :return: Transcription status with start and end time
+        :rtype: dict
         """
-        self._connection.patch(
-            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}/{ApiPath.status}",
-            data={"action": "stop", "mode": mode},
+        return self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
+            data={"action": "stop", "engine": engine},
         )
 
     def generate_stream(self, start, end):
