@@ -1,5 +1,4 @@
-import os
-from setuptools import setup, find_packages, Distribution
+from setuptools import setup, Distribution
 
 class BinaryDistribution(Distribution):
     """Forces the distribution to be platform-specific."""

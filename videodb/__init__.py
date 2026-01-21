@@ -36,6 +36,8 @@ __all__ = [
     "Channel",
     "AudioChannel",
     "VideoChannel",
+    "ChannelCollection",
+    "Channels",
 ]
 from videodb.exceptions import (
     VideodbError,
