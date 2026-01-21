@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from videodb._constants import ApiPath
 from videodb.rtstream import RTStream
 
