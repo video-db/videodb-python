@@ -213,20 +213,24 @@ class RTStreamSceneIndex:
         )
         self.status = "stopped"
 
-    def create_alert(self, event_id, callback_url) -> str:
+    def create_alert(self, event_id, callback_url, ws_connection_id=None) -> str:
         """Create an event alert.
 
         :param str event_id: ID of the event
         :param str callback_url: URL to receive the alert callback
+        :param str ws_connection_id: WebSocket connection ID for real-time alerts
         :return: Alert ID
         :rtype: str
         """
+        data = {
+            "event_id": event_id,
+            "callback_url": callback_url,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
         alert_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}",
-            data={
-                "event_id": event_id,
-                "callback_url": callback_url,
-            },
+            data=data,
         )
         return alert_data.get("alert_id", None)
 
