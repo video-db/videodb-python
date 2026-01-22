@@ -386,10 +386,7 @@ class Connection(HttpClient):
         session_id = response.pop("session_id", None) or response.pop("id", None)
         response_collection_id = response.pop("collection_id", collection_id)
         return CaptureSession(
-            self,
-            id=session_id,
-            collection_id=response_collection_id,
-            **response
+            self, id=session_id, collection_id=response_collection_id, **response
         )
 
     def get_capture_session(
@@ -405,14 +402,25 @@ class Connection(HttpClient):
         response = self.get(
             path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}/{session_id}"
         )
+
+        # If response is wrapped in 'data', extract it
+        if "data" in response and isinstance(response["data"], dict):
+            response = response["data"]
+
+        # Normalize rtstreams before passing to CaptureSession
+        for rts in response.get("rtstreams", []):
+            if isinstance(rts, dict):
+                if "rtstream_id" in rts and "id" not in rts:
+                    rts["id"] = rts.pop("rtstream_id")
+                if "collection_id" not in rts:
+                    rts["collection_id"] = collection_id
+
         # Extract id and collection_id from response to avoid duplicate arguments
         response.pop("id", None)  # Remove id from response
-        response_collection_id = response.pop("collection_id", collection_id)
+        response.pop("collection_id", None)  # Remove collection_id from response
+
         return CaptureSession(
-            self,
-            id=session_id,
-            collection_id=response_collection_id,
-            **response
+            self, id=session_id, collection_id=collection_id, **response
         )
 
     def list_capture_sessions(
@@ -441,6 +449,13 @@ class Connection(HttpClient):
             session_id = session_data.pop("id", None) or session_data.pop(
                 "session_id", None
             )
+            # Normalize rtstreams
+            for rts in session_data.get("rtstreams", []):
+                if isinstance(rts, dict):
+                    if "rtstream_id" in rts and "id" not in rts:
+                        rts["id"] = rts.pop("rtstream_id")
+                    if "collection_id" not in rts:
+                        rts["collection_id"] = collection_id
             # Remove collection_id from data
             session_data.pop("collection_id", None)
             sessions.append(

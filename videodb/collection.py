@@ -631,7 +631,7 @@ class Collection:
         meeting = Meeting(self._connection, id=meeting_id, collection_id=self.id)
         meeting.refresh()
         return meeting
-        
+
     def create_capture_session(
         self,
         end_user_id: str,
@@ -662,6 +662,13 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.capture}/{ApiPath.session}",
             data=data,
         )
+        # Normalize rtstreams before passing to CaptureSession
+        for rts in response.get("rtstreams", []):
+            if isinstance(rts, dict):
+                if "rtstream_id" in rts and "id" not in rts:
+                    rts["id"] = rts.pop("rtstream_id")
+                if "collection_id" not in rts:
+                    rts["collection_id"] = self.id
         # Extract id and collection_id from response to avoid duplicate arguments
         session_id = response.pop("session_id", None) or response.pop("id", None)
         response.pop("collection_id", None)
@@ -679,6 +686,13 @@ class Collection:
         response = self._connection.get(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.capture}/{ApiPath.session}/{session_id}"
         )
+        # Normalize rtstreams before passing to CaptureSession
+        for rts in response.get("rtstreams", []):
+            if isinstance(rts, dict):
+                if "rtstream_id" in rts and "id" not in rts:
+                    rts["id"] = rts.pop("rtstream_id")
+                if "collection_id" not in rts:
+                    rts["collection_id"] = self.id
         # Extract id and collection_id from response to avoid duplicate arguments
         response.pop("id", None)
         response.pop("collection_id", None)
@@ -707,11 +721,21 @@ class Collection:
             session_id = session_data.pop("id", None) or session_data.pop(
                 "session_id", None
             )
+            # Normalize rtstreams
+            for rts in session_data.get("rtstreams", []):
+                if isinstance(rts, dict):
+                    if "rtstream_id" in rts and "id" not in rts:
+                        rts["id"] = rts.pop("rtstream_id")
+                    if "collection_id" not in rts:
+                        rts["collection_id"] = self.id
             # Remove collection_id from data
             session_data.pop("collection_id", None)
             sessions.append(
                 CaptureSession(
-                    self._connection, id=session_id, collection_id=self.id, **session_data
+                    self._connection,
+                    id=session_id,
+                    collection_id=self.id,
+                    **session_data,
                 )
             )
         return sessions

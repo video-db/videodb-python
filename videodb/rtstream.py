@@ -285,6 +285,7 @@ class RTStream:
         self.created_at = kwargs.get("created_at", None)
         self.sample_rate = kwargs.get("sample_rate", None)
         self.status = kwargs.get("status", None)
+        self.channel_id = kwargs.get("channel_id", None)
 
     def __repr__(self) -> str:
         return (
@@ -322,9 +323,7 @@ class RTStream:
         self.status = "stopped"
 
     def start_transcript(
-        self, 
-        ws_connection_id: Optional[str] = None, 
-        engine: str = "assemblyai"
+        self, ws_connection_id: Optional[str] = None, engine: str = "assemblyai"
     ) -> dict:
         """Start transcription for the rtstream.
 
@@ -336,7 +335,7 @@ class RTStream:
         data = {"action": "start", "engine": engine}
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
-        
+
         return self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
             data=data,
@@ -595,7 +594,6 @@ class RTStream:
             name=index_data.get("name"),
             status=index_data.get("status"),
         )
-
 
     def list_scene_indexes(self):
         """List all scene indexes for the rtstream.

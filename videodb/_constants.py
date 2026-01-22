@@ -12,6 +12,12 @@ class MediaType:
     image = "image"
 
 
+class RTStreamChannelType:
+    mic = "mic"
+    screen = "screen"
+    system_audio = "system_audio"
+
+
 class SearchType:
     semantic = "semantic"
     keyword = "keyword"
