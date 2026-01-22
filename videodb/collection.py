@@ -222,14 +222,34 @@ class Collection:
         )
         return RTStream(self._connection, **rtstream_data)
 
-    def list_rtstreams(self) -> List[RTStream]:
+    def list_rtstreams(
+        self,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        status: Optional[str] = None,
+        name: Optional[str] = None,
+        ordering: Optional[str] = None,
+    ) -> List[RTStream]:
         """List all rtstreams in the collection.
 
+        :param int limit: Number of rtstreams to return (optional)
+        :param int offset: Number of rtstreams to skip (optional)
+        :param str status: Filter by status (optional)
+        :param str name: Filter by name (optional)
+        :param str ordering: Order results by field (optional)
         :return: List of :class:`RTStream <RTStream>` objects
         :rtype: List[:class:`videodb.rtstream.RTStream`]
         """
+        params = {
+            "limit": limit,
+            "offset": offset,
+            "status": status,
+            "name": name,
+            "ordering": ordering,
+        }
         rtstreams_data = self._connection.get(
             path=f"{ApiPath.rtstream}",
+            params={key: value for key, value in params.items() if value is not None},
         )
         return [
             RTStream(self._connection, **rtstream)
