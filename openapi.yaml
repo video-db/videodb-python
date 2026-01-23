@@ -316,32 +316,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-    post:
-      summary: Create new user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                organization_id:
-                  type: string
-                  example: "o-12345"
-      responses:
-        '200':
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/User'
-
   /user/api_key:
     get:
       summary: Get user API keys
@@ -2117,25 +2091,6 @@ paths:
                           type: string
                           format: date-time
 
-  /billing/usage:
-    get:
-      summary: Get billing usage information
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Billing usage data
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/BillingUsage'
-
   /billing/topup:
     post:
       summary: Create topup payment
@@ -2173,29 +2128,6 @@ paths:
                       url:
                         type: string
                         example: "https://checkout.stripe.com/pay/xxx"
-
-  /billing/portal:
-    post:
-      summary: Create customer portal session
-      security:
-        - ApiKeyAuth: []
-      responses:
-        '200':
-          description: Portal URL
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      url:
-                        type: string
-                        example: "https://billing.stripe.com/p/session/xxx"
 
   /billing/auto_recharge:
     get:
@@ -2260,29 +2192,6 @@ paths:
                   message:
                     type: string
                     example: "Auto recharge settings updated"
-
-  /billing/webhook_event/stripe:
-    post:
-      summary: Stripe webhook handler
-      description: Webhook endpoint for Stripe events
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              description: Stripe webhook payload
-      responses:
-        '200':
-          description: Webhook processed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
 
   /async-response/{response_id}:
     get:
@@ -2575,242 +2484,6 @@ paths:
                       total_tokens:
                         type: integer
                         example: 25
-
-  /prompts/:
-    get:
-      summary: List prompts
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - name: page_index
-          in: query
-          schema:
-            type: integer
-            example: 0
-        - name: count
-          in: query
-          schema:
-            type: integer
-            maximum: 5000
-            example: 50
-      responses:
-        '200':
-          description: List of prompts
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          example: "prompt-12345"
-                        name:
-                          type: string
-                          example: "Custom Search Prompt"
-                        content:
-                          type: string
-                          example: "Find content about..."
-                        created_at:
-                          type: string
-                          format: date-time
-                        versions:
-                          type: array
-                          items:
-                            type: object
-                            properties:
-                              version:
-                                type: integer
-                                example: 1
-                              created_at:
-                                type: string
-                                format: date-time
-
-    post:
-      summary: Create new prompt
-      security:
-        - ApiKeyAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-                - content
-              properties:
-                name:
-                  type: string
-                  example: "Custom Search Prompt"
-                content:
-                  type: string
-                  example: "Find content about {query} in videos"
-                description:
-                  type: string
-                  example: "A custom prompt for video search"
-      responses:
-        '200':
-          description: Prompt created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        example: "prompt-12345"
-                      name:
-                        type: string
-                        example: "Custom Search Prompt"
-                      content:
-                        type: string
-                        example: "Find content about {query} in videos"
-                      created_at:
-                        type: string
-                        format: date-time
-
-  /prompts/{prompt_id}:
-    get:
-      summary: Get prompt details
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - name: prompt_id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "prompt-12345"
-      responses:
-        '200':
-          description: Prompt details
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        example: "prompt-12345"
-                      name:
-                        type: string
-                        example: "Custom Search Prompt"
-                      content:
-                        type: string
-                        example: "Find content about {query} in videos"
-                      description:
-                        type: string
-                        example: "A custom prompt for video search"
-                      created_at:
-                        type: string
-                        format: date-time
-                      versions:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            version:
-                              type: integer
-                              example: 1
-                            content:
-                              type: string
-                              example: "Updated content"
-                            created_at:
-                              type: string
-                              format: date-time
-
-    put:
-      summary: Update prompt
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - name: prompt_id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "prompt-12345"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "Updated Prompt Name"
-                content:
-                  type: string
-                  example: "Updated prompt content"
-                description:
-                  type: string
-                  example: "Updated description"
-      responses:
-        '200':
-          description: Prompt updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        example: "prompt-12345"
-                      name:
-                        type: string
-                        example: "Updated Prompt Name"
-                      content:
-                        type: string
-                        example: "Updated prompt content"
-                      updated_at:
-                        type: string
-                        format: date-time
-
-    delete:
-      summary: Delete prompt
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - name: prompt_id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "prompt-12345"
-      responses:
-        '200':
-          description: Prompt deleted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
 
   /timeline_v2:
     post:
@@ -3108,18 +2781,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-  /test-error:
-    get:
-      summary: Test error handling
-      description: Endpoint for testing error handling (development only)
-      responses:
-        '500':
-          description: Test error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
 tags:
   - name: Authentication
     description: User authentication and API key management
@@ -3139,8 +2800,6 @@ tags:
     description: Billing and usage management
   - name: RTStream
     description: Real-time streaming operations
-  - name: Prompts
-    description: Custom prompt management
   - name: Utilities
     description: Utility endpoints
   - name: Meeting
