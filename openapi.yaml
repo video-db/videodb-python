@@ -1,0 +1,2806 @@
+openapi: 3.0.3
+info:
+  title: VideoDB Server API
+  description: |
+    VideoDB Server API for video, audio, and image processing with AI capabilities.
+    This API provides comprehensive video management, search, indexing, and AI-powered features.
+  version: 1.0.0
+  contact:
+    name: VideoDB Support
+    url: https://videodb.io
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.videodb.io
+    description: Production server
+  - url: https://staging-api.videodb.io
+    description: Staging server
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-access-token
+      description: API key for authentication (sk-xxx format)
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+        error_code:
+          type: string
+          example: "ERROR_CODE"
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation successful"
+
+    AsyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum: [processing, done, failed]
+          example: "processing"
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "job-123"
+            output_url:
+              type: string
+              example: "https://api.videodb.io/async-response/job-123"
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "u-12345"
+        user_name:
+          type: string
+          example: "John Doe"
+        user_email:
+          type: string
+          example: "john@example.com"
+        collections:
+          type: array
+          items:
+            type: string
+          example: ["default", "c-67890"]
+        default_collection:
+          type: string
+          example: "default"
+
+    Collection:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "default"
+        name:
+          type: string
+          example: "My Collection"
+        description:
+          type: string
+          example: "Collection description"
+        is_public:
+          type: boolean
+          example: false
+        owner:
+          type: string
+          example: "u-12345"
+        created_at:
+          type: string
+          format: date-time
+
+    Video:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "m-12345"
+        name:
+          type: string
+          example: "video.mp4"
+        description:
+          type: string
+          example: "Video description"
+        collection_id:
+          type: string
+          example: "default"
+        length:
+          type: number
+          example: 120.5
+        size:
+          type: number
+          example: 1048576
+        stream_url:
+          type: string
+          example: "https://stream.videodb.io/v/12345"
+        player_url:
+          type: string
+          example: "https://console.videodb.io/player/12345"
+        thumbnail_url:
+          type: string
+          example: "https://assets.videodb.io/thumb/12345.jpg"
+        created_at:
+          type: string
+          format: date-time
+
+    Audio:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "a-12345"
+        name:
+          type: string
+          example: "audio.mp3"
+        collection_id:
+          type: string
+          example: "default"
+        length:
+          type: number
+          example: 60.0
+        size:
+          type: number
+          example: 524288
+        created_at:
+          type: string
+          format: date-time
+
+    Image:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "img-12345"
+        name:
+          type: string
+          example: "image.jpg"
+        collection_id:
+          type: string
+          example: "default"
+        width:
+          type: number
+          example: 1920
+        height:
+          type: number
+          example: 1080
+        size:
+          type: number
+          example: 262144
+        url:
+          type: string
+          example: "https://assets.videodb.io/img/12345.jpg"
+        created_at:
+          type: string
+          format: date-time
+
+    SearchResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            query:
+              type: string
+              example: "search query"
+            results:
+              type: array
+              items:
+                type: object
+                properties:
+                  video_id:
+                    type: string
+                    example: "m-12345"
+                  start:
+                    type: number
+                    example: 10.5
+                  end:
+                    type: number
+                    example: 20.3
+                  text:
+                    type: string
+                    example: "matched content"
+                  score:
+                    type: number
+                    example: 0.95
+
+    Timeline:
+      type: object
+      properties:
+        video_id:
+          type: string
+          example: "m-12345"
+        clips:
+          type: array
+          items:
+            type: object
+            properties:
+              start:
+                type: number
+                example: 0
+              end:
+                type: number
+                example: 30
+              volume:
+                type: number
+                example: 1.0
+
+    BillingUsage:
+      type: object
+      properties:
+        credit_balance:
+          type: number
+          example: 100.50
+        usage_this_month:
+          type: number
+          example: 25.75
+        breakdown:
+          type: object
+          additionalProperties:
+            type: number
+
+paths:
+  /:
+    get:
+      summary: Get service information
+      description: Returns basic service information
+      responses:
+        '200':
+          description: Service information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      service:
+                        type: string
+                        example: "VideoDB Server"
+
+  /user:
+    get:
+      summary: Get user information
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/api_key:
+    get:
+      summary: Get user API keys
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          example: "sk-xxx"
+                        created_at:
+                          type: string
+                          format: date-time
+
+    post:
+      summary: Create new API key
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      api_key:
+                        type: string
+                        example: "sk-xxx"
+
+  /user/api_key/{api_key}:
+    delete:
+      summary: Delete API key
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: api_key
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "sk-xxx"
+      responses:
+        '200':
+          description: API key deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /collection:
+    get:
+      summary: Get user collections
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: List of collections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      collections:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Collection'
+                      default_collection:
+                        type: string
+                        example: "default"
+
+    post:
+      summary: Create new collection
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "My New Collection"
+                description:
+                  type: string
+                  example: "Collection for my videos"
+                is_public:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Collection created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Collection'
+
+  /collection/{collection_id}:
+    get:
+      summary: Get collection details
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: Collection details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Collection'
+
+    patch:
+      summary: Update collection
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Collection Name"
+                description:
+                  type: string
+                  example: "Updated description"
+                is_public:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Collection updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Collection'
+
+    delete:
+      summary: Delete collection
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: Collection deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /collection/{collection_id}/upload:
+    post:
+      summary: Upload media to collection
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  example: "https://example.com/video.mp4"
+                name:
+                  type: string
+                  example: "My Video"
+                media_type:
+                  type: string
+                  enum: [video, audio, image]
+                  example: "video"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Upload initiated
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AsyncResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      data:
+                        $ref: '#/components/schemas/Video'
+
+  /collection/{collection_id}/search/:
+    post:
+      summary: Search within collection
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  example: "search query"
+                index_type:
+                  type: string
+                  enum: [spoken_word, scene]
+                  example: "spoken_word"
+                search_type:
+                  type: string
+                  enum: [semantic, custom]
+                  example: "semantic"
+                score_threshold:
+                  type: number
+                  example: 0.2
+                result_threshold:
+                  type: integer
+                  example: 10
+                stitch:
+                  type: boolean
+                  example: true
+                rerank:
+                  type: boolean
+                  example: false
+                filter:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+
+  /video/:
+    get:
+      summary: List videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+        - name: page_index
+          in: query
+          schema:
+            type: integer
+            example: 0
+        - name: count
+          in: query
+          schema:
+            type: integer
+            maximum: 5000
+            example: 50
+      responses:
+        '200':
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      videos:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Video'
+
+  /video/{video_id}:
+    get:
+      summary: Get video details
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: Video details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Video'
+
+    delete:
+      summary: Delete video
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      responses:
+        '200':
+          description: Video deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /video/{video_id}/storage/:
+    delete:
+      summary: Delete video storage
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      responses:
+        '200':
+          description: Video storage deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /video/{video_id}/stream/:
+    post:
+      summary: Create video stream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [mp4, webm, hls]
+                  example: "mp4"
+                quality:
+                  type: string
+                  enum: [low, medium, high]
+                  example: "high"
+      responses:
+        '200':
+          description: Stream created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stream_url:
+                        type: string
+                        example: "https://stream.videodb.io/v/12345"
+
+  /video/{video_id}/thumbnail/:
+    get:
+      summary: Get video thumbnail
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: timestamp
+          in: query
+          schema:
+            type: number
+            example: 10.5
+      responses:
+        '200':
+          description: Thumbnail URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      thumbnail_url:
+                        type: string
+                        example: "https://assets.videodb.io/thumb/12345.jpg"
+
+    post:
+      summary: Generate custom thumbnail
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timestamp:
+                  type: number
+                  example: 10.5
+                width:
+                  type: integer
+                  example: 320
+                height:
+                  type: integer
+                  example: 180
+      responses:
+        '200':
+          description: Thumbnail generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/thumbnails/:
+    get:
+      summary: Get all video thumbnails
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      responses:
+        '200':
+          description: List of thumbnails
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: number
+                          example: 10.5
+                        url:
+                          type: string
+                          example: "https://assets.videodb.io/thumb/12345_10.jpg"
+
+  /video/{video_id}/transcription/:
+    get:
+      summary: Get video transcription
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: engine
+          in: query
+          schema:
+            type: string
+            default: "AAI"
+            example: "AAI"
+        - name: start
+          in: query
+          schema:
+            type: number
+            default: 0
+            example: 10.5
+        - name: end
+          in: query
+          schema:
+            type: number
+            default: -1
+            example: 60.0
+        - name: segmenter
+          in: query
+          schema:
+            type: string
+            default: "word"
+            example: "word"
+        - name: length
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+      responses:
+        '200':
+          description: Transcription data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [completed, processing, failed]
+                    example: "completed"
+                  data:
+                    type: object
+                    properties:
+                      transcript:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            text:
+                              type: string
+                              example: "Hello world"
+                            start:
+                              type: number
+                              example: 1.5
+                            end:
+                              type: number
+                              example: 3.2
+
+    post:
+      summary: Generate video transcription
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                engine:
+                  type: string
+                  default: "AAI"
+                  example: "AAI"
+                force:
+                  type: boolean
+                  example: false
+                language_code:
+                  type: string
+                  example: "en-US"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                callback_data:
+                  type: object
+      responses:
+        '200':
+          description: Transcription job started
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AsyncResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      message:
+                        type: string
+                        example: "transcription already exists"
+
+  /video/{video_id}/index/:
+    get:
+      summary: Get video index status
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: index_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [spoken_word, scene]
+            example: "spoken_word"
+        - name: engine
+          in: query
+          schema:
+            type: string
+            default: "AAI"
+            example: "AAI"
+      responses:
+        '200':
+          description: Index status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [done, processing, failed]
+                    example: "done"
+                  message:
+                    type: string
+                    example: "Index is available"
+
+    post:
+      summary: Create video index
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index_type:
+                  type: string
+                  enum: [spoken_word, scene]
+                  default: "spoken_word"
+                  example: "spoken_word"
+                engine:
+                  type: string
+                  default: "AAI"
+                  example: "AAI"
+                force:
+                  type: boolean
+                  example: false
+                language_code:
+                  type: string
+                  example: "en-US"
+                segmentation_type:
+                  type: string
+                  default: "sentence"
+                  example: "sentence"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Index job started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/search/:
+    post:
+      summary: Search within video
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  example: "search query"
+                index_type:
+                  type: string
+                  enum: [spoken_word, scene]
+                  example: "spoken_word"
+                search_type:
+                  type: string
+                  enum: [semantic, keyword]
+                  example: "semantic"
+                score_threshold:
+                  type: number
+                  example: 0.2
+                result_threshold:
+                  type: integer
+                  example: 10
+                stitch:
+                  type: boolean
+                  example: true
+                scene_index_id:
+                  type: string
+                  example: "idx-12345"
+                filter:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+
+  /video/{video_id}/scenes/:
+    get:
+      summary: Get video scenes
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      responses:
+        '200':
+          description: List of scenes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        scene_id:
+                          type: string
+                          example: "scene-123"
+                        start_time:
+                          type: number
+                          example: 10.5
+                        end_time:
+                          type: number
+                          example: 25.3
+                        description:
+                          type: string
+                          example: "Scene description"
+                        thumbnail_url:
+                          type: string
+                          example: "https://assets.videodb.io/scene/123.jpg"
+
+    post:
+      summary: Create video scenes
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scene_type:
+                  type: string
+                  enum: [shot, time_based]
+                  example: "shot"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Scene creation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/scene/{scene_id}/describe/:
+    post:
+      summary: Describe video scene
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: scene_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  example: "Describe what happens in this scene"
+                model_name:
+                  type: string
+                  example: "gpt-4"
+      responses:
+        '200':
+          description: Scene description generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                        example: "Scene description text"
+
+  /video/{video_id}/frame/{frame_id}/describe/:
+    post:
+      summary: Describe video frame
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: frame_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "frame-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  example: "Describe this frame"
+                model_name:
+                  type: string
+                  example: "gpt-4-vision"
+      responses:
+        '200':
+          description: Frame description generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                        example: "Frame description text"
+
+  /video/{video_id}/clip:
+    post:
+      summary: Generate video clip
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  example: "Create a clip about the introduction"
+                content_type:
+                  type: string
+                  default: "spoken"
+                  example: "spoken"
+                model_name:
+                  type: string
+                  default: "basic"
+                  example: "basic"
+                scene_index_id:
+                  type: string
+                  example: "idx-12345"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Clip generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/workflow/:
+    post:
+      summary: Execute video workflow
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - workflow_type
+              properties:
+                workflow_type:
+                  type: string
+                  enum: [transcribe, index, analyze]
+                  example: "transcribe"
+                config:
+                  type: object
+                  properties:
+                    language:
+                      type: string
+                      example: "en"
+                    model:
+                      type: string
+                      example: "gpt-4"
+      responses:
+        '200':
+          description: Workflow started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /audio/:
+    get:
+      summary: List audios
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: List of audios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      audios:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Audio'
+
+  /audio/{audio_id}:
+    get:
+      summary: Get audio details
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: audio_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^a-"
+            example: "a-12345"
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: Audio details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Audio'
+
+    delete:
+      summary: Delete audio
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: audio_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^a-"
+            example: "a-12345"
+      responses:
+        '200':
+          description: Audio deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /audio/{audio_id}/generate_url:
+    post:
+      summary: Generate audio stream URL
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: audio_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^a-"
+            example: "a-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [mp3, wav, flac]
+                  example: "mp3"
+                quality:
+                  type: string
+                  enum: [low, medium, high]
+                  example: "high"
+      responses:
+        '200':
+          description: Stream URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stream_url:
+                        type: string
+                        example: "https://stream.videodb.io/a/12345"
+
+  /image/:
+    get:
+      summary: List images
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: List of images
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      images:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Image'
+
+  /image/{image_id}:
+    get:
+      summary: Get image details
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^img-"
+            example: "img-12345"
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: Image details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Image'
+
+    delete:
+      summary: Delete image
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^img-"
+            example: "img-12345"
+      responses:
+        '200':
+          description: Image deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /image/{image_id}/generate_url:
+    post:
+      summary: Generate image URL
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^img-"
+            example: "img-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [jpg, png, webp]
+                  example: "jpg"
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  example: 90
+                width:
+                  type: integer
+                  example: 1024
+                height:
+                  type: integer
+                  example: 768
+      responses:
+        '200':
+          description: Image URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      image_url:
+                        type: string
+                        example: "https://assets.videodb.io/img/12345.jpg"
+
+  /collection/{collection_id}/generate/image/:
+    post:
+      summary: Generate image using AI
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  example: "A beautiful sunset over mountains"
+                aspect_ratio:
+                  type: string
+                  example: "16:9"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Image generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /collection/{collection_id}/generate/video/:
+    post:
+      summary: Generate video using AI
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  example: "A cat playing with a ball"
+                duration:
+                  type: number
+                  example: 5
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Video generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /collection/{collection_id}/generate/audio/:
+    post:
+      summary: Generate audio using AI
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+                - audio_type
+              properties:
+                prompt:
+                  type: string
+                  example: "Generate upbeat background music"
+                audio_type:
+                  type: string
+                  enum: [speech, sound_effect, music]
+                  example: "music"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Audio generation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /collection/{collection_id}/generate/text/:
+    post:
+      summary: Generate text using AI
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  example: "Summarize the content of this video"
+                video_id:
+                  type: string
+                  example: "m-12345"
+                model_name:
+                  type: string
+                  example: "gpt-4"
+                max_tokens:
+                  type: integer
+                  example: 500
+                temperature:
+                  type: number
+                  example: 0.7
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Text generation started or completed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AsyncResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      data:
+                        type: object
+                        properties:
+                          output:
+                            type: string
+                            example: "Generated text content"
+
+  /timeline:
+    post:
+      summary: Compile timeline
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - request_type
+                - timeline
+              properties:
+                request_type:
+                  type: string
+                  enum: [compile]
+                  example: "compile"
+                timeline:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Timeline'
+      responses:
+        '200':
+          description: Timeline compilation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stream_url:
+                        type: string
+                        example: "https://stream.videodb.io/compiled/12345"
+
+  /billing/usage:
+    get:
+      summary: Get billing usage information
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Billing usage data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/BillingUsage'
+
+  /billing/checkout:
+    post:
+      summary: Create billing checkout session
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [payment, subscription]
+                  example: "payment"
+                plan_id:
+                  type: string
+                  example: "plan-basic"
+                amount:
+                  type: number
+                  example: 100
+      responses:
+        '200':
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        example: "https://checkout.stripe.com/pay/xxx"
+
+  /billing/checkouts:
+    get:
+      summary: Get billing checkout history
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            example: 0
+      responses:
+        '200':
+          description: Checkout history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "cs_test_xxx"
+                        amount:
+                          type: number
+                          example: 100
+                        currency:
+                          type: string
+                          example: "usd"
+                        status:
+                          type: string
+                          example: "completed"
+                        created_at:
+                          type: string
+                          format: date-time
+
+  /billing/invoices:
+    get:
+      summary: Get billing invoices
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            example: 0
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "in_xxx"
+                        amount:
+                          type: number
+                          example: 100
+                        currency:
+                          type: string
+                          example: "usd"
+                        status:
+                          type: string
+                          example: "paid"
+                        pdf_url:
+                          type: string
+                          example: "https://invoice.stripe.com/pdf/xxx"
+                        created_at:
+                          type: string
+                          format: date-time
+
+  /billing/topup:
+    post:
+      summary: Create topup payment
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  example: 50
+                currency:
+                  type: string
+                  example: "usd"
+      responses:
+        '200':
+          description: Topup checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        example: "https://checkout.stripe.com/pay/xxx"
+
+  /billing/auto_recharge:
+    get:
+      summary: Get auto recharge settings
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Auto recharge settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                        example: true
+                      threshold:
+                        type: number
+                        example: 10
+                      amount:
+                        type: number
+                        example: 50
+
+    post:
+      summary: Update auto recharge settings
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  example: true
+                threshold:
+                  type: number
+                  example: 10
+                amount:
+                  type: number
+                  example: 50
+      responses:
+        '200':
+          description: Auto recharge updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Auto recharge settings updated"
+
+  /async-response/{response_id}:
+    get:
+      summary: Get async operation result
+      parameters:
+        - name: response_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "job-12345"
+      responses:
+        '200':
+          description: Operation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [processing, done, failed]
+                    example: "done"
+                  data:
+                    type: object
+                    description: "Result data varies by operation type"
+        '404':
+          description: Response not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /download:
+    get:
+      summary: List download entries
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: page_index
+          in: query
+          schema:
+            type: integer
+            example: 0
+        - name: count
+          in: query
+          schema:
+            type: integer
+            maximum: 5000
+            example: 50
+      responses:
+        '200':
+          description: List of downloads
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      downloads:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: "download-12345"
+                            name:
+                              type: string
+                              example: "video_download.mp4"
+                            status:
+                              type: string
+                              enum: [processing, done, error]
+                              example: "done"
+                            created_at:
+                              type: string
+                              format: date-time
+                            download_url:
+                              type: string
+                              example: "https://example.com/download/video.mp4"
+
+    post:
+      summary: Create download request
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stream_link
+              properties:
+                stream_link:
+                  type: string
+                  example: "https://stream.videodb.io/v/12345"
+                name:
+                  type: string
+                  example: "my_download.mp4"
+      responses:
+        '200':
+          description: Download initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+    delete:
+      summary: Delete download entry
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: download_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "download-12345"
+      responses:
+        '200':
+          description: Download deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /download/{download_id}:
+    get:
+      summary: Get download status/details
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: download_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "download-12345"
+      responses:
+        '200':
+          description: Download status
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AsyncResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            example: "download-12345"
+                          name:
+                            type: string
+                            example: "video_download.mp4"
+                          status:
+                            type: string
+                            enum: [processing, done, error]
+                            example: "done"
+                          download_url:
+                            type: string
+                            example: "https://example.com/download/video.mp4"
+                          created_at:
+                            type: string
+                            format: date-time
+
+    post:
+      summary: Retry download
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: download_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "download-12345"
+      responses:
+        '200':
+          description: Download retry initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /chat/completions:
+    post:
+      summary: OpenAI-compatible chat completions proxy
+      description: Proxy endpoint for OpenAI chat completions API with VideoDB billing
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - model
+                - messages
+              properties:
+                model:
+                  type: string
+                  enum: [gpt-4o-2024-11-20]
+                  example: "gpt-4o-2024-11-20"
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                        enum: [system, user, assistant]
+                        example: "user"
+                      content:
+                        type: string
+                        example: "Hello, how are you?"
+                max_tokens:
+                  type: integer
+                  example: 100
+                temperature:
+                  type: number
+                  example: 0.7
+                stream:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Chat completion response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "chatcmpl-123"
+                  object:
+                    type: string
+                    example: "chat.completion"
+                  created:
+                    type: integer
+                    example: 1677652288
+                  model:
+                    type: string
+                    example: "gpt-4o-2024-11-20"
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                          example: 0
+                        message:
+                          type: object
+                          properties:
+                            role:
+                              type: string
+                              example: "assistant"
+                            content:
+                              type: string
+                              example: "Hello! I'm doing well, thank you for asking."
+                        finish_reason:
+                          type: string
+                          example: "stop"
+                  usage:
+                    type: object
+                    properties:
+                      prompt_tokens:
+                        type: integer
+                        example: 10
+                      completion_tokens:
+                        type: integer
+                        example: 15
+                      total_tokens:
+                        type: integer
+                        example: 25
+
+  /timeline_v2:
+    post:
+      summary: Compile timeline (v2)
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - request_type
+                - timeline
+              properties:
+                request_type:
+                  type: string
+                  enum: [compile]
+                  example: "compile"
+                timeline:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Timeline'
+                output_format:
+                  type: string
+                  enum: [mp4, webm, hls]
+                  example: "mp4"
+                quality:
+                  type: string
+                  enum: [low, medium, high]
+                  example: "high"
+      responses:
+        '200':
+          description: Timeline compilation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stream_url:
+                        type: string
+                        example: "https://stream.videodb.io/compiled/12345"
+                      duration:
+                        type: number
+                        example: 120.5
+                      format:
+                        type: string
+                        example: "mp4"
+
+  /timeline_v2/download:
+    post:
+      summary: Download compiled timeline
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - timeline_id
+              properties:
+                timeline_id:
+                  type: string
+                  example: "timeline-12345"
+                format:
+                  type: string
+                  enum: [mp4, webm, avi]
+                  example: "mp4"
+                quality:
+                  type: string
+                  enum: [low, medium, high]
+                  example: "high"
+      responses:
+        '200':
+          description: Download initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /compile/:
+    post:
+      summary: Compile media content
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - inputs
+              properties:
+                inputs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media_id:
+                        type: string
+                        example: "m-12345"
+                      start_time:
+                        type: number
+                        example: 10.0
+                      end_time:
+                        type: number
+                        example: 30.0
+                output_format:
+                  type: string
+                  enum: [mp4, webm, hls]
+                  example: "mp4"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Compilation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/index/scene/:
+    get:
+      summary: Get video scene index status
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      responses:
+        '200':
+          description: Scene index status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [done, processing, failed]
+                    example: "done"
+                  data:
+                    type: object
+                    properties:
+                      scene_count:
+                        type: integer
+                        example: 25
+                      total_duration:
+                        type: number
+                        example: 120.5
+                      last_updated:
+                        type: string
+                        format: date-time
+
+    post:
+      summary: Create video scene index
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scene_type:
+                  type: string
+                  enum: [shot, time_based]
+                  example: "shot"
+                segmentation_threshold:
+                  type: number
+                  example: 0.8
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Scene index creation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/index/scene/{scene_index_id}:
+    get:
+      summary: Get scene index details
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      responses:
+        '200':
+          description: Scene index details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "scene-idx-12345"
+                      video_id:
+                        type: string
+                        example: "m-12345"
+                      scene_type:
+                        type: string
+                        example: "shot"
+                      status:
+                        type: string
+                        enum: [done, processing, failed]
+                        example: "done"
+                      scenes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            start_time:
+                              type: number
+                              example: 10.5
+                            end_time:
+                              type: number
+                              example: 25.3
+                            confidence:
+                              type: number
+                              example: 0.85
+
+    delete:
+      summary: Delete scene index
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      responses:
+        '200':
+          description: Scene index deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+tags:
+  - name: Authentication
+    description: User authentication and API key management
+  - name: Collections
+    description: Collection management operations
+  - name: Videos
+    description: Video upload, processing, and management
+  - name: Audio
+    description: Audio management operations
+  - name: Images
+    description: Image management operations
+  - name: Search
+    description: Content search and indexing
+  - name: AI Generation
+    description: AI-powered content generation
+  - name: Billing
+    description: Billing and usage management
+  - name: RTStream
+    description: Real-time streaming operations
+  - name: Utilities
+    description: Utility endpoints
+  - name: Meeting
+    description: Meeting recording and management 
