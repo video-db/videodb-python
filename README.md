@@ -56,6 +56,7 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
     - [Realtime Video Editor](#realtime-video-editor)
     - [Real-Time Streams (RTStream)](#real-time-streams-rtstream)
     - [Meeting Recording](#meeting-recording)
+    - [Local Capture](#local-capture)
     - [Generative Media](#generative-media)
     - [Video Dubbing and Translation](#video-dubbing-and-translation)
     - [Transcoding](#transcoding)
@@ -463,6 +464,106 @@ if meeting.is_completed:
     
 # Get meeting from video
 meeting_info = video.get_meeting()
+```
+
+### Local Capture
+
+Capture screen, microphone, and system audio from local devices. Two components work together: your backend creates and controls sessions, while a desktop client captures media.
+
+**Requirements:** Install capture dependencies with `pip install 'videodb[capture]'`
+
+**Step 1: Backend creates session and token**
+
+```python
+import videodb
+
+conn = videodb.connect()
+
+# Create a capture session
+session = conn.create_capture_session(
+    end_user_id="user_abc",
+    callback_url="https://your-backend.com/webhooks/videodb",
+    metadata={"app": "my-ai-copilot"},
+)
+
+# Generate a short-lived token for the desktop client
+token = conn.generate_client_token(expires_in=600)
+
+# Send session.id and token to your desktop app
+print(f"Session: {session.id}, Token: {token}")
+```
+
+**Step 2: Desktop client captures**
+
+```python
+import asyncio
+from videodb.capture import CaptureClient
+
+async def capture(capture_session_id: str, client_token: str):
+    client = CaptureClient(upload_token=client_token)
+
+    # Request permissions
+    await client.request_permission("microphone")
+    await client.request_permission("screen_capture")
+
+    # Discover available sources
+    channels = await client.list_channels()
+
+    mic = channels.default_mic
+    display = channels.default_display
+    system_audio = channels.default_system_audio
+
+    selected = [c for c in [mic, display, system_audio] if c]
+
+    # Start capture
+    await client.start_capture_session(
+        capture_session_id=capture_session_id,
+        channels=selected,
+        primary_video_channel_id=display.id if display else None,
+    )
+
+    # Listen for events
+    async for ev in client.events():
+        print(f"{ev.get('type')}: {ev}")
+        if ev.get("type") in ("recording-complete", "error"):
+            break
+
+    await client.stop_capture()
+    await client.shutdown()
+
+# asyncio.run(capture("<SESSION_ID>", "<TOKEN_FROM_BACKEND>"))
+```
+
+**Step 3: Backend receives webhook and starts AI pipelines**
+
+```python
+# In your webhook handler
+def on_webhook(payload: dict):
+    if payload["event"] == "capture_session.active":
+        cap_id = payload["capture_session_id"]
+        session = conn.get_capture_session(cap_id)
+
+        # Get RTStreams (one per channel)
+        mics = session.get_rtstream("mic")
+        screens = session.get_rtstream("screen")
+
+        # Start real-time AI processing
+        if mics:
+            mic = mics[0]
+            mic.start_transcript()
+            mic.index_audio(prompt="Extract key decisions and action items")
+
+        if screens:
+            screen = screens[0]
+            screen.index_visuals(prompt="Describe what the user is doing")
+```
+
+**Channel Controls:**
+
+```python
+# Pause/resume individual channels during recording
+await mic.pause()   # Mute microphone
+await mic.resume()  # Unmute microphone
 ```
 
 ### Generative Media
