@@ -2,6 +2,7 @@ from typing import Optional, Union, List, Dict, Tuple, Any
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
+    ClipContentType,
     IndexType,
     ReframeMode,
     SceneExtractionType,
@@ -724,3 +725,64 @@ class Video:
 
         download_name = name or self.name or f"video_{self.id}"
         return self._connection.download(self.stream_url, download_name)
+
+    def clip(
+        self,
+        prompt: str,
+        content_type: str = ClipContentType.spoken,
+        model_name: str = "basic",
+        scene_index_id: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> List[Shot]:
+        """Generate video clips based on a text prompt.
+
+        Uses AI to analyze the video content (transcript, scenes, or both) and
+        identify segments that match the given prompt.
+
+        :param str prompt: Text describing what clips to find (e.g., "find funny moments",
+            "create a clip about the introduction")
+        :param str content_type: Type of content to analyze. One of:
+            - "spoken": Analyze transcript/spoken words (default)
+            - "visual": Analyze scene descriptions
+            - "multimodal": Analyze both transcript and scenes together
+        :param str model_name: LLM tier to use - "basic", "pro", or "ultra" (default: "basic")
+        :param str scene_index_id: (optional) Specific scene index to use for visual/multimodal analysis
+        :param str callback_url: (optional) URL to receive callback when processing completes
+        :raises InvalidRequestError: If the clip generation fails
+        :return: List of :class:`Shot <Shot>` objects representing the matched clips
+        :rtype: List[:class:`videodb.shot.Shot`]
+        """
+        clip_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.clip}",
+            data={
+                "prompt": prompt,
+                "content_type": content_type,
+                "model_name": model_name,
+                "scene_index_id": scene_index_id,
+                "callback_url": callback_url,
+            },
+        )
+
+        if callback_url:
+            return clip_data
+
+        shots = []
+        results = clip_data.get("results", [])
+        for result in results:
+            video_id = result.get("video_id", self.id)
+            video_length = result.get("length", self.length)
+            video_title = result.get("title", self.name)
+            for doc in result.get("docs", []):
+                shot = Shot(
+                    self._connection,
+                    video_id=video_id,
+                    video_length=video_length,
+                    video_title=video_title,
+                    start=doc.get("start"),
+                    end=doc.get("end"),
+                    text=doc.get("text"),
+                    search_score=doc.get("score"),
+                )
+                shots.append(shot)
+
+        return shots

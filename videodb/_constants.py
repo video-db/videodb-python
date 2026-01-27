@@ -38,6 +38,12 @@ class ReframeMode:
     smart = "smart"
 
 
+class ClipContentType:
+    spoken = "spoken"
+    visual = "visual"
+    multimodal = "multimodal"
+
+
 class SemanticSearchDefaultValues:
     result_threshold = 5
     score_threshold = 0.2
@@ -91,6 +97,7 @@ class ApiPath:
     record = "record"
     editor = "editor"
     reframe = "reframe"
+    clip = "clip"
 
 
 class Status:
