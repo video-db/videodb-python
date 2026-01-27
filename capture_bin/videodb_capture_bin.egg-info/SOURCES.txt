@@ -1,0 +1,6 @@
+setup.py
+videodb_capture_bin/__init__.py
+videodb_capture_bin.egg-info/PKG-INFO
+videodb_capture_bin.egg-info/SOURCES.txt
+videodb_capture_bin.egg-info/dependency_links.txt
+videodb_capture_bin.egg-info/top_level.txt

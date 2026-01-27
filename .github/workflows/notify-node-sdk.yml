@@ -1,0 +1,91 @@
+name: Notify Node SDK on Python Code Changes
+
+on:
+  push:
+    paths:
+      - 'videodb/*.py'
+      - 'videodb/**/*.py'
+      - '!videodb/__about__.py'
+      - '!videodb/__init__.py'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check if spec also changed
+        id: check_spec
+        run: |
+          BEFORE_SHA="${{ github.event.before }}"
+          AFTER_SHA="${{ github.sha }}"
+
+          # Handle new branch case
+          if [[ "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            BEFORE_SHA=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+          fi
+
+          # Check if openapi.yaml changed in this push
+          if [[ -n "$BEFORE_SHA" ]]; then
+            SPEC_CHANGED=$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- openapi.yaml | wc -l)
+          else
+            SPEC_CHANGED=0
+          fi
+
+          if [[ "$SPEC_CHANGED" -gt 0 ]]; then
+            echo "spec_changed=true" >> $GITHUB_OUTPUT
+            echo "Spec also changed - skipping (generate-from-spec.yml will handle this)"
+          else
+            echo "spec_changed=false" >> $GITHUB_OUTPUT
+            echo "Only Python code changed - will notify Node SDK"
+          fi
+
+      - name: Get branch and changed files
+        if: steps.check_spec.outputs.spec_changed == 'false'
+        id: info
+        run: |
+          # Get the branch name
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          BEFORE_SHA="${{ github.event.before }}"
+          AFTER_SHA="${{ github.sha }}"
+
+          # Handle new branch case
+          if [[ "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
+            BEFORE_SHA=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+          fi
+
+          # Get changed Python files (comma-separated for JSON)
+          if [[ -n "$BEFORE_SHA" ]]; then
+            FILES=$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" -- 'videodb/*.py' 'videodb/**/*.py' | grep -v '__about__\|__init__' | tr '\n' ',' | sed 's/,$//' || true)
+          else
+            FILES=""
+          fi
+
+          echo "changed_files=$FILES" >> $GITHUB_OUTPUT
+          echo "before_sha=$BEFORE_SHA" >> $GITHUB_OUTPUT
+          echo "after_sha=$AFTER_SHA" >> $GITHUB_OUTPUT
+
+          echo "Branch: $BRANCH_NAME"
+          echo "Changed files: $FILES"
+
+      - name: Trigger Node SDK Generation
+        if: steps.check_spec.outputs.spec_changed == 'false' && steps.info.outputs.changed_files != ''
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SDK_SYNC_PAT }}
+          repository: ${{ github.repository_owner }}/videodb-node
+          event-type: python-updated
+          client-payload: |
+            {
+              "source_branch": "${{ steps.info.outputs.branch_name }}",
+              "target_branch": "${{ steps.info.outputs.branch_name }}",
+              "trigger_type": "code_change",
+              "changed_files": "${{ steps.info.outputs.changed_files }}",
+              "before_sha": "${{ steps.info.outputs.before_sha }}",
+              "after_sha": "${{ steps.info.outputs.after_sha }}"
+            }
