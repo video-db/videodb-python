@@ -17,4 +17,4 @@ venv/
 example.ipynb
 example.py
 # test_local.py
-capture_bin/videodb_capture_bin/bin/*
+# capture_bin/videodb_capture_bin/bin/*
