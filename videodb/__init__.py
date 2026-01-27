@@ -7,6 +7,7 @@ from typing import Optional
 from videodb._utils._video import play_stream
 from videodb._constants import (
     VIDEO_DB_API,
+    ClipContentType,
     IndexType,
     SceneExtractionType,
     MediaType,
@@ -36,6 +37,7 @@ __all__ = [
     "VideodbError",
     "AuthenticationError",
     "InvalidRequestError",
+    "ClipContentType",
     "IndexType",
     "SearchError",
     "play_stream",
