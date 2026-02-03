@@ -159,15 +159,15 @@ class CaptureClient:
 
     def __init__(
         self,
-        upload_token: str,
+        client_token: str,
         base_url: Optional[str] = None,
     ):
         """Initialize the capture client.
 
-        :param str upload_token: Upload token for the capture session.
+        :param str client_token: Client token for the capture session.
         :param str base_url: VideoDB API endpoint URL.
         """
-        self.upload_token = upload_token
+        self.client_token = client_token
         self.base_url = base_url or os.environ.get("VIDEO_DB_API", VIDEO_DB_API)
         self._session_id: Optional[str] = None
         self._proc = None
@@ -381,7 +381,7 @@ class CaptureClient:
 
         payload = {
             "sessionId": capture_session_id,
-            "uploadToken": self.upload_token,
+            "uploadToken": self.client_token,
             "channels": [ch.to_dict() for ch in channels],
         }
 
