@@ -52,6 +52,7 @@ class Channel:
         self.name = name
         self.type = type
         self._client = client
+        self.store = False
 
     def __repr__(self):
         return f"Channel(id={self.id}, name={self.name}, type={self.type})"
@@ -89,7 +90,7 @@ class Channel:
             "type": self.type,
             "name": self.name,
             "record": True,
-            "store": True,
+            "store": self.store,
         }
 
 
