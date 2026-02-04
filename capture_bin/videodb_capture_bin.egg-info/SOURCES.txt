@@ -4,3 +4,6 @@ videodb_capture_bin.egg-info/PKG-INFO
 videodb_capture_bin.egg-info/SOURCES.txt
 videodb_capture_bin.egg-info/dependency_links.txt
 videodb_capture_bin.egg-info/top_level.txt
+videodb_capture_bin/bin/librecorder.dylib
+videodb_capture_bin/bin/meet_detector
+videodb_capture_bin/bin/recorder

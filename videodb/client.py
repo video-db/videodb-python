@@ -32,23 +32,28 @@ logger = logging.getLogger(__name__)
 class Connection(HttpClient):
     """Connection class to interact with the VideoDB"""
 
-    def __init__(self, api_key: str, base_url: str, **kwargs) -> "Connection":
+    def __init__(self, api_key: str = None, session_token: str = None, base_url: str = None, **kwargs) -> "Connection":
         """Initializes a new instance of the Connection class with specified API credentials.
 
         Note: Users should not initialize this class directly.
         Instead use :meth:`videodb.connect() <videodb.connect>`
 
         :param str api_key: API key for authentication
+        :param str session_token: Session token for authentication (alternative to api_key)
         :param str base_url: Base URL of the VideoDB API
-        :raise ValueError: If the API key is not provided
+        :raise ValueError: If neither API key nor session token is provided
         :return: :class:`Connection <Connection>` object, to interact with the VideoDB
         :rtype: :class:`videodb.client.Connection`
         """
+        # Use whichever token is provided
+        access_token = api_key or session_token
+
         self.api_key = api_key
+        self.session_token = session_token
         self.base_url = base_url
         self.collection_id = "default"
         super().__init__(
-            api_key=api_key, base_url=base_url, version=__version__, **kwargs
+            api_key=access_token, base_url=base_url, version=__version__, **kwargs
         )
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
