@@ -238,7 +238,7 @@ class CaptureClient:
             if not line:
                 break
             
-            line_str = line.decode("utf-8").strip()
+            line_str = line.decode("utf-8", errors="replace").strip()
             if not line_str.startswith("videodb_recorder|"):
                 continue
 
@@ -268,7 +268,7 @@ class CaptureClient:
             line = await self._proc.stderr.readline()
             if not line:
                 break
-            logger.debug(f"[Recorder Binary]: {line.decode('utf-8').strip()}")
+            logger.debug(f"[Recorder Binary]: {line.decode('utf-8', errors='replace').strip()}")
 
     async def shutdown(self):
         """Cleanly terminate the recorder binary process."""
