@@ -14,7 +14,7 @@ setup(
     description="Binary container for VideoDB Capture runtime",
     packages=["videodb_capture_bin"],
     package_data={
-        "videodb_capture_bin": ["bin/*"],
+        "videodb_capture_bin": ["bin/**/*"],
     },
     include_package_data=True,
     distclass=BinaryDistribution,

@@ -22,6 +22,7 @@ from videodb._constants import (
     AudioConfig,
     ReframeMode,
     SegmentationType,
+    RTStreamChannelType,
 )
 from videodb.client import Connection
 from videodb.capture_session import CaptureSession
@@ -69,6 +70,7 @@ __all__ = [
     "AudioConfig",
     "ReframeMode",
     "SegmentationType",
+    "RTStreamChannelType",
 ]
 
 

@@ -1,12 +1,32 @@
 import os
 import sys
+import platform
+
+
+def _get_platform_folder():
+    """Returns the platform-specific folder name."""
+    if sys.platform == "win32":
+        return "win_amd64"
+    elif sys.platform == "darwin":
+        machine = platform.machine()
+        if machine == "arm64":
+            return "darwin_arm64"
+        else:
+            return "darwin_x86_64"
+    else:
+        # Linux
+        machine = platform.machine()
+        if machine == "aarch64":
+            return "linux_arm64"
+        else:
+            return "linux_x86_64"
+
 
 def get_binary_path():
     """Returns the absolute path to the recorder binary."""
-    # This file is at: capture_bin/videodb_capture_bin/__init__.py
-    # Binary is at:  capture_bin/videodb_capture_bin/bin/recorder (or .exe)
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    bin_dir = os.path.join(base_dir, "bin")
+    platform_folder = _get_platform_folder()
+    bin_dir = os.path.join(base_dir, "bin", platform_folder)
 
     if sys.platform == "win32":
         binary_name = "recorder.exe"
