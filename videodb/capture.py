@@ -114,6 +114,15 @@ class VideoChannel(Channel):
         return f"VideoChannel(id={self.id}, name={self.name})"
 
 
+class ChannelList(list):
+    """List subclass with a default property for channel collections."""
+
+    @property
+    def default(self) -> Optional[Channel]:
+        """Get the first (default) channel, or None if empty."""
+        return self[0] if self else None
+
+
 class Channels:
     """Container for available channels, grouped by type."""
 
@@ -123,9 +132,9 @@ class Channels:
         displays: List[VideoChannel] = None,
         system_audio: List[AudioChannel] = None,
     ):
-        self.mics: List[AudioChannel] = mics or []
-        self.displays: List[VideoChannel] = displays or []
-        self.system_audio: List[AudioChannel] = system_audio or []
+        self.mics: ChannelList = ChannelList(mics or [])
+        self.displays: ChannelList = ChannelList(displays or [])
+        self.system_audio: ChannelList = ChannelList(system_audio or [])
 
     def __repr__(self):
         return (
@@ -135,24 +144,9 @@ class Channels:
             f"system_audio={len(self.system_audio)})"
         )
 
-    @property
-    def default_mic(self) -> Optional[AudioChannel]:
-        """Get the default microphone channel."""
-        return self.mics[0] if self.mics else None
-
-    @property
-    def default_display(self) -> Optional[VideoChannel]:
-        """Get the default display channel."""
-        return self.displays[0] if self.displays else None
-
-    @property
-    def default_system_audio(self) -> Optional[AudioChannel]:
-        """Get the default system audio channel."""
-        return self.system_audio[0] if self.system_audio else None
-
     def all(self) -> List[Channel]:
         """Return a flat list of all channels."""
-        return self.mics + self.displays + self.system_audio
+        return list(self.mics) + list(self.displays) + list(self.system_audio)
 
 
 class CaptureClient:
