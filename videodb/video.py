@@ -587,32 +587,57 @@ class Video:
 
     def index_audio(
         self,
+        prompt: Optional[str] = None,
+        model_name: Optional[str] = None,
+        model_config: Optional[Dict] = None,
         language_code: Optional[str] = None,
-        segmentation_type: Optional[SegmentationType] = SegmentationType.sentence,
-        force: bool = False,
-        callback_url: str = None,
-    ) -> None:
-        """Index audio (spoken words) in the video.
+        batch_config: Optional[Dict] = None,
+        name: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional[str]:
+        """Index audio by processing transcript segments through an LLM.
 
-        :param str language_code: (optional) Language code of the video
-        :param SegmentationType segmentation_type: (optional) Segmentation type used for indexing, :class:`SegmentationType <SegmentationType>` object
-        :param bool force: (optional) Force to index the video
+        Segments the video transcript, processes each segment with the given
+        prompt using the specified model, and indexes the results as scene
+        records for semantic search.
+
+        :param str prompt: (optional) Prompt for processing transcript segments
+        :param str model_name: (optional) LLM tier to use (e.g. "basic", "pro", "ultra")
+        :param dict model_config: (optional) Model configuration
+        :param str language_code: (optional) Language code for transcription
+        :param dict batch_config: (optional) Segmentation config with keys:
+            - "type": Segmentation type ("word", "sentence", or "time")
+            - "value": Segment length (words, sentences, or seconds)
+            Defaults to {"type": "word", "value": 10}
+        :param str name: (optional) Name for the scene index
         :param str callback_url: (optional) URL to receive the callback
-        :raises InvalidRequestError: If the video is already indexed
-        :return: None if the indexing is successful
-        :rtype: None
+        :return: The scene index id
+        :rtype: str
         """
-        self._connection.post(
-            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}",
+        if batch_config is None:
+            batch_config = {"type": Segmenter.word, "value": 10}
+
+        extraction_config = {
+            "segmenter": batch_config.get("type", Segmenter.word),
+            "segmentation_value": batch_config.get("value", 10),
+        }
+
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
             data={
-                "index_type": IndexType.spoken_word,
+                "extraction_type": SceneExtractionType.transcript,
+                "extraction_config": extraction_config,
+                "prompt": prompt,
+                "model_name": model_name,
+                "model_config": model_config,
                 "language_code": language_code,
-                "segmentation_type": segmentation_type,
-                "force": force,
+                "name": name,
                 "callback_url": callback_url,
             },
-            show_progress=True,
         )
+        if not scenes_data:
+            return None
+        return scenes_data.get("scene_index_id")
 
     def list_scene_index(self) -> List:
         """List all the scene indexes.
