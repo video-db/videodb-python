@@ -109,6 +109,7 @@ class ApiPath:
     session = "session"
     token = "token"
     websocket = "websocket"
+    export = "export"
 
 
 class Status:

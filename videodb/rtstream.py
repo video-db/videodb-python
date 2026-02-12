@@ -39,6 +39,39 @@ class RTStreamSearchResult:
         return self.shots
 
 
+class RTStreamExportResult:
+    """Result of exporting an RTStream recording.
+
+    :ivar str video_id: ID of the exported video or audio asset
+    :ivar str stream_url: URL to stream the exported asset (may be None for audio)
+    :ivar str player_url: URL to play the exported asset in a player (may be None for audio)
+    :ivar str name: Name of the exported recording
+    :ivar float duration: Duration of the exported recording in seconds (may be None on idempotent calls)
+    """
+
+    def __init__(
+        self,
+        video_id: str,
+        stream_url: Optional[str] = None,
+        player_url: Optional[str] = None,
+        name: Optional[str] = None,
+        duration: Optional[float] = None,
+    ) -> None:
+        self.video_id = video_id
+        self.stream_url = stream_url
+        self.player_url = player_url
+        self.name = name
+        self.duration = duration
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamExportResult("
+            f"video_id={self.video_id}, "
+            f"name={self.name}, "
+            f"duration={self.duration})"
+        )
+
+
 class RTStreamShot:
     """RTStreamShot class for rtstream search results
 
@@ -325,6 +358,32 @@ class RTStream:
             data={"action": "stop"},
         )
         self.status = "stopped"
+
+    def export(self, name: Optional[str] = None) -> "RTStreamExportResult":
+        """Export the latest completed recording as a video or audio asset.
+
+        The stream must be stopped before exporting. The call is idempotent:
+        calling it again returns the same asset without re-ingesting.
+
+        :param str name: Name for the exported asset (optional, defaults to "{stream_name} - Recording")
+        :return: Export result with the asset ID and metadata
+        :rtype: :class:`RTStreamExportResult`
+        """
+        data = {}
+        if name is not None:
+            data["name"] = name
+
+        export_data = self._connection.post(
+            path=f"{ApiPath.rtstream}/{self.id}/{ApiPath.export}",
+            data=data,
+        )
+        return RTStreamExportResult(
+            video_id=export_data.get("video_id"),
+            stream_url=export_data.get("stream_url"),
+            player_url=export_data.get("player_url"),
+            name=export_data.get("name"),
+            duration=export_data.get("duration"),
+        )
 
     def start_transcript(
         self, ws_connection_id: Optional[str] = None, engine: Optional[str] = None
