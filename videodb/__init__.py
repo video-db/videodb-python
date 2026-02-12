@@ -20,8 +20,15 @@ from videodb._constants import (
     ResizeMode,
     VideoConfig,
     AudioConfig,
+    ReframeMode,
+    SegmentationType,
+    RTStreamChannelType,
 )
 from videodb.client import Connection
+from videodb.capture_session import CaptureSession
+from videodb.websocket_client import WebSocketConnection
+from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
+
 from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
@@ -33,6 +40,15 @@ logger: logging.Logger = logging.getLogger("videodb")
 
 
 __all__ = [
+    "connect",
+    "CaptureSession",
+    "WebSocketConnection",
+    "CaptureClient",
+    "Channel",
+    "AudioChannel",
+    "VideoChannel",
+    "Channels",
+    "ChannelList",
     "VideodbError",
     "AuthenticationError",
     "InvalidRequestError",
@@ -51,11 +67,15 @@ __all__ = [
     "ResizeMode",
     "VideoConfig",
     "AudioConfig",
+    "ReframeMode",
+    "SegmentationType",
+    "RTStreamChannelType",
 ]
 
 
 def connect(
     api_key: str = None,
+    session_token: str = None,
     base_url: Optional[str] = VIDEO_DB_API,
     log_level: Optional[int] = logging.INFO,
     **kwargs,
@@ -63,6 +83,7 @@ def connect(
     """A client for interacting with a videodb via REST API
 
     :param str api_key: The api key to use for authentication
+    :param str session_token: The session token to use for authentication (alternative to api_key)
     :param str base_url: (optional) The base url to use for the api
     :param int log_level: (optional) The log level to use for the logger
     :return: A connection object
@@ -70,11 +91,14 @@ def connect(
     """
 
     logger.setLevel(log_level)
-    if api_key is None:
+
+    # Determine which token to use
+    if api_key is None and session_token is None:
         api_key = os.environ.get("VIDEO_DB_API_KEY")
-    if api_key is None:
+
+    if api_key is None and session_token is None:
         raise AuthenticationError(
-            "No API key provided. Set an API key either as an environment variable (VIDEO_DB_API_KEY) or pass it as an argument."
+            "No authentication provided. Set an API key (VIDEO_DB_API_KEY) or provide api_key/session_token as an argument."
         )
 
-    return Connection(api_key, base_url, **kwargs)
+    return Connection(api_key=api_key, session_token=session_token, base_url=base_url, **kwargs)

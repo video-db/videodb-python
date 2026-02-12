@@ -19,6 +19,8 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.capture_session import CaptureSession
+from videodb.websocket_client import WebSocketConnection
 
 from videodb._upload import (
     upload,
@@ -30,23 +32,28 @@ logger = logging.getLogger(__name__)
 class Connection(HttpClient):
     """Connection class to interact with the VideoDB"""
 
-    def __init__(self, api_key: str, base_url: str, **kwargs) -> "Connection":
+    def __init__(self, api_key: str = None, session_token: str = None, base_url: str = None, **kwargs) -> "Connection":
         """Initializes a new instance of the Connection class with specified API credentials.
 
         Note: Users should not initialize this class directly.
         Instead use :meth:`videodb.connect() <videodb.connect>`
 
         :param str api_key: API key for authentication
+        :param str session_token: Session token for authentication (alternative to api_key)
         :param str base_url: Base URL of the VideoDB API
-        :raise ValueError: If the API key is not provided
+        :raise ValueError: If neither API key nor session token is provided
         :return: :class:`Connection <Connection>` object, to interact with the VideoDB
         :rtype: :class:`videodb.client.Connection`
         """
+        # Use whichever token is provided
+        access_token = api_key or session_token
+
         self.api_key = api_key
+        self.session_token = session_token
         self.base_url = base_url
         self.collection_id = "default"
         super().__init__(
-            api_key=api_key, base_url=base_url, version=__version__, **kwargs
+            api_key=access_token, base_url=base_url, version=__version__, **kwargs
         )
 
     def get_collection(self, collection_id: Optional[str] = "default") -> Collection:
@@ -347,3 +354,143 @@ class Connection(HttpClient):
         meeting = Meeting(self, id=meeting_id, collection_id="default")
         meeting.refresh()
         return meeting
+
+    def create_capture_session(
+        self,
+        end_user_id: str,
+        collection_id: str = "default",
+        callback_url: str = None,
+        ws_connection_id: str = None,
+        metadata: dict = None,
+    ) -> CaptureSession:
+        """Create a capture session.
+
+        :param str end_user_id: ID of the end user
+        :param str collection_id: ID of the collection (default: "default")
+        :param str callback_url: URL to receive callback (optional)
+        :param str ws_connection_id: WebSocket connection ID (optional)
+        :param dict metadata: Custom metadata (optional)
+        :return: :class:`CaptureSession <CaptureSession>` object
+        :rtype: :class:`videodb.capture_session.CaptureSession`
+        """
+        data = {
+            "end_user_id": end_user_id,
+        }
+        if callback_url:
+            data["callback_url"] = callback_url
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        if metadata:
+            data["metadata"] = metadata
+
+        response = self.post(
+            path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}",
+            data=data,
+        )
+        # Extract id and collection_id from response to avoid duplicate arguments
+        session_id = response.pop("session_id", None) or response.pop("id", None)
+        response_collection_id = response.pop("collection_id", collection_id)
+        return CaptureSession(
+            self, id=session_id, collection_id=response_collection_id, **response
+        )
+
+    def get_capture_session(
+        self, session_id: str, collection_id: str = "default"
+    ) -> CaptureSession:
+        """Get a capture session by its ID.
+
+        :param str session_id: ID of the capture session
+        :param str collection_id: ID of the collection (default: "default")
+        :return: :class:`CaptureSession <CaptureSession>` object
+        :rtype: :class:`videodb.capture_session.CaptureSession`
+        """
+        response = self.get(
+            path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}/{session_id}"
+        )
+
+        # If response is wrapped in 'data', extract it
+        if "data" in response and isinstance(response["data"], dict):
+            response = response["data"]
+
+        # Normalize rtstreams before passing to CaptureSession
+        for rts in response.get("rtstreams", []):
+            if isinstance(rts, dict):
+                if "rtstream_id" in rts and "id" not in rts:
+                    rts["id"] = rts.pop("rtstream_id")
+                if "collection_id" not in rts:
+                    rts["collection_id"] = collection_id
+
+        # Extract id and collection_id from response to avoid duplicate arguments
+        response.pop("id", None)  # Remove id from response
+        response.pop("collection_id", None)  # Remove collection_id from response
+
+        return CaptureSession(
+            self, id=session_id, collection_id=collection_id, **response
+        )
+
+    def list_capture_sessions(
+        self,
+        collection_id: str = "default",
+        status: str = None,
+    ) -> list[CaptureSession]:
+        """List capture sessions.
+
+        :param str collection_id: ID of the collection (default: "default")
+        :param str status: Filter sessions by status (optional)
+        :return: List of :class:`CaptureSession <CaptureSession>` objects
+        :rtype: list[:class:`videodb.capture_session.CaptureSession`]
+        """
+        params = {}
+        if status:
+            params["status"] = status
+
+        response = self.get(
+            path=f"{ApiPath.collection}/{collection_id}/{ApiPath.capture}/{ApiPath.session}",
+            params=params,
+        )
+
+        sessions = []
+        for session_data in response.get("sessions", []):
+            session_id = session_data.pop("id", None) or session_data.pop(
+                "session_id", None
+            )
+            # Normalize rtstreams
+            for rts in session_data.get("rtstreams", []):
+                if isinstance(rts, dict):
+                    if "rtstream_id" in rts and "id" not in rts:
+                        rts["id"] = rts.pop("rtstream_id")
+                    if "collection_id" not in rts:
+                        rts["collection_id"] = collection_id
+            # Remove collection_id from data
+            session_data.pop("collection_id", None)
+            sessions.append(
+                CaptureSession(
+                    self, id=session_id, collection_id=collection_id, **session_data
+                )
+            )
+        return sessions
+
+    def connect_websocket(self, collection_id: str = "default") -> WebSocketConnection:
+        """Connect to the VideoDB WebSocket service.
+
+        :param str collection_id: ID of the collection (default: "default")
+        :return: :class:`WebSocketConnection <WebSocketConnection>` object
+        :rtype: :class:`videodb.websocket_client.WebSocketConnection`
+        """
+        path = f"{ApiPath.collection}/{collection_id}/{ApiPath.websocket}"
+        response = self.get(path=path)
+        websocket_url = response.get("websocket_url")
+        return WebSocketConnection(url=websocket_url)
+
+    def generate_client_token(self, expires_in: int = 86400) -> str:
+        """Generate a client token for capture operations.
+
+        :param int expires_in: Expiration time in seconds (default: 86400)
+        :return: Client token string
+        :rtype: str
+        """
+        response = self.post(
+            path=f"{ApiPath.capture}/{ApiPath.session}/{ApiPath.token}",
+            data={"expires_in": expires_in},
+        )
+        return response.get("token")

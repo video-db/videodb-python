@@ -7,13 +7,15 @@ from videodb._upload import (
 from videodb._constants import (
     ApiPath,
     IndexType,
+    MediaType,
     SearchType,
 )
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
-from videodb.rtstream import RTStream
+from videodb.capture_session import CaptureSession
+from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
 from videodb.search import SearchFactory, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -167,23 +169,56 @@ class Collection:
         )
 
     def connect_rtstream(
-        self, url: str, name: str, sample_rate: int = None
+        self,
+        url: str,
+        name: str,
+        media_types: List[str] = None,
+        sample_rate: int = None,
+        store: bool = None,
+        enable_transcript: bool = None,
+        ws_connection_id: str = None,
     ) -> RTStream:
         """Connect to an rtstream.
 
         :param str url: URL of the rtstream
         :param str name: Name of the rtstream
-        :param int sample_rate: Sample rate of the rtstream (optional)
+        :param list media_types: List of media types to capture (default: [MediaType.video]).
+            Valid values: :attr:`MediaType.audio`, :attr:`MediaType.video`
+        :param int sample_rate: Sample rate of the rtstream (optional, server default: 30)
+        :param bool store: Enable recording storage (optional, default: False).
+            When True, the stream recording is stored and can be exported via :meth:`RTStream.export`.
+        :param bool enable_transcript: Enable real-time transcription (optional)
+        :param str ws_connection_id: WebSocket connection ID for receiving events (optional)
         :return: :class:`RTStream <RTStream>` object
         """
+        if media_types is None:
+            media_types = [MediaType.video]
+
+        valid = {MediaType.audio, MediaType.video}
+        invalid = set(media_types) - valid
+        if invalid or not media_types:
+            raise ValueError(
+                f"Invalid media_types: {invalid}. Valid values: {MediaType.audio}, {MediaType.video}"
+            )
+
+        data = {
+            "collection_id": self.id,
+            "url": url,
+            "name": name,
+            "media_types": media_types,
+        }
+        if sample_rate is not None:
+            data["sample_rate"] = sample_rate
+        if store is not None:
+            data["store"] = store
+        if enable_transcript is not None:
+            data["enable_transcript"] = enable_transcript
+        if ws_connection_id is not None:
+            data["ws_connection_id"] = ws_connection_id
+
         rtstream_data = self._connection.post(
             path=f"{ApiPath.rtstream}",
-            data={
-                "collection_id": self.id,
-                "url": url,
-                "name": name,
-                "sample_rate": sample_rate,
-            },
+            data=data,
         )
         return RTStream(self._connection, **rtstream_data)
 
@@ -199,14 +234,34 @@ class Collection:
         )
         return RTStream(self._connection, **rtstream_data)
 
-    def list_rtstreams(self) -> List[RTStream]:
+    def list_rtstreams(
+        self,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        status: Optional[str] = None,
+        name: Optional[str] = None,
+        ordering: Optional[str] = None,
+    ) -> List[RTStream]:
         """List all rtstreams in the collection.
 
+        :param int limit: Number of rtstreams to return (optional)
+        :param int offset: Number of rtstreams to skip (optional)
+        :param str status: Filter by status (optional)
+        :param str name: Filter by name (optional)
+        :param str ordering: Order results by field (optional)
         :return: List of :class:`RTStream <RTStream>` objects
         :rtype: List[:class:`videodb.rtstream.RTStream`]
         """
+        params = {
+            "limit": limit,
+            "offset": offset,
+            "status": status,
+            "name": name,
+            "ordering": ordering,
+        }
         rtstreams_data = self._connection.get(
             path=f"{ApiPath.rtstream}",
+            params={key: value for key, value in params.items() if value is not None},
         )
         return [
             RTStream(self._connection, **rtstream)
@@ -413,7 +468,9 @@ class Collection:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
         filter: List[Dict[str, Any]] = [],
-    ) -> SearchResult:
+        namespace: Optional[str] = None,
+        scene_index_id: Optional[str] = None,
+    ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
 
         :param str query: Query to search for
@@ -422,10 +479,50 @@ class Collection:
         :param int result_threshold: Number of results to return (optional)
         :param float score_threshold: Threshold score for the search (optional)
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
+        :param list filter: Additional metadata filters (optional)
+        :param str namespace: Search namespace (optional, "rtstream" to search RTStreams)
+        :param str scene_index_id: Filter by specific scene index (optional)
         :raise SearchError: If the search fails
-        :return: :class:`SearchResult <SearchResult>` object
-        :rtype: :class:`videodb.search.SearchResult`
+        :return: :class:`SearchResult <SearchResult>` or
+            :class:`RTStreamSearchResult <videodb.rtstream.RTStreamSearchResult>` object
+        :rtype: Union[:class:`videodb.search.SearchResult`,
+            :class:`videodb.rtstream.RTStreamSearchResult`]
         """
+        if namespace == "rtstream":
+            data = {"query": query}
+            if scene_index_id is not None:
+                data["scene_index_id"] = scene_index_id
+            if result_threshold is not None:
+                data["result_threshold"] = result_threshold
+            if score_threshold is not None:
+                data["score_threshold"] = score_threshold
+            if dynamic_score_percentage is not None:
+                data["dynamic_score_percentage"] = dynamic_score_percentage
+            if filter is not None:
+                data["filter"] = filter
+
+            search_data = self._connection.post(
+                path=f"{ApiPath.rtstream}/{ApiPath.collection}/{self.id}/{ApiPath.search}",
+                data=data,
+            )
+            results = search_data.get("results", [])
+            shots = [
+                RTStreamShot(
+                    _connection=self._connection,
+                    rtstream_id=result.get("rtstream_id") or result.get("id"),
+                    rtstream_name=result.get("rtstream_name"),
+                    start=result.get("start"),
+                    end=result.get("end"),
+                    text=result.get("text"),
+                    search_score=result.get("score"),
+                    scene_index_id=result.get("scene_index_id"),
+                    scene_index_name=result.get("scene_index_name"),
+                    metadata=result.get("metadata"),
+                )
+                for result in results
+            ]
+            return RTStreamSearchResult(collection_id=self.id, shots=shots)
+
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
             collection_id=self.id,
@@ -482,6 +579,7 @@ class Collection:
             callback_url=callback_url,
             file_path=file_path,
             url=url,
+            collection_id=self.id,
         )
         media_id = upload_data.get("id", "")
         if media_id.startswith("m-"):
@@ -565,3 +663,111 @@ class Collection:
         meeting = Meeting(self._connection, id=meeting_id, collection_id=self.id)
         meeting.refresh()
         return meeting
+
+    def create_capture_session(
+        self,
+        end_user_id: str,
+        callback_url: str = None,
+        ws_connection_id: str = None,
+        metadata: dict = None,
+    ) -> "CaptureSession":
+        """Create a capture session.
+
+        :param str end_user_id: ID of the end user
+        :param str callback_url: URL to receive callback (optional)
+        :param str ws_connection_id: WebSocket connection ID (optional)
+        :param dict metadata: Custom metadata (optional)
+        :return: :class:`CaptureSession <CaptureSession>` object
+        :rtype: :class:`videodb.capture_session.CaptureSession`
+        """
+        data = {
+            "end_user_id": end_user_id,
+        }
+        if callback_url:
+            data["callback_url"] = callback_url
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        if metadata:
+            data["metadata"] = metadata
+
+        response = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.capture}/{ApiPath.session}",
+            data=data,
+        )
+        # Normalize rtstreams before passing to CaptureSession
+        for rts in response.get("rtstreams", []):
+            if isinstance(rts, dict):
+                if "rtstream_id" in rts and "id" not in rts:
+                    rts["id"] = rts.pop("rtstream_id")
+                if "collection_id" not in rts:
+                    rts["collection_id"] = self.id
+        # Extract id and collection_id from response to avoid duplicate arguments
+        session_id = response.pop("session_id", None) or response.pop("id", None)
+        response.pop("collection_id", None)
+        return CaptureSession(
+            self._connection, id=session_id, collection_id=self.id, **response
+        )
+
+    def get_capture_session(self, session_id: str) -> "CaptureSession":
+        """Get a capture session by its ID.
+
+        :param str session_id: ID of the capture session
+        :return: :class:`CaptureSession <CaptureSession>` object
+        :rtype: :class:`videodb.capture_session.CaptureSession`
+        """
+        response = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.capture}/{ApiPath.session}/{session_id}"
+        )
+        # Normalize rtstreams before passing to CaptureSession
+        for rts in response.get("rtstreams", []):
+            if isinstance(rts, dict):
+                if "rtstream_id" in rts and "id" not in rts:
+                    rts["id"] = rts.pop("rtstream_id")
+                if "collection_id" not in rts:
+                    rts["collection_id"] = self.id
+        # Extract id and collection_id from response to avoid duplicate arguments
+        response.pop("id", None)
+        response.pop("collection_id", None)
+        return CaptureSession(
+            self._connection, id=session_id, collection_id=self.id, **response
+        )
+
+    def list_capture_sessions(self, status: str = None) -> list["CaptureSession"]:
+        """List capture sessions.
+
+        :param str status: Filter sessions by status (optional)
+        :return: List of :class:`CaptureSession <CaptureSession>` objects
+        :rtype: list[:class:`videodb.capture_session.CaptureSession`]
+        """
+        params = {}
+        if status:
+            params["status"] = status
+
+        response = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.capture}/{ApiPath.session}",
+            params=params,
+        )
+
+        sessions = []
+        for session_data in response.get("sessions", []):
+            session_id = session_data.pop("id", None) or session_data.pop(
+                "session_id", None
+            )
+            # Normalize rtstreams
+            for rts in session_data.get("rtstreams", []):
+                if isinstance(rts, dict):
+                    if "rtstream_id" in rts and "id" not in rts:
+                        rts["id"] = rts.pop("rtstream_id")
+                    if "collection_id" not in rts:
+                        rts["collection_id"] = self.id
+            # Remove collection_id from data
+            session_data.pop("collection_id", None)
+            sessions.append(
+                CaptureSession(
+                    self._connection,
+                    id=session_id,
+                    collection_id=self.id,
+                    **session_data,
+                )
+            )
+        return sessions

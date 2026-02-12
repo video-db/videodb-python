@@ -7,6 +7,7 @@ from videodb._constants import (
     SceneExtractionType,
     SearchType,
     Segmenter,
+    SegmentationType,
     SubtitleStyle,
     Workflows,
 )
@@ -297,12 +298,14 @@ class Video:
     def index_spoken_words(
         self,
         language_code: Optional[str] = None,
+        segmentation_type: Optional[SegmentationType] = SegmentationType.sentence,
         force: bool = False,
         callback_url: str = None,
     ) -> None:
         """Semantic indexing of spoken words in the video.
 
         :param str language_code: (optional) Language code of the video
+        :param SegmentationType segmentation_type: (optional) Segmentation type used for indexing, :class:`SegmentationType <SegmentationType>` object
         :param bool force: (optional) Force to index the video
         :param str callback_url: (optional) URL to receive the callback
         :raises InvalidRequestError: If the video is already indexed
@@ -314,6 +317,7 @@ class Video:
             data={
                 "index_type": IndexType.spoken_word,
                 "language_code": language_code,
+                "segmentation_type": segmentation_type,
                 "force": force,
                 "callback_url": callback_url,
             },
@@ -523,6 +527,119 @@ class Video:
             return None
         return scenes_data.get("scene_index_id")
 
+    def index_visuals(
+        self,
+        prompt: Optional[str] = None,
+        batch_config: Optional[Dict] = None,
+        model_name: Optional[str] = None,
+        model_config: Optional[Dict] = None,
+        name: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional[str]:
+        """Index visuals (scenes) from the video.
+
+        :param str prompt: Prompt for scene description
+        :param dict batch_config: Frame extraction config with keys:
+            - "type": Extraction type ("time" or "shot"). Default is "time".
+            - "value": Window size in seconds (for time) or threshold (for shot). Default is 10.
+            - "frame_count": Number of frames to extract per window. Default is 1.
+            - "select_frames": Which frames to select (e.g., ["first", "middle", "last"]). Default is ["first"].
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the visual index
+        :param str callback_url: URL to receive the callback (optional)
+        :return: The scene index id
+        :rtype: str
+        """
+        if batch_config is not None:
+            extraction_type = batch_config.get("type")
+            if extraction_type == "shot":
+                extraction_type = SceneExtractionType.shot_based
+                extraction_config = {
+                    "threshold": batch_config.get("value"),
+                    "frame_count": batch_config.get("frame_count"),
+                }
+            else:
+                extraction_type = SceneExtractionType.time_based
+                extraction_config = {
+                    "time": batch_config.get("value"),
+                    "frame_count": batch_config.get("frame_count"),
+                    "select_frames": batch_config.get("select_frames"),
+                }
+        else:
+            extraction_type = None
+            extraction_config = None
+
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data={
+                "extraction_type": extraction_type,
+                "extraction_config": extraction_config,
+                "prompt": prompt,
+                "model_name": model_name,
+                "model_config": model_config or {},
+                "name": name,
+                "callback_url": callback_url,
+            },
+        )
+        if not scenes_data:
+            return None
+        return scenes_data.get("scene_index_id")
+
+    def index_audio(
+        self,
+        prompt: Optional[str] = None,
+        model_name: Optional[str] = None,
+        model_config: Optional[Dict] = None,
+        language_code: Optional[str] = None,
+        batch_config: Optional[Dict] = None,
+        name: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional[str]:
+        """Index audio by processing transcript segments through an LLM.
+
+        Segments the video transcript, processes each segment with the given
+        prompt using the specified model, and indexes the results as scene
+        records for semantic search.
+
+        :param str prompt: (optional) Prompt for processing transcript segments
+        :param str model_name: (optional) LLM tier to use (e.g. "basic", "pro", "ultra")
+        :param dict model_config: (optional) Model configuration
+        :param str language_code: (optional) Language code for transcription
+        :param dict batch_config: (optional) Segmentation config with keys:
+            - "type": Segmentation type ("word", "sentence", or "time")
+            - "value": Segment length (words, sentences, or seconds)
+            Defaults to {"type": "word", "value": 10}
+        :param str name: (optional) Name for the scene index
+        :param str callback_url: (optional) URL to receive the callback
+        :return: The scene index id
+        :rtype: str
+        """
+        if batch_config is not None:
+            extraction_config = {
+                "segmenter": batch_config.get("type"),
+                "segmentation_value": batch_config.get("value"),
+            }
+        else:
+            extraction_config = None
+
+        scenes_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data={
+                "extraction_type": SceneExtractionType.transcript,
+                "extraction_config": extraction_config,
+                "prompt": prompt,
+                "model_name": model_name,
+                "model_config": model_config,
+                "language_code": language_code,
+                "name": name,
+                "callback_url": callback_url,
+            },
+        )
+        if not scenes_data:
+            return None
+        return scenes_data.get("scene_index_id")
+
     def list_scene_index(self) -> List:
         """List all the scene indexes.
 
@@ -581,6 +698,30 @@ class Video:
             },
         )
         return subtitle_data.get("stream_url", None)
+
+    def clip(
+            self,
+            prompt: str,
+            content_type: str,
+            model_name: str,
+        ) -> str:
+            """Generate a clip from the video using a prompt.
+            :param str prompt: Prompt to generate the clip
+            :param str content_type: Content type for the clip
+            :param str model_name: Model name for generation
+            :return: The stream url of the generated clip
+            :rtype: str
+            """
+
+            clip_data = self._connection.post(
+                path=f"{ApiPath.video}/{self.id}/{ApiPath.clip}",
+                data={
+                    "prompt": prompt,
+                    "content_type": content_type,
+                    "model_name": model_name,
+                },
+            )
+            return SearchResult(self._connection, **clip_data)
 
     def insert_video(self, video, timestamp: float) -> str:
         """Insert a video into another video

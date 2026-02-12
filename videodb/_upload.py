@@ -29,6 +29,7 @@ def upload(
     callback_url: Optional[str] = None,
     file_path: Optional[str] = None,
     url: Optional[str] = None,
+    collection_id: Optional[str] = None,
 ) -> dict:
     """Upload a file or URL.
 
@@ -40,9 +41,12 @@ def upload(
     :param str callback_url: URL to receive the callback (optional)
     :param str file_path: Path to the file to be uploaded
     :param str url: URL of the file to be uploaded
+    :param str collection_id: ID of the collection to upload to (optional)
     :return: Dictionary containing upload response data
     :rtype: dict
     """
+    collection_id = collection_id or _connection.collection_id
+
     if source and (file_path or url):
         raise VideodbError("source cannot be used with file_path or url")
 
@@ -68,7 +72,7 @@ def upload(
         try:
             name = file_path.split("/")[-1].split(".")[0] if not name else name
             upload_url_data = _connection.get(
-                path=f"{ApiPath.collection}/{_connection.collection_id}/{ApiPath.upload_url}",
+                path=f"{ApiPath.collection}/{collection_id}/{ApiPath.upload_url}",
                 params={"name": name},
             )
             upload_url = upload_url_data.get("upload_url")
@@ -85,7 +89,7 @@ def upload(
             raise VideodbError("Error while uploading file", cause=e)
 
     upload_data = _connection.post(
-        path=f"{ApiPath.collection}/{_connection.collection_id}/{ApiPath.upload}",
+        path=f"{ApiPath.collection}/{collection_id}/{ApiPath.upload}",
         data={
             "url": url,
             "name": name,

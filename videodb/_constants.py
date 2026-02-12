@@ -1,15 +1,22 @@
 """Constants used in the videodb package."""
 
+from enum import Enum
 from typing import Union
 from dataclasses import dataclass
 
 VIDEO_DB_API: str = "https://api.videodb.io"
 
 
-class MediaType:
+class MediaType(str, Enum):
     video = "video"
     audio = "audio"
     image = "image"
+
+
+class RTStreamChannelType:
+    mic = "mic"
+    screen = "screen"
+    system_audio = "system_audio"
 
 
 class SearchType:
@@ -27,6 +34,7 @@ class IndexType:
 class SceneExtractionType:
     shot_based = "shot"
     time_based = "time"
+    transcript = "transcript"
 
 
 class Workflows:
@@ -47,6 +55,11 @@ class Segmenter:
     time = "time"
     word = "word"
     sentence = "sentence"
+
+
+class SegmentationType:
+    sentence = "sentence"
+    llm = "llm"
 
 
 class ApiPath:
@@ -91,6 +104,12 @@ class ApiPath:
     record = "record"
     editor = "editor"
     reframe = "reframe"
+    clip = "clip"
+    capture = "capture"
+    session = "session"
+    token = "token"
+    websocket = "websocket"
+    export = "export"
 
 
 class Status:
@@ -101,6 +120,7 @@ class Status:
 class MeetingStatus:
     initializing = "initializing"
     processing = "processing"
+    joined = "joined"
     done = "done"
 
 

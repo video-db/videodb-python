@@ -45,6 +45,9 @@ class SearchResult:
                         doc.get("end"),
                         doc.get("text"),
                         doc.get("score"),
+                        scene_index_id=doc.get("scene_index_id"),
+                        scene_index_name=doc.get("scene_index_name"),
+                        metadata=doc.get("metadata"),
                     )
                 )
 
@@ -132,9 +135,11 @@ class SemanticSearch(Search):
                 "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold
-                or SemanticSearchDefaultValues.score_threshold,
+                if score_threshold is not None
+                else SemanticSearchDefaultValues.score_threshold,
                 "result_threshold": result_threshold
-                or SemanticSearchDefaultValues.result_threshold,
+                if result_threshold is not None
+                else SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
                 **kwargs,
             },
@@ -159,9 +164,11 @@ class SemanticSearch(Search):
                 "index_type": index_type,
                 "query": query,
                 "score_threshold": score_threshold
-                or SemanticSearchDefaultValues.score_threshold,
+                if score_threshold is not None
+                else SemanticSearchDefaultValues.score_threshold,
                 "result_threshold": result_threshold
-                or SemanticSearchDefaultValues.result_threshold,
+                if result_threshold is not None
+                else SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
                 **kwargs,
             },

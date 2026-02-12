@@ -1,7 +1,163 @@
+from typing import Optional, List, Dict, Any
+
 from videodb._constants import (
     ApiPath,
     SceneExtractionType,
+    Segmenter,
 )
+from videodb._utils._video import play_stream
+
+
+class RTStreamSearchResult:
+    """RTStreamSearchResult class to interact with rtstream search results
+
+    :ivar str collection_id: ID of the collection this rtstream belongs to
+    :ivar List[RTStreamShot] shots: List of shots in the search result
+    """
+
+    def __init__(
+        self,
+        collection_id: str,
+        shots: List["RTStreamShot"],
+    ) -> None:
+        self.collection_id = collection_id
+        self.shots = shots
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamSearchResult("
+            f"collection_id={self.collection_id}, "
+            f"shots={len(self.shots)})"
+        )
+
+    def get_shots(self) -> List["RTStreamShot"]:
+        """Get the list of shots from the search result.
+
+        :return: List of :class:`RTStreamShot <RTStreamShot>` objects
+        :rtype: List[:class:`videodb.rtstream.RTStreamShot`]
+        """
+        return self.shots
+
+
+class RTStreamExportResult:
+    """Result of exporting an RTStream recording.
+
+    :ivar str video_id: ID of the exported video or audio asset
+    :ivar str stream_url: URL to stream the exported asset (may be None for audio)
+    :ivar str player_url: URL to play the exported asset in a player (may be None for audio)
+    :ivar str name: Name of the exported recording
+    :ivar float duration: Duration of the exported recording in seconds (may be None on idempotent calls)
+    """
+
+    def __init__(
+        self,
+        video_id: str,
+        stream_url: Optional[str] = None,
+        player_url: Optional[str] = None,
+        name: Optional[str] = None,
+        duration: Optional[float] = None,
+    ) -> None:
+        self.video_id = video_id
+        self.stream_url = stream_url
+        self.player_url = player_url
+        self.name = name
+        self.duration = duration
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamExportResult("
+            f"video_id={self.video_id}, "
+            f"name={self.name}, "
+            f"duration={self.duration})"
+        )
+
+
+class RTStreamShot:
+    """RTStreamShot class for rtstream search results
+
+    :ivar str rtstream_id: ID of the rtstream
+    :ivar str rtstream_name: Name of the rtstream
+    :ivar float start: Start time in Unix timestamp
+    :ivar float end: End time in Unix timestamp
+    :ivar str text: Text content of the shot
+    :ivar float search_score: Search relevance score
+    :ivar str scene_index_id: ID of the scene index (optional)
+    :ivar str scene_index_name: Name of the scene index (optional)
+    :ivar dict metadata: Additional metadata (optional)
+    :ivar str stream_url: URL to stream the shot
+    :ivar str player_url: URL to play the shot in a player
+    """
+
+    def __init__(
+        self,
+        _connection,
+        rtstream_id: str,
+        start: float,
+        end: float,
+        rtstream_name: Optional[str] = None,
+        text: Optional[str] = None,
+        search_score: Optional[float] = None,
+        scene_index_id: Optional[str] = None,
+        scene_index_name: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
+        self._connection = _connection
+        self.rtstream_id = rtstream_id
+        self.rtstream_name = rtstream_name
+        self.start = start
+        self.end = end
+        self.text = text
+        self.search_score = search_score
+        self.scene_index_id = scene_index_id
+        self.scene_index_name = scene_index_name
+        self.metadata = metadata
+        self.stream_url = None
+        self.player_url = None
+
+    def __repr__(self) -> str:
+        repr_str = (
+            f"RTStreamShot("
+            f"rtstream_id={self.rtstream_id}, "
+            f"rtstream_name={self.rtstream_name}, "
+            f"start={self.start}, "
+            f"end={self.end}, "
+            f"text={self.text}, "
+            f"search_score={self.search_score}"
+        )
+        if self.scene_index_id:
+            repr_str += f", scene_index_id={self.scene_index_id}"
+        if self.scene_index_name:
+            repr_str += f", scene_index_name={self.scene_index_name}"
+        if self.metadata:
+            repr_str += f", metadata={self.metadata}"
+        repr_str += ")"
+        return repr_str
+
+    def generate_stream(self) -> str:
+        """Generate a stream url for the shot.
+
+        :return: The stream url
+        :rtype: str
+        """
+        if self.stream_url:
+            return self.stream_url
+
+        stream_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.stream}",
+            params={"start": int(self.start), "end": int(self.end)},
+        )
+        self.stream_url = stream_data.get("stream_url")
+        self.player_url = stream_data.get("player_url")
+        return self.stream_url
+
+    def play(self) -> str:
+        """Generate a stream url for the shot and open it in the default browser.
+
+        :return: The stream url
+        :rtype: str
+        """
+        self.generate_stream()
+        return play_stream(self.stream_url)
 
 
 class RTStreamSceneIndex:
@@ -90,20 +246,24 @@ class RTStreamSceneIndex:
         )
         self.status = "stopped"
 
-    def create_alert(self, event_id, callback_url) -> str:
+    def create_alert(self, event_id, callback_url, ws_connection_id=None) -> str:
         """Create an event alert.
 
         :param str event_id: ID of the event
         :param str callback_url: URL to receive the alert callback
+        :param str ws_connection_id: WebSocket connection ID for real-time alerts
         :return: Alert ID
         :rtype: str
         """
+        data = {
+            "event_id": event_id,
+            "callback_url": callback_url,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
         alert_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}",
-            data={
-                "event_id": event_id,
-                "callback_url": callback_url,
-            },
+            data=data,
         )
         return alert_data.get("alert_id", None)
 
@@ -162,6 +322,7 @@ class RTStream:
         self.created_at = kwargs.get("created_at", None)
         self.sample_rate = kwargs.get("sample_rate", None)
         self.status = kwargs.get("status", None)
+        self.channel_id = kwargs.get("channel_id", None)
 
     def __repr__(self) -> str:
         return (
@@ -198,6 +359,68 @@ class RTStream:
         )
         self.status = "stopped"
 
+    def export(self, name: Optional[str] = None) -> "RTStreamExportResult":
+        """Export the latest completed recording as a video or audio asset.
+
+        The stream must be stopped before exporting. The call is idempotent:
+        calling it again returns the same asset without re-ingesting.
+
+        :param str name: Name for the exported asset (optional, defaults to "{stream_name} - Recording")
+        :return: Export result with the asset ID and metadata
+        :rtype: :class:`RTStreamExportResult`
+        """
+        data = {}
+        if name is not None:
+            data["name"] = name
+
+        export_data = self._connection.post(
+            path=f"{ApiPath.rtstream}/{self.id}/{ApiPath.export}",
+            data=data,
+        )
+        return RTStreamExportResult(
+            video_id=export_data.get("video_id"),
+            stream_url=export_data.get("stream_url"),
+            player_url=export_data.get("player_url"),
+            name=export_data.get("name"),
+            duration=export_data.get("duration"),
+        )
+
+    def start_transcript(
+        self, ws_connection_id: Optional[str] = None, engine: Optional[str] = None
+    ) -> dict:
+        """Start transcription for the rtstream.
+
+        :param str ws_connection_id: WebSocket connection ID for real-time transcript updates (optional)
+        :param str engine: Transcription engine (optional, server defaults to "assemblyai")
+        :return: Transcription status with start time
+        :rtype: dict
+        """
+        data = {"action": "start"}
+        if engine:
+            data["engine"] = engine
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
+        return self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
+            data=data,
+        )
+
+    def stop_transcript(self, engine: Optional[str] = None) -> dict:
+        """Stop transcription for the rtstream.
+
+        :param str engine: Transcription engine (optional, server defaults to "assemblyai")
+        :return: Transcription status with start and end time
+        :rtype: dict
+        """
+        data = {"action": "stop"}
+        if engine:
+            data["engine"] = engine
+        return self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
+            data=data,
+        )
+
     def generate_stream(self, start, end):
         """Generate a stream from the rtstream.
 
@@ -220,6 +443,7 @@ class RTStream:
         model_name=None,
         model_config={},
         name=None,
+        ws_connection_id: Optional[str] = None,
     ):
         """Index scenes from the rtstream.
 
@@ -229,19 +453,197 @@ class RTStream:
         :param str model_name: Name of the model
         :param dict model_config: Configuration for the model
         :param str name: Name of the scene index
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
+        data = {
+            "extraction_type": extraction_type,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
-            data={
-                "extraction_type": extraction_type,
-                "extraction_config": extraction_config,
-                "prompt": prompt,
-                "model_name": model_name,
-                "model_config": model_config,
-                "name": name,
-            },
+            data=data,
+        )
+        if not index_data:
+            return None
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )
+
+    def index_spoken_words(
+        self,
+        prompt: str = None,
+        segmenter: str = Segmenter.word,
+        length: int = 10,
+        model_name: str = None,
+        model_config: dict = {},
+        name: str = None,
+        ws_connection_id: Optional[str] = None,
+    ):
+        """Index spoken words from the rtstream transcript.
+
+        :param str prompt: Prompt for summarizing transcript segments
+        :param Segmenter segmenter: Segmentation type (:class:`Segmenter.word`,
+            :class:`Segmenter.sentence`, :class:`Segmenter.time`)
+        :param int length: Length of segments (words, sentences, or seconds based on segmenter)
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the spoken words index
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
+        """
+        extraction_config = {
+            "segmenter": segmenter,
+            "segmentation_value": length,
+        }
+
+        data = {
+            "extraction_type": SceneExtractionType.transcript,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data=data,
+        )
+        if not index_data:
+            return None
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )
+
+    def index_audio(
+        self,
+        prompt: str = None,
+        batch_config: dict = None,
+        model_name: str = None,
+        model_config: dict = {},
+        name: str = None,
+        ws_connection_id: Optional[str] = None,
+    ):
+        """Index audio from the rtstream transcript.
+
+        :param str prompt: Prompt for summarizing transcript segments
+        :param dict batch_config: Segmentation config with keys:
+            - "type": Segmentation type ("word", "sentence", or "time")
+            - "value": Segment length (words, sentences, or seconds)
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the audio index
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
+        """
+        if batch_config is not None:
+            extraction_config = {
+                "segmenter": batch_config.get("type"),
+                "segmentation_value": batch_config.get("value"),
+            }
+        else:
+            extraction_config = None
+
+        data = {
+            "extraction_type": SceneExtractionType.transcript,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data=data,
+        )
+        if not index_data:
+            return None
+        return RTStreamSceneIndex(
+            _connection=self._connection,
+            rtstream_index_id=index_data.get("rtstream_index_id"),
+            rtstream_id=self.id,
+            extraction_type=index_data.get("extraction_type"),
+            extraction_config=index_data.get("extraction_config"),
+            prompt=index_data.get("prompt"),
+            name=index_data.get("name"),
+            status=index_data.get("status"),
+        )
+
+    def index_visuals(
+        self,
+        prompt: str = None,
+        batch_config: dict = None,
+        model_name: str = None,
+        model_config: dict = {},
+        name: str = None,
+        ws_connection_id: Optional[str] = None,
+    ):
+        """Index visuals (scenes) from the rtstream.
+
+        :param str prompt: Prompt for scene description
+        :param dict batch_config: Frame extraction config with keys:
+            - "type": Only "time" is supported
+            - "value": Window size in seconds
+            - "frame_count": Number of frames to extract per window
+        :param str model_name: Name of the model
+        :param dict model_config: Configuration for the model
+        :param str name: Name of the visual index
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
+        """
+        if batch_config is not None:
+            extraction_config = {
+                "time": batch_config.get("value"),
+                "frame_count": batch_config.get("frame_count"),
+            }
+        else:
+            extraction_config = None
+
+        data = {
+            "extraction_type": SceneExtractionType.time_based,
+            "extraction_config": extraction_config,
+            "prompt": prompt,
+            "model_name": model_name,
+            "model_config": model_config,
+            "name": name,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
+            data=data,
         )
         if not index_data:
             return None
@@ -298,4 +700,101 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+        )
+
+    def get_transcript(
+        self,
+        page=1,
+        page_size=100,
+        start=None,
+        end=None,
+        since=None,
+        engine=None,
+    ):
+        """Get transcription data from the rtstream.
+
+        :param int page: Page number (default: 1)
+        :param int page_size: Items per page (default: 100, max: 1000)
+        :param float start: Start timestamp filter (optional)
+        :param float end: End timestamp filter (optional)
+        :param float since: For polling - only get transcriptions after this timestamp (optional)
+        :param str engine: Transcription engine (default: "AAIS")
+        :return: Transcription data with segments and metadata
+        :rtype: dict
+        """
+        params = {
+            "engine": engine,
+            "page": page,
+            "page_size": page_size,
+        }
+        if start is not None:
+            params["start"] = start
+        if end is not None:
+            params["end"] = end
+        if since is not None:
+            params["since"] = since
+
+        transcription_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
+            params=params,
+        )
+        return transcription_data
+
+    def search(
+        self,
+        query: str,
+        index_id: Optional[str] = None,
+        result_threshold: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        dynamic_score_percentage: Optional[float] = None,
+        filter: Optional[List[Dict[str, Any]]] = None,
+    ) -> RTStreamSearchResult:
+        """Search across scene index records for the rtstream.
+
+        :param str query: Query to search for
+        :param str index_id: Filter by specific scene index (optional)
+        :param int result_threshold: Number of results to return (optional)
+        :param float score_threshold: Minimum score threshold (optional)
+        :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
+        :param list filter: Additional metadata filters (optional)
+        :return: :class:`RTStreamSearchResult <RTStreamSearchResult>` object
+        :rtype: :class:`videodb.rtstream.RTStreamSearchResult`
+        """
+        data = {"query": query}
+
+        if index_id is not None:
+            data["scene_index_id"] = index_id
+        if result_threshold is not None:
+            data["result_threshold"] = result_threshold
+        if score_threshold is not None:
+            data["score_threshold"] = score_threshold
+        if dynamic_score_percentage is not None:
+            data["dynamic_score_percentage"] = dynamic_score_percentage
+        if filter is not None:
+            data["filter"] = filter
+
+        search_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.search}",
+            data=data,
+        )
+
+        results = search_data.get("results", [])
+        shots = [
+            RTStreamShot(
+                _connection=self._connection,
+                rtstream_id=self.id,
+                rtstream_name=self.name,
+                start=result.get("start"),
+                end=result.get("end"),
+                text=result.get("text"),
+                search_score=result.get("score"),
+                scene_index_id=result.get("scene_index_id"),
+                scene_index_name=result.get("scene_index_name"),
+                metadata=result.get("metadata"),
+            )
+            for result in results
+        ]
+        return RTStreamSearchResult(
+            collection_id=self.collection_id,
+            shots=shots,
         )
