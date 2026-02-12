@@ -356,7 +356,7 @@ class CaptureClient:
                 
         return Channels(mics=mics, displays=displays, system_audio=system_audio)
 
-    async def start_capture_session(
+    async def start_session(
         self,
         capture_session_id: str,
         channels: List[Channel],
@@ -385,7 +385,7 @@ class CaptureClient:
 
         await self._send_command("startRecording", payload)
 
-    async def stop_capture(self) -> None:
+    async def stop_session(self) -> None:
         """Stop the current recording session."""
         if not self._session_id:
             raise RuntimeError("No active capture session to stop.")

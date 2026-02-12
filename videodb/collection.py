@@ -174,6 +174,7 @@ class Collection:
         name: str,
         media_types: List[str] = None,
         sample_rate: int = None,
+        store: bool = None,
         enable_transcript: bool = None,
         ws_connection_id: str = None,
     ) -> RTStream:
@@ -184,6 +185,8 @@ class Collection:
         :param list media_types: List of media types to capture (default: [MediaType.video]).
             Valid values: :attr:`MediaType.audio`, :attr:`MediaType.video`
         :param int sample_rate: Sample rate of the rtstream (optional, server default: 30)
+        :param bool store: Enable recording storage (optional, default: False).
+            When True, the stream recording is stored and can be exported via :meth:`RTStream.export`.
         :param bool enable_transcript: Enable real-time transcription (optional)
         :param str ws_connection_id: WebSocket connection ID for receiving events (optional)
         :return: :class:`RTStream <RTStream>` object
@@ -206,6 +209,8 @@ class Collection:
         }
         if sample_rate is not None:
             data["sample_rate"] = sample_rate
+        if store is not None:
+            data["store"] = store
         if enable_transcript is not None:
             data["enable_transcript"] = enable_transcript
         if ws_connection_id is not None:
