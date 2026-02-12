@@ -1,12 +1,13 @@
 """Constants used in the videodb package."""
 
+from enum import Enum
 from typing import Union
 from dataclasses import dataclass
 
 VIDEO_DB_API: str = "https://api.videodb.io"
 
 
-class MediaType:
+class MediaType(str, Enum):
     video = "video"
     audio = "audio"
     image = "image"

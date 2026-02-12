@@ -7,6 +7,7 @@ from videodb._upload import (
 from videodb._constants import (
     ApiPath,
     IndexType,
+    MediaType,
     SearchType,
 )
 from videodb.video import Video
@@ -171,9 +172,8 @@ class Collection:
         self,
         url: str,
         name: str,
+        media_types: List[str] = None,
         sample_rate: int = None,
-        video: bool = None,
-        audio: bool = None,
         enable_transcript: bool = None,
         ws_connection_id: str = None,
     ) -> RTStream:
@@ -181,24 +181,31 @@ class Collection:
 
         :param str url: URL of the rtstream
         :param str name: Name of the rtstream
+        :param list media_types: List of media types to capture (default: [MediaType.video]).
+            Valid values: :attr:`MediaType.audio`, :attr:`MediaType.video`
         :param int sample_rate: Sample rate of the rtstream (optional, server default: 30)
-        :param bool video: Enable video streaming (optional, server default: True)
-        :param bool audio: Enable audio streaming (optional, server default: False)
         :param bool enable_transcript: Enable real-time transcription (optional)
         :param str ws_connection_id: WebSocket connection ID for receiving events (optional)
         :return: :class:`RTStream <RTStream>` object
         """
+        if media_types is None:
+            media_types = [MediaType.video]
+
+        valid = {MediaType.audio, MediaType.video}
+        invalid = set(media_types) - valid
+        if invalid or not media_types:
+            raise ValueError(
+                f"Invalid media_types: {invalid}. Valid values: {MediaType.audio}, {MediaType.video}"
+            )
+
         data = {
             "collection_id": self.id,
             "url": url,
             "name": name,
+            "media_types": media_types,
         }
         if sample_rate is not None:
             data["sample_rate"] = sample_rate
-        if video is not None:
-            data["video"] = video
-        if audio is not None:
-            data["audio"] = audio
         if enable_transcript is not None:
             data["enable_transcript"] = enable_transcript
         if ws_connection_id is not None:
