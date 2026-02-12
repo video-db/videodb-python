@@ -268,6 +268,63 @@ components:
           additionalProperties:
             type: number
 
+    RTStream:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "rts-12345"
+        name:
+          type: string
+          example: "My Stream"
+        status:
+          type: string
+          enum: [connected, stopped]
+          example: "connected"
+        sample_rate:
+          type: integer
+          example: 30
+        media_types:
+          type: array
+          items:
+            type: string
+            enum: [video, audio]
+          example: ["video", "audio"]
+        collection_id:
+          type: string
+          example: "default"
+        store:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+
+    CaptureSession:
+      type: object
+      properties:
+        session_id:
+          type: string
+          example: "capture-12345"
+        end_user_id:
+          type: string
+          example: "user-123"
+        status:
+          type: string
+          enum: [created, starting, active, stopped, failed]
+          example: "created"
+        collection_id:
+          type: string
+          example: "default"
+        ws_connection_id:
+          type: string
+          example: "conn-123"
+        metadata:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
 paths:
   /:
     get:
@@ -712,6 +769,44 @@ paths:
                   data:
                     $ref: '#/components/schemas/Video'
 
+    patch:
+      summary: Update video
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Video Name"
+      responses:
+        '200':
+          description: Video updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Video'
+
     delete:
       summary: Delete video
       security:
@@ -924,8 +1019,8 @@ paths:
           in: query
           schema:
             type: string
-            default: "AAI"
-            example: "AAI"
+            default: "default"
+            example: "default"
         - name: start
           in: query
           schema:
@@ -1004,8 +1099,8 @@ paths:
               properties:
                 engine:
                   type: string
-                  default: "AAI"
-                  example: "AAI"
+                  default: "default"
+                  example: "default"
                 force:
                   type: boolean
                   example: false
@@ -1058,8 +1153,8 @@ paths:
           in: query
           schema:
             type: string
-            default: "AAI"
-            example: "AAI"
+            default: "default"
+            example: "default"
       responses:
         '200':
           description: Index status
@@ -1105,8 +1200,8 @@ paths:
                   example: "spoken_word"
                 engine:
                   type: string
-                  default: "AAI"
-                  example: "AAI"
+                  default: "default"
+                  example: "default"
                 force:
                   type: boolean
                   example: false
@@ -1516,6 +1611,44 @@ paths:
                   data:
                     $ref: '#/components/schemas/Audio'
 
+    patch:
+      summary: Update audio
+      tags:
+        - Audio
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: audio_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^a-"
+            example: "a-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Audio Name"
+      responses:
+        '200':
+          description: Audio updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Audio'
+
     delete:
       summary: Delete audio
       security:
@@ -1633,6 +1766,44 @@ paths:
       responses:
         '200':
           description: Image details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Image'
+
+    patch:
+      summary: Update image
+      tags:
+        - Images
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^img-"
+            example: "img-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Image Name"
+      responses:
+        '200':
+          description: Image updated
           content:
             application/json:
               schema:
@@ -2781,6 +2952,2626 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
+  /audio/{audio_id}/transcription/:
+    get:
+      summary: Get audio transcription
+      tags:
+        - Audio
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: audio_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^a-"
+            example: "a-12345"
+        - name: engine
+          in: query
+          schema:
+            type: string
+            example: "default"
+        - name: start
+          in: query
+          schema:
+            type: number
+            default: 0
+            example: 0
+        - name: end
+          in: query
+          schema:
+            type: number
+            default: -1
+            example: 60.0
+      responses:
+        '200':
+          description: Audio transcription data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [completed, processing, failed]
+                    example: "completed"
+                  data:
+                    type: object
+                    properties:
+                      transcript:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            text:
+                              type: string
+                              example: "Hello world"
+                            start:
+                              type: number
+                              example: 1.5
+                            end:
+                              type: number
+                              example: 3.2
+        '404':
+          description: Transcription not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Generate audio transcription
+      tags:
+        - Audio
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: audio_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^a-"
+            example: "a-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                engine:
+                  type: string
+                  default: "default"
+                  example: "default"
+                language_code:
+                  type: string
+                  default: "en"
+                  example: "en"
+                force:
+                  type: boolean
+                  default: false
+                  example: false
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                callback_data:
+                  type: object
+      responses:
+        '200':
+          description: Transcription job started
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AsyncResponse'
+                  - type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      message:
+                        type: string
+                        example: "transcription already exists"
+
+  /collection/{collection_id}/upload_url:
+    get:
+      summary: Get presigned upload URL
+      tags:
+        - Collections
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+        - name: name
+          in: query
+          schema:
+            type: string
+            example: "my_video.mp4"
+      responses:
+        '200':
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      upload_url:
+                        type: string
+                        example: "https://s3.amazonaws.com/..."
+                      video_id:
+                        type: string
+                        example: "m-12345"
+
+  /collection/{collection_id}/websocket:
+    get:
+      summary: Get WebSocket connection URL
+      tags:
+        - Collections
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      responses:
+        '200':
+          description: WebSocket URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      websocket_url:
+                        type: string
+                        example: "wss://ws.videodb.io/..."
+
+  /collection/{collection_id}/search/title/:
+    post:
+      summary: Search by title within collection
+      tags:
+        - Search
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  example: "search query"
+                search_type:
+                  type: string
+                  default: "llm"
+                  example: "llm"
+      responses:
+        '200':
+          description: Title search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /collection/{collection_id}/search/web/:
+    post:
+      summary: Web search within collection
+      tags:
+        - Search
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  example: "search query"
+      responses:
+        '200':
+          description: Web search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+
+  /collection/{collection_id}/generate/video/dub:
+    post:
+      summary: Dub video with AI-generated audio
+      tags:
+        - AI Generation
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                video_id:
+                  type: string
+                  example: "m-12345"
+                target_language:
+                  type: string
+                  example: "es"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                callback_data:
+                  type: object
+      responses:
+        '200':
+          description: Dubbing job started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /collection/{collection_id}/video/{video_id}/translate:
+    post:
+      summary: Translate video content
+      tags:
+        - AI Generation
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target_language:
+                  type: string
+                  example: "es"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                callback_data:
+                  type: object
+      responses:
+        '200':
+          description: Translation job started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/scenes/{scene_collection_id}/:
+    get:
+      summary: Get scene collection details
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: scene_collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "sc-12345"
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            example: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 100
+      responses:
+        '200':
+          description: Scene collection details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "sc-12345"
+                      scenes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            scene_id:
+                              type: string
+                            start:
+                              type: number
+                            end:
+                              type: number
+                            description:
+                              type: string
+
+    patch:
+      summary: Update scene collection
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: scene_collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "sc-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scenes
+              properties:
+                scenes:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Scene collection updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    delete:
+      summary: Delete scene collection
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: scene_collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "sc-12345"
+      responses:
+        '200':
+          description: Scene collection deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/index/delete:
+    post:
+      summary: Delete video index
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index_type:
+                  type: string
+                  enum: [spoken_word, scene, all]
+                  default: "all"
+                  example: "all"
+                model_name:
+                  type: string
+                  default: "gpt4-v"
+                  example: "gpt4-v"
+      responses:
+        '200':
+          description: Index deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /video/{video_id}/reframe:
+    post:
+      summary: Reframe video to different aspect ratio
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target
+                - mode
+              properties:
+                target:
+                  type: string
+                  example: "9:16"
+                mode:
+                  type: string
+                  example: "auto"
+                start:
+                  type: number
+                  default: 0
+                  example: 0
+                end:
+                  type: number
+                  example: 30
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                callback_data:
+                  type: object
+      responses:
+        '200':
+          description: Reframe job started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /video/{video_id}/reframe/{reframe_id}:
+    get:
+      summary: Get reframe job status
+      tags:
+        - Videos
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+        - name: reframe_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "reframe-12345"
+      responses:
+        '200':
+          description: Reframe job status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    enum: [processing, done, failed]
+                    example: "done"
+                  data:
+                    type: object
+        '404':
+          description: Reframe job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /assets:
+    get:
+      summary: List all assets across collections
+      tags:
+        - Assets
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: query
+          schema:
+            type: string
+            example: "default"
+        - name: asset_type
+          in: query
+          description: Comma-separated asset types
+          schema:
+            type: string
+            example: "video,audio,image"
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [name, duration, size, created_at]
+            default: "created_at"
+            example: "created_at"
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: "desc"
+            example: "desc"
+        - name: min_duration
+          in: query
+          schema:
+            type: number
+            example: 10
+        - name: max_duration
+          in: query
+          schema:
+            type: number
+            example: 300
+        - name: min_size
+          in: query
+          schema:
+            type: number
+            example: 1024
+        - name: max_size
+          in: query
+          schema:
+            type: number
+            example: 104857600
+        - name: name_pattern
+          in: query
+          description: Regex pattern for name filter
+          schema:
+            type: string
+            example: ".*intro.*"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 50000
+            maximum: 50000
+            example: 100
+      responses:
+        '200':
+          description: List of assets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /user/api-key-collections:
+    put:
+      summary: Set API key collection scoping
+      tags:
+        - Authentication
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - api_key
+                - collection_ids
+              properties:
+                api_key:
+                  type: string
+                  example: "sk-xxx"
+                collection_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["default", "c-12345"]
+      responses:
+        '200':
+          description: API key collections updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Pro-only feature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /editor:
+    post:
+      summary: Compile editor timeline
+      tags:
+        - Editor
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Timeline compilation payload with tracks and clips
+      responses:
+        '200':
+          description: Timeline compilation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncResponse'
+
+  /editor/download:
+    post:
+      summary: Download compiled editor timeline
+      tags:
+        - Editor
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stream_url
+              properties:
+                stream_url:
+                  type: string
+                  example: "https://stream.videodb.io/compiled/12345"
+      responses:
+        '200':
+          description: Download URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      download_url:
+                        type: string
+                        example: "https://download.videodb.io/..."
+
+  /transcode:
+    post:
+      summary: Start transcode job
+      tags:
+        - Transcode
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source
+              properties:
+                source:
+                  type: string
+                  description: Source video ID
+                  example: "m-12345"
+      responses:
+        '200':
+          description: Transcode job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      job_id:
+                        type: string
+                        example: "job-12345"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transcode/{job_id}:
+    get:
+      summary: Get transcode job status
+      tags:
+        - Transcode
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "job-12345"
+      responses:
+        '200':
+          description: Transcode job details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+
+  /collection/{collection_id}/meeting/record:
+    post:
+      summary: Record a meeting
+      tags:
+        - Meeting
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - meeting_url
+              properties:
+                meeting_url:
+                  type: string
+                  example: "https://meet.google.com/abc-def-ghi"
+                bot_name:
+                  type: string
+                  default: "VideoDB Assistant"
+                  example: "VideoDB Assistant"
+                meeting_title:
+                  type: string
+                  example: "Weekly standup"
+                time_zone:
+                  type: string
+                  default: "UTC"
+                  example: "UTC"
+                bot_image_url:
+                  type: string
+                  example: "https://example.com/bot-avatar.png"
+                realtime_stream:
+                  type: boolean
+                  default: false
+                  example: false
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                callback_data:
+                  type: object
+      responses:
+        '200':
+          description: Meeting recording started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      bot_id:
+                        type: string
+                        example: "bot-12345"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /collection/{collection_id}/meeting/{bot_id}:
+    get:
+      summary: Get meeting recording information
+      tags:
+        - Meeting
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+        - name: bot_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "bot-12345"
+      responses:
+        '200':
+          description: Meeting information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      bot_id:
+                        type: string
+                        example: "bot-12345"
+                      status:
+                        type: string
+                        example: "recording"
+                      video_url:
+                        type: string
+                        example: "https://stream.videodb.io/v/12345"
+        '400':
+          description: Invalid meeting ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /video/{video_id}/meeting:
+    get:
+      summary: Get meeting by video
+      tags:
+        - Meeting
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^m-"
+            example: "m-12345"
+      responses:
+        '200':
+          description: Meeting information for video
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+
+  /collection/{collection_id}/capture/session:
+    post:
+      summary: Create capture session
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - end_user_id
+              properties:
+                end_user_id:
+                  type: string
+                  example: "user-123"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+                ws_connection_id:
+                  type: string
+                  example: "conn-123"
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Capture session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/CaptureSession'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: List capture sessions
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [created, starting, active, stopped, failed]
+            example: "active"
+      responses:
+        '200':
+          description: List of capture sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      sessions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CaptureSession'
+                      next_page:
+                        type: string
+                        nullable: true
+
+  /collection/{collection_id}/capture/session/{session_id}:
+    get:
+      summary: Get capture session details
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "default"
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "capture-12345"
+      responses:
+        '200':
+          description: Capture session details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/CaptureSession'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /capture/session/token:
+    post:
+      summary: Create capture session token
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  description: End user identifier for partner tracking
+                  example: "user-123"
+                expires_in:
+                  type: integer
+                  description: Token validity in seconds
+                  default: 86400
+                  example: 86400
+      responses:
+        '200':
+          description: Session token created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "st-xxx"
+                      expires_at:
+                        type: number
+                        example: 1700000000
+                      expires_in:
+                        type: integer
+                        example: 86400
+
+  /capture/session/start:
+    post:
+      summary: Start capture session
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+                - channels
+              properties:
+                session_id:
+                  type: string
+                  example: "capture-12345"
+                channels:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - channel_id
+                    properties:
+                      channel_id:
+                        type: string
+                        example: "mic"
+                      channel_name:
+                        type: string
+                        example: "Microphone"
+                      type:
+                        type: string
+                        enum: [audio, video]
+                        default: "audio"
+                        example: "audio"
+                      store:
+                        type: boolean
+                        default: true
+                        example: true
+                ws_connection_id:
+                  type: string
+                  example: "conn-123"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/callback"
+      responses:
+        '200':
+          description: Capture session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      session_id:
+                        type: string
+                        example: "capture-12345"
+                      status:
+                        type: string
+                        example: "starting"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '402':
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /capture/session/{streaming_session_id}:
+    get:
+      summary: Get capture session with RTSP URLs
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: streaming_session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "capture-12345"
+      responses:
+        '200':
+          description: Session details with RTSP URLs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      session_id:
+                        type: string
+                        example: "capture-12345"
+                      status:
+                        type: string
+                        example: "active"
+                      channels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            channel_id:
+                              type: string
+                            rtsp_url:
+                              type: string
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /capture/session/{streaming_session_id}/stop:
+    post:
+      summary: Stop capture session
+      tags:
+        - Capture
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: streaming_session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "capture-12345"
+      responses:
+        '200':
+          description: Session stopped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /rtstream/:
+    get:
+      summary: List RTStreams
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            example: 10
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            example: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [connected, stopped]
+            example: "connected"
+        - name: name
+          in: query
+          description: Filter by name substring
+          schema:
+            type: string
+            example: "my stream"
+        - name: ordering
+          in: query
+          description: Sort field (prefix with - for descending)
+          schema:
+            type: string
+            example: "-created_at"
+      responses:
+        '200':
+          description: List of RTStreams
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RTStream'
+                      count:
+                        type: integer
+                        example: 25
+                      next:
+                        type: string
+                        nullable: true
+                        example: "/rtstream/?limit=10&offset=10"
+                      previous:
+                        type: string
+                        nullable: true
+                        example: null
+
+    post:
+      summary: Create RTStream
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  description: RTSP or YouTube stream URL
+                  example: "rtsp://example.com:8554/stream"
+                name:
+                  type: string
+                  example: "My Stream"
+                collection_id:
+                  type: string
+                  default: "default"
+                  example: "default"
+                sample_rate:
+                  type: integer
+                  default: 30
+                  example: 30
+                media_types:
+                  type: array
+                  items:
+                    type: string
+                    enum: [video, audio]
+                  example: ["video", "audio"]
+                store:
+                  type: boolean
+                  default: false
+                  example: false
+                enable_transcript:
+                  type: boolean
+                  default: true
+                  example: true
+                ws_connection_id:
+                  type: string
+                  example: "conn-123"
+      responses:
+        '201':
+          description: RTStream created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/RTStream'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '402':
+          description: Insufficient credits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rtstream/{stream_id}/:
+    get:
+      summary: Get RTStream details
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      responses:
+        '200':
+          description: RTStream details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/RTStream'
+        '404':
+          description: Stream not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      summary: Update RTStream
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Stream Name"
+                sample_rate:
+                  type: integer
+                  example: 15
+      responses:
+        '200':
+          description: RTStream updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/RTStream'
+        '400':
+          description: Invalid fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rtstream/{stream_id}/status/:
+    patch:
+      summary: Start or stop RTStream
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [start, stop]
+                  example: "stop"
+      responses:
+        '200':
+          description: RTStream status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /rtstream/{stream_id}/export:
+    post:
+      summary: Export RTStream recording as VideoDB asset
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Exported Recording"
+      responses:
+        '200':
+          description: Recording exported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      video_id:
+                        type: string
+                        example: "m-12345"
+                      name:
+                        type: string
+                        example: "Exported Recording"
+                      stream_url:
+                        type: string
+                        example: "https://stream.videodb.io/v/12345"
+                      player_url:
+                        type: string
+                        example: "https://console.videodb.io/player/12345"
+                      duration:
+                        type: number
+                        example: 123.45
+        '400':
+          description: No recordings available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /rtstream/{stream_id}/index/scene:
+    post:
+      summary: Create RTStream scene index
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                extraction_type:
+                  type: string
+                  enum: [time, transcript]
+                  default: "time"
+                  example: "time"
+                extraction_config:
+                  type: object
+                  properties:
+                    time:
+                      type: integer
+                      example: 10
+                    frame_count:
+                      type: integer
+                      example: 5
+                prompt:
+                  type: string
+                  example: "Describe the scene"
+                model_name:
+                  type: string
+                  example: "GPT4o"
+                model_config:
+                  type: object
+                name:
+                  type: string
+                  example: "My Scene Index"
+                ws_connection_id:
+                  type: string
+                  example: "conn-123"
+      responses:
+        '200':
+          description: Scene index created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      rtstream_index_id:
+                        type: string
+                        example: "scene-idx-12345"
+                      extraction_type:
+                        type: string
+                        example: "time"
+                      status:
+                        type: string
+                        example: "running"
+                      prompt:
+                        type: string
+                        example: "Describe the scene"
+                      name:
+                        type: string
+                        example: "My Scene Index"
+
+    get:
+      summary: List RTStream scene indexes
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      responses:
+        '200':
+          description: List of scene indexes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      scene_indexes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            rtstream_index_id:
+                              type: string
+                              example: "scene-idx-12345"
+                            extraction_type:
+                              type: string
+                              example: "time"
+                            status:
+                              type: string
+                              example: "running"
+                            prompt:
+                              type: string
+                            name:
+                              type: string
+
+  /rtstream/{stream_id}/index/{scene_index_id}:
+    get:
+      summary: Get RTStream scene index details
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      responses:
+        '200':
+          description: Scene index details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      rtstream_index_id:
+                        type: string
+                        example: "scene-idx-12345"
+                      extraction_type:
+                        type: string
+                        example: "time"
+                      extraction_config:
+                        type: object
+                      status:
+                        type: string
+                        example: "running"
+                      prompt:
+                        type: string
+                      name:
+                        type: string
+
+  /rtstream/{stream_id}/index/scene/{scene_index_id}:
+    get:
+      summary: Get RTStream scene records
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 100
+            example: 100
+        - name: start
+          in: query
+          description: Filter by start timestamp
+          schema:
+            type: number
+            example: 1700000000
+        - name: end
+          in: query
+          description: Filter by end timestamp
+          schema:
+            type: number
+            example: 1700003600
+      responses:
+        '200':
+          description: Scene records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      scene_index_records:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            start:
+                              type: number
+                              example: 1700000000
+                            end:
+                              type: number
+                              example: 1700000010
+                            description:
+                              type: string
+                              example: "Scene description"
+                      next_page:
+                        type: boolean
+                        example: false
+
+    patch:
+      summary: Update RTStream scene index prompt
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  example: "Updated scene description prompt"
+      responses:
+        '200':
+          description: Scene index prompt updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /rtstream/{stream_id}/index/scene/{scene_index_id}/status:
+    patch:
+      summary: Update RTStream scene index status
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [start, stop]
+                  example: "stop"
+      responses:
+        '200':
+          description: Scene index status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /rtstream/{stream_id}/search:
+    post:
+      summary: Search RTStream scene index
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - scene_index_id
+              properties:
+                query:
+                  type: string
+                  example: "person walking"
+                scene_index_id:
+                  type: string
+                  example: "scene-idx-12345"
+                result_threshold:
+                  type: integer
+                  default: 10
+                  example: 10
+                score_threshold:
+                  type: number
+                  example: 0.5
+                dynamic_score_percentage:
+                  type: integer
+                  default: 20
+                  example: 20
+                stitch:
+                  type: boolean
+                  default: true
+                  example: true
+                filter:
+                  type: array
+                  items:
+                    type: object
+                rerank:
+                  type: boolean
+                  default: false
+                  example: false
+                rerank_params:
+                  type: object
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            start:
+                              type: number
+                              example: 1700000000
+                            end:
+                              type: number
+                              example: 1700000010
+                            text:
+                              type: string
+                              example: "matching scene text"
+                            score:
+                              type: number
+                              example: 0.95
+                            scene_index_id:
+                              type: string
+                              example: "scene-idx-12345"
+
+  /rtstream/{stream_id}/stream:
+    get:
+      summary: Get RTStream playback URL
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: start
+          in: query
+          description: Start unix timestamp for time-based retrieval
+          schema:
+            type: number
+            example: 1700000000
+        - name: end
+          in: query
+          description: End unix timestamp for time-based retrieval
+          schema:
+            type: number
+            example: 1700003600
+        - name: original_frame_rate
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: frame_rate
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+      responses:
+        '200':
+          description: Stream URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stream_url:
+                        type: string
+                        example: "https://stream.videodb.io/rts/12345"
+
+  /rtstream/{stream_id}/transcription/:
+    get:
+      summary: Get RTStream transcription data
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: engine
+          in: query
+          schema:
+            type: string
+            default: "default"
+            example: "default"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            example: 100
+        - name: start
+          in: query
+          description: Filter by start timestamp
+          schema:
+            type: number
+            example: 1700000000
+        - name: end
+          in: query
+          description: Filter by end timestamp
+          schema:
+            type: number
+            example: 1700003600
+        - name: since
+          in: query
+          description: Get only entries newer than this timestamp (for polling)
+          schema:
+            type: number
+            example: 1700000000
+      responses:
+        '200':
+          description: Transcription data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      transcription_records:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            start:
+                              type: number
+                              example: 1700000000
+                            end:
+                              type: number
+                              example: 1700000005
+                            text:
+                              type: string
+                              example: "transcribed text"
+                            word_timestamps:
+                              type: array
+                              items:
+                                type: object
+                      next_page:
+                        type: boolean
+                        example: false
+                      total_count:
+                        type: integer
+                        example: 50
+                      page:
+                        type: integer
+                        example: 1
+                      page_size:
+                        type: integer
+                        example: 100
+
+    post:
+      summary: Start or stop RTStream transcription
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [start, stop]
+                  example: "start"
+                engine:
+                  type: string
+                  default: "default"
+                  example: "default"
+                ws_connection_id:
+                  type: string
+                  example: "conn-123"
+      responses:
+        '200':
+          description: Transcription status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [running, stopped]
+                        example: "running"
+                      engine:
+                        type: string
+                        example: "default"
+                      updated_at:
+                        type: string
+                        format: date-time
+
+  /rtstream/{stream_id}/transcription/status:
+    get:
+      summary: Get RTStream transcription status
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: engine
+          in: query
+          schema:
+            type: string
+            default: "default"
+            example: "default"
+      responses:
+        '200':
+          description: Transcription status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        enum: [running, stopped, not_configured]
+                        example: "running"
+                      engine:
+                        type: string
+                        example: "default"
+                      language:
+                        type: string
+                        example: "en"
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+
+  /rtstream/event:
+    post:
+      summary: Create collection event
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_prompt
+                - label
+              properties:
+                event_prompt:
+                  type: string
+                  example: "Detect when a person enters the room"
+                label:
+                  type: string
+                  example: "person-entry"
+      responses:
+        '200':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      event_id:
+                        type: string
+                        example: "event-12345"
+
+    get:
+      summary: List collection events
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      events:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            event_id:
+                              type: string
+                              example: "event-12345"
+                            event_prompt:
+                              type: string
+                              example: "Detect when a person enters the room"
+                            label:
+                              type: string
+                              example: "person-entry"
+
+  /rtstream/{stream_id}/index/{scene_index_id}/alert:
+    post:
+      summary: Create RTStream alert
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_id
+              properties:
+                event_id:
+                  type: string
+                  example: "event-12345"
+                callback_url:
+                  type: string
+                  example: "https://webhook.example.com/alert"
+                ws_connection_id:
+                  type: string
+                  example: "conn-123"
+      responses:
+        '200':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      alert_id:
+                        type: string
+                        example: "alert-12345"
+
+    get:
+      summary: List RTStream alerts
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+      responses:
+        '200':
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      alerts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            alert_id:
+                              type: string
+                              example: "alert-12345"
+                            event_id:
+                              type: string
+                              example: "event-12345"
+                            prompt:
+                              type: string
+                              example: "Detect when a person enters the room"
+                            label:
+                              type: string
+                              example: "person-entry"
+                            callback_url:
+                              type: string
+                              example: "https://webhook.example.com/alert"
+                            status:
+                              type: string
+                              enum: [enabled, disabled]
+                              example: "enabled"
+
+  /rtstream/{stream_id}/index/{scene_index_id}/alert/{alert_id}/status:
+    patch:
+      summary: Update RTStream alert status
+      tags:
+        - RTStream
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: stream_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "rts-12345"
+        - name: scene_index_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "scene-idx-12345"
+        - name: alert_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "alert-12345"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [enabled, disabled]
+                  example: "disabled"
+      responses:
+        '200':
+          description: Alert status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
 tags:
   - name: Authentication
     description: User authentication and API key management
@@ -2803,4 +5594,12 @@ tags:
   - name: Utilities
     description: Utility endpoints
   - name: Meeting
-    description: Meeting recording and management 
+    description: Meeting recording and management
+  - name: Capture
+    description: Capture session management for recording streams
+  - name: Editor
+    description: Timeline editor operations
+  - name: Transcode
+    description: Media transcoding operations
+  - name: Assets
+    description: Cross-collection asset listing
