@@ -327,16 +327,18 @@ class RTStream:
         self.status = "stopped"
 
     def start_transcript(
-        self, ws_connection_id: Optional[str] = None, engine: str = "assemblyai"
+        self, ws_connection_id: Optional[str] = None, engine: Optional[str] = None
     ) -> dict:
         """Start transcription for the rtstream.
 
         :param str ws_connection_id: WebSocket connection ID for real-time transcript updates (optional)
-        :param str engine: Transcription engine (default: "assemblyai")
+        :param str engine: Transcription engine (optional, server defaults to "assemblyai")
         :return: Transcription status with start time
         :rtype: dict
         """
-        data = {"action": "start", "engine": engine}
+        data = {"action": "start"}
+        if engine:
+            data["engine"] = engine
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
 
@@ -345,16 +347,19 @@ class RTStream:
             data=data,
         )
 
-    def stop_transcript(self, engine: str = "assemblyai") -> dict:
+    def stop_transcript(self, engine: Optional[str] = None) -> dict:
         """Stop transcription for the rtstream.
 
-        :param str engine: Transcription engine (default: "assemblyai")
+        :param str engine: Transcription engine (optional, server defaults to "assemblyai")
         :return: Transcription status with start and end time
         :rtype: dict
         """
+        data = {"action": "stop"}
+        if engine:
+            data["engine"] = engine
         return self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
-            data={"action": "stop", "engine": engine},
+            data=data,
         )
 
     def generate_stream(self, start, end):
