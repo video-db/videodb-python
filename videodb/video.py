@@ -551,23 +551,24 @@ class Video:
         :return: The scene index id
         :rtype: str
         """
-        if batch_config is None:
-            batch_config = {"type": "time", "value": 10, "frame_count": 1}
-
-        extraction_type = batch_config.get("type", "time")
-        if extraction_type == "shot":
-            extraction_type = SceneExtractionType.shot_based
-            extraction_config = {
-                "threshold": batch_config.get("value", 20),
-                "frame_count": batch_config.get("frame_count", 1),
-            }
+        if batch_config is not None:
+            extraction_type = batch_config.get("type")
+            if extraction_type == "shot":
+                extraction_type = SceneExtractionType.shot_based
+                extraction_config = {
+                    "threshold": batch_config.get("value"),
+                    "frame_count": batch_config.get("frame_count"),
+                }
+            else:
+                extraction_type = SceneExtractionType.time_based
+                extraction_config = {
+                    "time": batch_config.get("value"),
+                    "frame_count": batch_config.get("frame_count"),
+                    "select_frames": batch_config.get("select_frames"),
+                }
         else:
-            extraction_type = SceneExtractionType.time_based
-            extraction_config = {
-                "time": batch_config.get("value", 10),
-                "frame_count": batch_config.get("frame_count", 1),
-                "select_frames": batch_config.get("select_frames", ["first"]),
-            }
+            extraction_type = None
+            extraction_config = None
 
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -614,13 +615,13 @@ class Video:
         :return: The scene index id
         :rtype: str
         """
-        if batch_config is None:
-            batch_config = {"type": Segmenter.word, "value": 10}
-
-        extraction_config = {
-            "segmenter": batch_config.get("type", Segmenter.word),
-            "segmentation_value": batch_config.get("value", 10),
-        }
+        if batch_config is not None:
+            extraction_config = {
+                "segmenter": batch_config.get("type"),
+                "segmentation_value": batch_config.get("value"),
+            }
+        else:
+            extraction_config = None
 
         scenes_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}",

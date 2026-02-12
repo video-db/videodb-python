@@ -499,17 +499,13 @@ class RTStream:
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
-        # Default batch_config
-        if batch_config is None:
-            batch_config = {"type": "word", "value": 10}
-
-        segmenter = batch_config.get("type", Segmenter.word)
-        segmentation_value = batch_config.get("value", 10)
-
-        extraction_config = {
-            "segmenter": segmenter,
-            "segmentation_value": segmentation_value,
-        }
+        if batch_config is not None:
+            extraction_config = {
+                "segmenter": batch_config.get("type"),
+                "segmentation_value": batch_config.get("value"),
+            }
+        else:
+            extraction_config = None
 
         data = {
             "extraction_type": SceneExtractionType.transcript,
@@ -562,14 +558,13 @@ class RTStream:
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
-        # Default batch_config
-        if batch_config is None:
-            batch_config = {"type": "time", "value": 2, "frame_count": 5}
-
-        extraction_config = {
-            "time": batch_config.get("value", 2),
-            "frame_count": batch_config.get("frame_count", 5),
-        }
+        if batch_config is not None:
+            extraction_config = {
+                "time": batch_config.get("value"),
+                "frame_count": batch_config.get("frame_count"),
+            }
+        else:
+            extraction_config = None
 
         data = {
             "extraction_type": SceneExtractionType.time_based,
