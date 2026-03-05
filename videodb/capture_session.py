@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+from videodb._constants import ApiPath
 from videodb.rtstream import RTStream
 
 
@@ -10,6 +11,10 @@ class CaptureSession:
     :ivar str end_user_id: ID of the end user
     :ivar str client_id: Client-provided session ID
     :ivar str status: Current status of the session
+    :ivar list channels: List of channel dicts with id, name, type, is_primary
+    :ivar str primary_video_channel_id: Channel ID of the primary video source
+    :ivar str export_status: Current export status (exporting, exported, failed)
+    :ivar dict exported_videos: Mapping of channel_id to exported video_id
     """
 
     def __init__(self, _connection, id: str, collection_id: str, **kwargs) -> None:
@@ -35,6 +40,10 @@ class CaptureSession:
         self.callback_url = data.get("callback_url")
         self.exported_video_id = data.get("exported_video_id")
         self.metadata = data.get("metadata", {})
+        self.channels = data.get("channels", [])
+        self.primary_video_channel_id = data.get("primary_video_channel_id")
+        self.export_status = data.get("export_status")
+        self.exported_videos = data.get("exported_videos", {})
 
         self.rtstreams = []
         for rts_data in data.get("rtstreams", []):
@@ -42,6 +51,15 @@ class CaptureSession:
                 continue
             stream = RTStream(self._connection, **rts_data)
             self.rtstreams.append(stream)
+
+    @property
+    def displays(self) -> list:
+        """Video channels in the session.
+
+        :return: List of channel dicts where type is 'video'
+        :rtype: list[dict]
+        """
+        return [ch for ch in self.channels if ch.get("type") == "video"]
 
     def get_rtstream(self, category: str) -> List[RTStream]:
         """Get list of RTStreams by category.
@@ -59,3 +77,24 @@ class CaptureSession:
                 filtered_streams.append(stream)
 
         return filtered_streams
+
+    def export(self, video_channel_id: Optional[str] = None) -> dict:
+        """Trigger export for this capture session.
+
+        Returns the existing video_id immediately if the channel was already
+        exported. Otherwise starts an async export and returns.
+
+        :param str video_channel_id: Optional channel ID of the video to export.
+            Defaults to the primary video channel.
+        :return: Export response with session_id, video_channel_id, and
+            video_id (if already exported)
+        :rtype: dict
+        """
+        data = {}
+        if video_channel_id:
+            data["video_channel_id"] = video_channel_id
+
+        return self._connection.post(
+            path=f"{ApiPath.collection}/{self.collection_id}/{ApiPath.capture}/{ApiPath.session}/{self.id}/{ApiPath.export}",
+            data=data,
+        )
