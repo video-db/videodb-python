@@ -1,6 +1,6 @@
 from typing import List, Optional
 from videodb._constants import ApiPath
-from videodb.capture import Channel, VideoChannel, AudioChannel
+from videodb.capture import VideoChannel, AudioChannel
 from videodb.rtstream import RTStream
 
 
