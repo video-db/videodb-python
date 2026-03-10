@@ -312,6 +312,8 @@ class RTStream:
     :ivar str created_at: Timestamp of the rtstream creation
     :ivar int sample_rate: Sample rate of the rtstream
     :ivar str status: Status of the rtstream
+    :ivar str stream_url: Generated playback URL for the rtstream segment
+    :ivar str player_url: Player URL for the generated rtstream segment
     """
 
     def __init__(self, _connection, id: str, **kwargs) -> None:
@@ -323,6 +325,8 @@ class RTStream:
         self.sample_rate = kwargs.get("sample_rate", None)
         self.status = kwargs.get("status", None)
         self.channel_id = kwargs.get("channel_id", None)
+        self.stream_url = kwargs.get("stream_url", None)
+        self.player_url = kwargs.get("player_url", None)
 
     def __repr__(self) -> str:
         return (
@@ -332,7 +336,9 @@ class RTStream:
             f"collection_id={self.collection_id}, "
             f"created_at={self.created_at}, "
             f"sample_rate={self.sample_rate}, "
-            f"status={self.status})"
+            f"status={self.status}, "
+            f"stream_url={self.stream_url}, "
+            f"player_url={self.player_url})"
         )
 
     def start(self):
@@ -421,19 +427,41 @@ class RTStream:
             data=data,
         )
 
-    def generate_stream(self, start, end):
+    def generate_stream(
+        self,
+        start: int,
+        end: int,
+        player_config: Optional[Dict[str, str]] = None,
+    ) -> str:
         """Generate a stream from the rtstream.
 
         :param int start: Start time of the stream in Unix timestamp format
         :param int end: End time of the stream in Unix timestamp format
+        :param dict player_config: Optional player metadata with `title`,
+            `description`, and `slug` keys
         :return: Stream URL
         :rtype: str
         """
+        params = {"start": start, "end": end}
+        if player_config:
+            player_title = player_config.get("title")
+            player_description = player_config.get("description")
+            player_slug = player_config.get("slug")
+
+            if player_title:
+                params["player_title"] = player_title
+            if player_description:
+                params["player_description"] = player_description
+            if player_slug:
+                params["player_slug_prefix"] = player_slug
+
         stream_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.stream}",
-            params={"start": start, "end": end},
+            params=params,
         )
-        return stream_data.get("stream_url", None)
+        self.stream_url = stream_data.get("stream_url")
+        self.player_url = stream_data.get("player_url")
+        return self.player_url
 
     def index_scenes(
         self,
