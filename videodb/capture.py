@@ -3,15 +3,16 @@ import asyncio
 import json
 import uuid
 import os
+import warnings
 from typing import Optional, Dict, List, Any
 
 from videodb._constants import VIDEO_DB_API
 
 logger = logging.getLogger(__name__)
 
-def get_recorder_path():
+def get_capture_binary_path():
     """
-    Attempts to find the path to the recorder binary.
+    Attempts to find the path to the capture binary.
     If the optional 'videodb-capture-bin' package is not installed,
     it raises a RuntimeError with instructions.
     """
@@ -21,13 +22,13 @@ def get_recorder_path():
     except ImportError:
         error_msg = (
             "Capture runtime not found.\n"
-            "To use recording features, please install the capture dependencies:\n"
+            "To use capture features, please install the capture dependencies:\n"
             "pip install 'videodb[capture]'"
         )
         logger.error(error_msg)
         raise RuntimeError(error_msg)
     except Exception as e:
-        logger.error(f"Failed to resolve recorder path: {e}")
+        logger.error(f"Failed to resolve capture binary path: {e}")
         raise
 
 
@@ -53,6 +54,7 @@ class Channel:
         self.type = type
         self._client = client
         self.store = False
+        self.is_primary = False
 
     def __repr__(self):
         return f"Channel(id={self.id}, name={self.name}, type={self.type})"
@@ -91,6 +93,7 @@ class Channel:
             "name": self.name,
             "record": True,
             "store": self.store,
+            "is_primary": self.is_primary,
         }
 
 
@@ -167,14 +170,14 @@ class CaptureClient:
         self._session_id: Optional[str] = None
         self._proc = None
         self._futures: Dict[str, asyncio.Future] = {}
-        self._binary_path = get_recorder_path()
+        self._binary_path = get_capture_binary_path()
         self._event_queue = asyncio.Queue()
 
     def __repr__(self) -> str:
         return f"CaptureClient(base_url={self.base_url})"
 
     async def _ensure_process(self):
-        """Ensure the recorder binary is running."""
+        """Ensure the capture binary is running."""
         if self._proc is not None and self._proc.returncode is None:
             return
 
@@ -194,7 +197,7 @@ class CaptureClient:
     async def _send_command(
         self, command: str, params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Send a command to the recorder binary and await response.
+        """Send a command to the capture binary and await response.
 
         :param str command: Command name.
         :param dict params: Command parameters.
@@ -210,7 +213,7 @@ class CaptureClient:
             "params": params or {},
         }
         
-        # Framing: videodb_recorder|<JSON>\n
+        # IPC protocol framing: videodb_recorder|<JSON>\n
         message = f"videodb_recorder|{json.dumps(payload)}\n"
         self._proc.stdin.write(message.encode("utf-8"))
         await self._proc.stdin.drain()
@@ -254,7 +257,7 @@ class CaptureClient:
                     await self._event_queue.put(data)
 
             except Exception as e:
-                logger.error(f"Failed to parse recorder message: {e}")
+                logger.error(f"Failed to parse capture message: {e}")
 
     async def _read_stderr_loop(self):
         """Loop to read stderr and log messages."""
@@ -262,10 +265,10 @@ class CaptureClient:
             line = await self._proc.stderr.readline()
             if not line:
                 break
-            logger.debug(f"[Recorder Binary]: {line.decode('utf-8', errors='replace').strip()}")
+            logger.debug(f"[Capture Binary]: {line.decode('utf-8', errors='replace').strip()}")
 
     async def shutdown(self):
-        """Cleanly terminate the recorder binary process."""
+        """Cleanly terminate the capture binary process."""
         if self._proc:
             try:
                 # Try graceful shutdown command first
@@ -366,11 +369,25 @@ class CaptureClient:
 
         :param str capture_session_id: The ID of the capture session.
         :param list[Channel] channels: List of Channel objects to record.
-        :param str primary_video_channel_id: ID of the primary video channel.
+            Set channel.is_primary = True on the desired video channel.
+        :param str primary_video_channel_id: Deprecated. Set
+            channel.is_primary = True on the desired video channel instead.
         :raises ValueError: If no channels are specified.
         """
         if not channels:
             raise ValueError("At least one channel must be specified for capture.")
+
+        if primary_video_channel_id is not None:
+            warnings.warn(
+                "primary_video_channel_id is deprecated. "
+                "Set channel.is_primary = True on the desired video channel instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            for ch in channels:
+                if ch.id == primary_video_channel_id:
+                    ch.is_primary = True
+                    break
 
         self._session_id = capture_session_id
 
@@ -379,9 +396,6 @@ class CaptureClient:
             "uploadToken": self.client_token,
             "channels": [ch.to_dict() for ch in channels],
         }
-
-        if primary_video_channel_id:
-            payload["primary_video_channel_id"] = primary_video_channel_id
 
         await self._send_command("startRecording", payload)
 
@@ -392,7 +406,7 @@ class CaptureClient:
         await self._send_command("stopRecording", {"sessionId": self._session_id})
 
     async def events(self):
-        """Async generator that yields events from the recorder."""
+        """Async generator that yields events from the capture binary."""
         while True:
             try:
                 # Use a timeout so we can check if the process is still alive

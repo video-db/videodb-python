@@ -707,10 +707,10 @@ class Video:
         ) -> str:
             """Generate a clip from the video using a prompt.
             :param str prompt: Prompt to generate the clip
-            :param str content_type: Content type for the clip
-            :param str model_name: Model name for generation
-            :return: The stream url of the generated clip
-            :rtype: str
+            :param str content_type: Content type for the clip. Valid options: "spoken", "visual", "multimodal"
+            :param str model_name: Model tier for generation. Valid options: "basic", "pro", "ultra"
+            :return: The search result of the generated clip
+            :rtype: :class:`SearchResult <SearchResult>`
             """
 
             clip_data = self._connection.post(
