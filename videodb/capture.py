@@ -53,6 +53,7 @@ class Channel:
         self.type = type
         self._client = client
         self.store = False
+        self.is_primary = False
 
     def __repr__(self):
         return f"Channel(id={self.id}, name={self.name}, type={self.type})"
@@ -91,6 +92,7 @@ class Channel:
             "name": self.name,
             "record": True,
             "store": self.store,
+            "is_primary": self.is_primary,
         }
 
 
@@ -360,13 +362,12 @@ class CaptureClient:
         self,
         capture_session_id: str,
         channels: List[Channel],
-        primary_video_channel_id: Optional[str] = None,
     ) -> None:
         """Start the recording session.
 
         :param str capture_session_id: The ID of the capture session.
         :param list[Channel] channels: List of Channel objects to record.
-        :param str primary_video_channel_id: ID of the primary video channel.
+            Set channel.is_primary = True on the desired video channel.
         :raises ValueError: If no channels are specified.
         """
         if not channels:
@@ -379,9 +380,6 @@ class CaptureClient:
             "uploadToken": self.client_token,
             "channels": [ch.to_dict() for ch in channels],
         }
-
-        if primary_video_channel_id:
-            payload["primary_video_channel_id"] = primary_video_channel_id
 
         await self._send_command("startRecording", payload)
 

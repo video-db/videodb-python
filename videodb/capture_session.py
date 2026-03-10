@@ -56,7 +56,6 @@ class CaptureSession:
 
         self.primary_video_channel_id = data.get("primary_video_channel_id")
         self.export_status = data.get("export_status")
-        self.exported_videos = data.get("exported_videos", {})
 
         self.rtstreams = []
         for rts_data in data.get("rtstreams", []):
