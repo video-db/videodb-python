@@ -431,7 +431,6 @@ class RTStream:
         self,
         start: int,
         end: int,
-        player_render: bool = True,
         player_title: str = None,
         player_description: str = None,
         player_slug_prefix: str = None,
@@ -440,14 +439,13 @@ class RTStream:
 
         :param int start: Start time of the stream in Unix timestamp format
         :param int end: End time of the stream in Unix timestamp format
-        :param bool player_render: Whether to generate a player URL for the stream
         :param str player_title: Optional player title metadata
         :param str player_description: Optional player description metadata
         :param str player_slug_prefix: Optional prefix for the generated player slug
         :return: Stream URL
         :rtype: str
         """
-        params = {"start": start, "end": end, "player_render": player_render}
+        params = {"start": start, "end": end}
         if player_title:
             params["player_title"] = player_title
         if player_description:
