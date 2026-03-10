@@ -431,27 +431,29 @@ class RTStream:
         self,
         start: int,
         end: int,
-        player_title: str = None,
-        player_description: str = None,
-        player_slug_prefix: str = None,
+        player_config: Optional[Dict[str, str]] = None,
     ) -> str:
         """Generate a stream from the rtstream.
 
         :param int start: Start time of the stream in Unix timestamp format
         :param int end: End time of the stream in Unix timestamp format
-        :param str player_title: Optional player title metadata
-        :param str player_description: Optional player description metadata
-        :param str player_slug_prefix: Optional prefix for the generated player slug
+        :param dict player_config: Optional player metadata with `title`,
+            `description`, and `slug` keys
         :return: Stream URL
         :rtype: str
         """
         params = {"start": start, "end": end}
-        if player_title:
-            params["player_title"] = player_title
-        if player_description:
-            params["player_description"] = player_description
-        if player_slug_prefix:
-            params["player_slug_prefix"] = player_slug_prefix
+        if player_config:
+            player_title = player_config.get("title")
+            player_description = player_config.get("description")
+            player_slug = player_config.get("slug")
+
+            if player_title:
+                params["player_title"] = player_title
+            if player_description:
+                params["player_description"] = player_description
+            if player_slug:
+                params["player_slug_prefix"] = player_slug
 
         stream_data = self._connection.get(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.stream}",
@@ -459,7 +461,7 @@ class RTStream:
         )
         self.stream_url = stream_data.get("stream_url")
         self.player_url = stream_data.get("player_url")
-        return self.stream_url
+        return self.player_url
 
     def index_scenes(
         self,
