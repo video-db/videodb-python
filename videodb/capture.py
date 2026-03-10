@@ -3,6 +3,7 @@ import asyncio
 import json
 import uuid
 import os
+import warnings
 from typing import Optional, Dict, List, Any
 
 from videodb._constants import VIDEO_DB_API
@@ -362,16 +363,31 @@ class CaptureClient:
         self,
         capture_session_id: str,
         channels: List[Channel],
+        primary_video_channel_id: Optional[str] = None,
     ) -> None:
         """Start the recording session.
 
         :param str capture_session_id: The ID of the capture session.
         :param list[Channel] channels: List of Channel objects to record.
             Set channel.is_primary = True on the desired video channel.
+        :param str primary_video_channel_id: Deprecated. Set
+            channel.is_primary = True on the desired video channel instead.
         :raises ValueError: If no channels are specified.
         """
         if not channels:
             raise ValueError("At least one channel must be specified for capture.")
+
+        if primary_video_channel_id is not None:
+            warnings.warn(
+                "primary_video_channel_id is deprecated. "
+                "Set channel.is_primary = True on the desired video channel instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            for ch in channels:
+                if ch.id == primary_video_channel_id:
+                    ch.is_primary = True
+                    break
 
         self._session_id = capture_session_id
 

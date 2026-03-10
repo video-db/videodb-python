@@ -90,7 +90,7 @@ class CaptureSession:
 
         return filtered_streams
 
-    def export(self, video_channel_id: Optional[str] = None, connection_id: Optional[str] = None) -> dict:
+    def export(self, video_channel_id: Optional[str] = None, ws_connection_id: Optional[str] = None) -> dict:
         """Trigger export for this capture session.
 
         Call repeatedly to poll for completion. Returns ``export_status``
@@ -99,8 +99,8 @@ class CaptureSession:
 
         :param str video_channel_id: Optional channel ID of the video to export.
             Defaults to the primary video channel.
-        :param str connection_id: Optional websocket connection ID for push
-            notification when export completes.
+        :param str ws_connection_id: WebSocket connection ID for push
+            notification when export completes (optional).
         :return: Export response with session_id, video_channel_id,
             export_status, and video_id/stream_url/player_url when exported.
         :rtype: dict
@@ -108,8 +108,8 @@ class CaptureSession:
         data = {}
         if video_channel_id:
             data["video_channel_id"] = video_channel_id
-        if connection_id:
-            data["connection_id"] = connection_id
+        if ws_connection_id:
+            data["connection_id"] = ws_connection_id
 
         return self._connection.post(
             path=f"{ApiPath.collection}/{self.collection_id}/{ApiPath.capture}/{ApiPath.session}/{self.id}/{ApiPath.export}",
