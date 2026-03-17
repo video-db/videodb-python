@@ -37,8 +37,8 @@ class VideoAsset(MediaAsset):
         end: Optional[float] = None,
     ) -> None:
         super().__init__(asset_id)
-        self.start: int = start
-        self.end: Union[int, None] = end
+        self.start: Optional[float] = start
+        self.end: Optional[float] = end
 
     def to_json(self) -> dict:
         return copy.deepcopy(self.__dict__)
@@ -63,8 +63,8 @@ class AudioAsset(MediaAsset):
         fade_out_duration: Optional[Union[int, float]] = 0,
     ):
         super().__init__(asset_id)
-        self.start: int = start
-        self.end: Union[int, None] = end
+        self.start: Optional[float] = start
+        self.end: Optional[float] = end
         self.disable_other_tracks: bool = disable_other_tracks
         self.fade_in_duration: Union[int, float] = validate_max_supported(
             fade_in_duration, MaxSupported.fade_duration, "fade_in_duration"

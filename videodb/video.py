@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Dict, Tuple, Any
+from typing import Literal, Optional, Union, List, Dict, Tuple, Any
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
@@ -702,9 +702,9 @@ class Video:
     def clip(
             self,
             prompt: str,
-            content_type: str,
-            model_name: str,
-        ) -> str:
+            content_type: Literal["spoken", "visual", "multimodal"],
+            model_name: Literal["basic", "pro", "ultra"],
+        ) -> SearchResult:
             """Generate a clip from the video using a prompt.
             :param str prompt: Prompt to generate the clip
             :param str content_type: Content type for the clip. Valid options: "spoken", "visual", "multimodal"

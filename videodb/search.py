@@ -48,6 +48,8 @@ class SearchResult:
                         scene_index_id=doc.get("scene_index_id"),
                         scene_index_name=doc.get("scene_index_name"),
                         metadata=doc.get("metadata"),
+                        stream_url=doc.get("stream_link"),
+                        player_url=doc.get("player_url"),
                     )
                 )
 
