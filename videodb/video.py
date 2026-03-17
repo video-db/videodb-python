@@ -249,10 +249,12 @@ class Video:
     def generate_transcript(
         self,
         force: bool = None,
+        language_code: Optional[str] = None,
     ) -> str:
         """Generate transcript for the video.
 
         :param bool force: Force generate new transcript
+        :param str language_code: (optional) Language code of the video
         :return: Full transcript text as string
         :rtype: str
         """
@@ -260,6 +262,7 @@ class Video:
             path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
             data={
                 "force": True if force else False,
+                "language_code": language_code,
             },
         )
         transcript = transcript_data.get("word_timestamps", [])
