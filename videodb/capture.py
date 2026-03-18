@@ -133,21 +133,24 @@ class Channels:
         mics: List[AudioChannel] = None,
         displays: List[VideoChannel] = None,
         system_audio: List[AudioChannel] = None,
+        cameras: List[VideoChannel] = None,
     ):
         self.mics: ChannelList = ChannelList(mics or [])
         self.displays: ChannelList = ChannelList(displays or [])
         self.system_audio: ChannelList = ChannelList(system_audio or [])
+        self.cameras: ChannelList = ChannelList(cameras or [])
 
     def __repr__(self):
         return (
             f"Channels("
             f"mics={len(self.mics)}, "
             f"displays={len(self.displays)}, "
-            f"system_audio={len(self.system_audio)})"
+            f"system_audio={len(self.system_audio)}, "
+            f"cameras={len(self.cameras)})"
         )
 
     def all(self) -> List[Channel]:
-        """Return a flat list of all channels."""
+        """Return a flat list of all capturable channels (excludes cameras)."""
         return list(self.mics) + list(self.displays) + list(self.system_audio)
 
 
@@ -333,30 +336,34 @@ class CaptureClient:
         mics = []
         displays = []
         system_audio = []
-        
+        cameras = []
+
         for ch in raw_channels:
             c_type = ch.get("type")
             c_id = ch.get("channel_id") or ch.get("id")
             c_name = ch.get("name", "")
-            
+
             if not c_id:
                 logger.warning(f"Skipping channel with missing ID: {ch}")
                 continue
 
-            # Categorize based on type and name patterns
-            if c_type == "video":
+            # Categorize based on channel ID prefix
+            if c_id.startswith("mic:"):
+                mics.append(AudioChannel(id=c_id, name=c_name, client=self))
+            elif c_id.startswith("display:") or c_id.startswith("screen:"):
                 displays.append(VideoChannel(id=c_id, name=c_name, client=self))
+            elif c_id.startswith("system_audio:"):
+                system_audio.append(AudioChannel(id=c_id, name=c_name, client=self))
+            elif c_id.startswith("camera:"):
+                cameras.append(VideoChannel(id=c_id, name=c_name, client=self))
             elif c_type == "audio":
-                # Distinguish between mic and system audio based on common patterns
-                name_lower = c_name.lower()
-                if "system" in name_lower or "output" in name_lower or "speaker" in name_lower:
-                    system_audio.append(AudioChannel(id=c_id, name=c_name, client=self))
-                else:
-                    mics.append(AudioChannel(id=c_id, name=c_name, client=self))
+                mics.append(AudioChannel(id=c_id, name=c_name, client=self))
+            elif c_type == "video":
+                displays.append(VideoChannel(id=c_id, name=c_name, client=self))
             else:
                 logger.debug(f"Unknown channel type '{c_type}' for channel '{c_name}'")
-                
-        return Channels(mics=mics, displays=displays, system_audio=system_audio)
+
+        return Channels(mics=mics, displays=displays, system_audio=system_audio, cameras=cameras)
 
     async def start_session(
         self,
