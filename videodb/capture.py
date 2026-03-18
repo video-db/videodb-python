@@ -91,7 +91,6 @@ class Channel:
             "channel_id": self.id,
             "type": self.type,
             "name": self.name,
-            "record": True,
             "store": self.store,
             "is_primary": self.is_primary,
         }
