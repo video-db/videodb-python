@@ -1,6 +1,7 @@
 from typing import Union
 
 from videodb._constants import ApiPath
+from videodb._utils._video import build_embed_code
 from videodb.asset import VideoAsset, AudioAsset, ImageAsset, TextAsset
 
 
@@ -71,3 +72,38 @@ class Timeline(object):
         self.stream_url = stream_data.get("stream_url")
         self.player_url = stream_data.get("player_url")
         return stream_data.get("stream_url", None)
+
+    def get_embed_code(
+        self,
+        width: str = "100%",
+        height: int = 405,
+        title: str = "VideoDB Player",
+        allow_fullscreen: bool = True,
+        auto_generate: bool = True,
+    ) -> str:
+        """Generate an HTML iframe embed code for the timeline.
+
+        :param str width: Width of the iframe (default: "100%")
+        :param int height: Height of the iframe in pixels (default: 405)
+        :param str title: Title attribute for the iframe (default: "VideoDB Player")
+        :param bool allow_fullscreen: Whether to allow fullscreen (default: True)
+        :param bool auto_generate: If True and player_url is missing, auto-generate it (default: True)
+        :return: HTML iframe string
+        :rtype: str
+        :raises ValueError: If player_url is not available
+        """
+        if not self.player_url and auto_generate:
+            self.generate_stream()
+
+        if not self.player_url:
+            raise ValueError(
+                "player_url not available. Call generate_stream() first or set auto_generate=True."
+            )
+
+        return build_embed_code(
+            player_url=self.player_url,
+            width=width,
+            height=height,
+            title=title,
+            allow_fullscreen=allow_fullscreen,
+        )
