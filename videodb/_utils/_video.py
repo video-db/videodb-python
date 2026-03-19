@@ -35,7 +35,7 @@ def player_url_to_embed_url(player_url: str) -> str:
     return embed_url
 
 
-def build_embed_code(
+def build_iframe_embed_code(
     player_url: str,
     width: str = "100%",
     height: int = 405,

@@ -1,5 +1,5 @@
 from typing import Optional
-from videodb._utils._video import play_stream, build_embed_code
+from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     ApiPath,
 )
@@ -133,7 +133,7 @@ class Shot:
                 "player_url not available. Call generate_stream() first or set auto_generate=True."
             )
 
-        return build_embed_code(
+        return build_iframe_embed_code(
             player_url=self.player_url,
             width=width,
             height=height,

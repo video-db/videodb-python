@@ -5,7 +5,7 @@ from videodb._constants import (
     SceneExtractionType,
     Segmenter,
 )
-from videodb._utils._video import play_stream, build_embed_code
+from videodb._utils._video import play_stream, build_iframe_embed_code
 
 
 class RTStreamSearchResult:
@@ -93,7 +93,7 @@ class RTStreamExportResult:
                 "player_url not available. Export may have failed or returned audio-only content."
             )
 
-        return build_embed_code(
+        return build_iframe_embed_code(
             player_url=self.player_url,
             width=width,
             height=height,
@@ -216,7 +216,7 @@ class RTStreamShot:
                 "player_url not available. Call generate_stream() first or set auto_generate=True."
             )
 
-        return build_embed_code(
+        return build_iframe_embed_code(
             player_url=self.player_url,
             width=width,
             height=height,
@@ -554,7 +554,7 @@ class RTStream:
                 "player_url not available. Call generate_stream(start, end) first to generate a stream."
             )
 
-        return build_embed_code(
+        return build_iframe_embed_code(
             player_url=self.player_url,
             width=width,
             height=height,

@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 from enum import Enum
 
 from videodb._constants import ApiPath
-from videodb._utils._video import build_embed_code
+from videodb._utils._video import build_iframe_embed_code
 from videodb.exceptions import InvalidRequestError
 
 
@@ -1193,7 +1193,7 @@ class Timeline:
                 "player_url not available. Call generate_stream() first or set auto_generate=True."
             )
 
-        return build_embed_code(
+        return build_iframe_embed_code(
             player_url=self.player_url,
             width=width,
             height=height,

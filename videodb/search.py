@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from videodb._utils._video import play_stream, build_embed_code
+from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     IndexType,
     SearchType,
@@ -127,7 +127,7 @@ class SearchResult:
                 "player_url not available. Call compile() first or set auto_generate=True."
             )
 
-        return build_embed_code(
+        return build_iframe_embed_code(
             player_url=self.player_url,
             width=width,
             height=height,
