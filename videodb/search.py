@@ -157,6 +157,7 @@ class SemanticSearch(Search):
         result_threshold: Optional[int] = None,
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
+        sort_docs_on: Optional[str] = SemanticSearchDefaultValues.sort_docs_on,
         **kwargs,
     ):
         search_data = self._connection.post(
@@ -172,6 +173,7 @@ class SemanticSearch(Search):
                 if result_threshold is not None
                 else SemanticSearchDefaultValues.result_threshold,
                 "dynamic_score_percentage": dynamic_score_percentage,
+                "sort_docs_on": sort_docs_on,
                 **kwargs,
             },
         )
