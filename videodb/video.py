@@ -1,4 +1,4 @@
-from typing import Optional, Union, List, Dict, Tuple, Any
+from typing import Literal, Optional, Union, List, Dict, Tuple, Any
 from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
@@ -249,10 +249,12 @@ class Video:
     def generate_transcript(
         self,
         force: bool = None,
+        language_code: Optional[str] = None,
     ) -> str:
         """Generate transcript for the video.
 
         :param bool force: Force generate new transcript
+        :param str language_code: (optional) Language code of the video
         :return: Full transcript text as string
         :rtype: str
         """
@@ -260,6 +262,7 @@ class Video:
             path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
             data={
                 "force": True if force else False,
+                "language_code": language_code,
             },
         )
         transcript = transcript_data.get("word_timestamps", [])
@@ -702,9 +705,9 @@ class Video:
     def clip(
             self,
             prompt: str,
-            content_type: str,
-            model_name: str,
-        ) -> str:
+            content_type: Literal["spoken", "visual", "multimodal"],
+            model_name: Literal["basic", "pro", "ultra"],
+        ) -> SearchResult:
             """Generate a clip from the video using a prompt.
             :param str prompt: Prompt to generate the clip
             :param str content_type: Content type for the clip. Valid options: "spoken", "visual", "multimodal"
