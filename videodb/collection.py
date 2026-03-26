@@ -468,6 +468,7 @@ class Collection:
         score_threshold: Optional[float] = None,
         dynamic_score_percentage: Optional[float] = None,
         filter: List[Dict[str, Any]] = [],
+        sort_docs_on: Optional[str] = None,
         namespace: Optional[str] = None,
         scene_index_id: Optional[str] = None,
     ) -> Union[SearchResult, RTStreamSearchResult]:
@@ -480,6 +481,7 @@ class Collection:
         :param float score_threshold: Threshold score for the search (optional)
         :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
         :param list filter: Additional metadata filters (optional)
+        :param str sort_docs_on: Sort docs within each video by "score" or "start" (optional)
         :param str namespace: Search namespace (optional, "rtstream" to search RTStreams)
         :param str scene_index_id: Filter by specific scene index (optional)
         :raise SearchError: If the search fails
@@ -532,6 +534,7 @@ class Collection:
             result_threshold=result_threshold,
             score_threshold=score_threshold,
             dynamic_score_percentage=dynamic_score_percentage,
+            sort_docs_on=sort_docs_on,
             filter=filter,
         )
 

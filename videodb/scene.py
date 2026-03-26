@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Optional
 
 from videodb._constants import ApiPath
 
@@ -59,11 +59,17 @@ class Scene:
             "metadata": self.metadata,
         }
 
-    def describe(self, prompt: str = None, model_name=None) -> None:
+    def describe(
+        self,
+        prompt: Optional[str] = None,
+        model_name: Optional[str] = None,
+        model_config: Optional[Dict] = None,
+    ) -> None:
         """Describe the scene.
 
         :param str prompt: (optional) The prompt to use for the description
         :param str model_name: (optional) The model to use for the description
+        :param dict model_config: (optional) The model configuration for the description
         :return: The description of the scene
         :rtype: str
         """
@@ -71,7 +77,11 @@ class Scene:
             raise ValueError("Connection is required to describe a scene")
         description_data = self._connection.post(
             path=f"{ApiPath.video}/{self.video_id}/{ApiPath.scene}/{self.id}/{ApiPath.describe}",
-            data={"prompt": prompt, "model_name": model_name},
+            data={
+                "prompt": prompt,
+                "model_name": model_name,
+                "model_config": model_config,
+            },
         )
         self.description = description_data.get("description", None)
         return self.description

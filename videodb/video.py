@@ -63,6 +63,23 @@ class Video:
     def __getitem__(self, key):
         return self.__dict__[key]
 
+    def update(self, name: Optional[str] = None) -> None:
+        """Update the video's metadata.
+
+        :param str name: (optional) New name for the video
+        """
+        data = {}
+        if name is not None:
+            data["name"] = name
+        if not data:
+            return
+        response_data = self._connection.patch(
+            path=f"{ApiPath.video}/{self.id}",
+            data=data,
+        )
+        if name is not None:
+            self.name = response_data.get("name", name)
+
     def search(
         self,
         query: str,
