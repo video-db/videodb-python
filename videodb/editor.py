@@ -1,5 +1,7 @@
 import json
+import logging
 import requests
+import warnings
 
 from typing import List, Optional, Union
 from enum import Enum
@@ -8,6 +10,8 @@ from videodb._constants import ApiPath
 from videodb._utils._video import build_iframe_embed_code
 from videodb.exceptions import InvalidRequestError
 
+
+logger = logging.getLogger(__name__)
 
 MAX_PAYLOAD_SIZE = 100 * 1024
 
@@ -841,6 +845,11 @@ class CaptionAsset(BaseAsset):
     ):
         """Initialize a CaptionAsset instance.
 
+        .. note::
+            When using ``src="auto"``, the video must be indexed first
+            (e.g. via ``video.index_spoken_words()``) so that a transcript
+            is available for caption generation.
+
         :param str src: Caption source ("auto" for auto-generated or base64 encoded ass string)
         :param FontStyling font: (optional) Font styling properties
         :param str primary_color: Primary text color in ASS format (default: "&H00FFFFFF")
@@ -850,6 +859,12 @@ class CaptionAsset(BaseAsset):
         :param Positioning position: (optional) Caption positioning properties
         :param CaptionAnimation animation: (optional) Caption animation effect
         """
+        if src == "auto":
+            warnings.warn(
+                "CaptionAsset(src='auto'): the video must be indexed "
+                "(e.g. video.index_spoken_words()) for captions to be generated.",
+                stacklevel=2,
+            )
         self.src = src
         self.font = font if font is not None else FontStyling()
         self.primary_color = primary_color

@@ -49,6 +49,7 @@ class ReframeMode:
 class SemanticSearchDefaultValues:
     result_threshold = 5
     score_threshold = 0.2
+    sort_docs_on = None
 
 
 class Segmenter:

@@ -63,6 +63,23 @@ class Video:
     def __getitem__(self, key):
         return self.__dict__[key]
 
+    def update(self, name: Optional[str] = None) -> None:
+        """Update the video's metadata.
+
+        :param str name: (optional) New name for the video
+        """
+        data = {}
+        if name is not None:
+            data["name"] = name
+        if not data:
+            return
+        response_data = self._connection.patch(
+            path=f"{ApiPath.video}/{self.id}",
+            data=data,
+        )
+        if name is not None:
+            self.name = response_data.get("name", name)
+
     def search(
         self,
         query: str,
@@ -251,10 +268,12 @@ class Video:
     def generate_transcript(
         self,
         force: bool = None,
+        language_code: Optional[str] = None,
     ) -> str:
         """Generate transcript for the video.
 
         :param bool force: Force generate new transcript
+        :param str language_code: (optional) Language code of the video
         :return: Full transcript text as string
         :rtype: str
         """
@@ -262,6 +281,7 @@ class Video:
             path=f"{ApiPath.video}/{self.id}/{ApiPath.transcription}",
             data={
                 "force": True if force else False,
+                "language_code": language_code,
             },
         )
         transcript = transcript_data.get("word_timestamps", [])
@@ -704,9 +724,9 @@ class Video:
     def clip(
             self,
             prompt: str,
-            content_type: str,
-            model_name: str,
-        ) -> str:
+            content_type: Literal["spoken", "visual", "multimodal"],
+            model_name: Literal["basic", "pro", "ultra"],
+        ) -> SearchResult:
             """Generate a clip from the video using a prompt.
             :param str prompt: Prompt to generate the clip
             :param str content_type: Content type for the clip. Valid options: "spoken", "visual", "multimodal"

@@ -35,6 +35,8 @@ class Shot:
         scene_index_id: Optional[str] = None,
         scene_index_name: Optional[str] = None,
         metadata: Optional[dict] = None,
+        stream_url: Optional[str] = None,
+        player_url: Optional[str] = None,
     ) -> None:
         self._connection = _connection
         self.video_id = video_id
@@ -47,8 +49,8 @@ class Shot:
         self.scene_index_id = scene_index_id
         self.scene_index_name = scene_index_name
         self.metadata = metadata
-        self.stream_url = None
-        self.player_url = None
+        self.stream_url = stream_url
+        self.player_url = player_url
 
     def __repr__(self) -> str:
         repr_str = (
