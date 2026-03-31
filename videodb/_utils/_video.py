@@ -1,5 +1,4 @@
 import webbrowser as web
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 
 PLAYER_URL: str = "https://console.videodb.io/player"
 
@@ -15,24 +14,13 @@ def player_url_to_embed_url(player_url: str) -> str:
     if not player_url:
         raise ValueError("player_url is required to generate embed URL")
 
-    parsed = urlparse(player_url)
-    query_params = parse_qs(parsed.query)
+    if "/watch?" not in player_url:
+        raise ValueError("player_url must contain '/watch?' path")
 
-    if "v" not in query_params:
+    if "v=" not in player_url.split("/watch?", 1)[1]:
         raise ValueError("player_url must contain a 'v' query parameter")
 
-    embed_params = {"v": query_params["v"][0]}
-
-    embed_url = urlunparse((
-        parsed.scheme,
-        parsed.netloc,
-        "/embed",
-        "",
-        urlencode(embed_params),
-        "",
-    ))
-
-    return embed_url
+    return player_url.replace("/watch?", "/embed?", 1)
 
 
 def build_iframe_embed_code(
