@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from videodb._utils._video import play_stream
+from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     IndexType,
     SearchType,
@@ -101,6 +101,41 @@ class SearchResult:
         """
         self.compile()
         return play_stream(self.stream_url)
+
+    def get_embed_code(
+        self,
+        width: str = "100%",
+        height: int = 405,
+        title: str = "VideoDB Player",
+        allow_fullscreen: bool = True,
+        auto_generate: bool = True,
+    ) -> str:
+        """Generate an HTML iframe embed code for the search result.
+
+        :param str width: Width of the iframe (default: "100%")
+        :param int height: Height of the iframe in pixels (default: 405)
+        :param str title: Title attribute for the iframe (default: "VideoDB Player")
+        :param bool allow_fullscreen: Whether to allow fullscreen (default: True)
+        :param bool auto_generate: If True and player_url is missing, auto-compile it (default: True)
+        :return: HTML iframe string
+        :rtype: str
+        :raises ValueError: If player_url is not available
+        """
+        if not self.player_url and auto_generate:
+            self.compile()
+
+        if not self.player_url:
+            raise ValueError(
+                "player_url not available. Call compile() first or set auto_generate=True."
+            )
+
+        return build_iframe_embed_code(
+            player_url=self.player_url,
+            width=width,
+            height=height,
+            title=title,
+            allow_fullscreen=allow_fullscreen,
+        )
 
 
 class Search(ABC):
