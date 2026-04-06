@@ -9,6 +9,7 @@ from videodb._constants import (
     IndexType,
     MediaType,
     SearchType,
+    _InternalSearchType,
 )
 from videodb.video import Video
 from videodb.audio import Audio
@@ -543,7 +544,7 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
             data={
                 "query": query,
-                "search_type": SearchType.llm,
+                "search_type": _InternalSearchType.llm,
             },
         )
         return [

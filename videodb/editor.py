@@ -237,7 +237,7 @@ class VideoAsset(BaseAsset):
     The src must be a publicly accessible URL to a video resource.
 
     :ivar str id: Unique identifier for the video asset
-    :ivar int start: Start time offset in seconds
+    :ivar float start: Start time offset in seconds
     :ivar float volume: Audio volume level (0 to 5)
     :ivar Crop crop: Crop settings for the video
     """
@@ -247,14 +247,14 @@ class VideoAsset(BaseAsset):
     def __init__(
         self,
         id: str,
-        start: int = 0,
+        start: float = 0,
         volume: float = 1,
         crop: Optional[Crop] = None,
     ):
         """Initialize a VideoAsset instance.
 
         :param str id: Unique identifier for the video asset
-        :param int start: Start time offset in seconds (default: 0)
+        :param float start: Start time offset in seconds (default: 0)
         :param float volume: Audio volume level between 0 and 5 (default: 1)
         :param Crop crop: (optional) Crop settings for the video
         :raises ValueError: If start is negative or volume is not between 0 and 5

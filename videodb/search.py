@@ -3,6 +3,7 @@ from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     IndexType,
     SearchType,
+    _InternalSearchType,
     ApiPath,
     SemanticSearchDefaultValues,
 )
@@ -283,7 +284,7 @@ class SceneSearch(Search):
 search_type = {
     SearchType.semantic: SemanticSearch,
     SearchType.keyword: KeywordSearch,
-    SearchType.scene: SceneSearch,
+    _InternalSearchType.scene: SceneSearch,
 }
 
 

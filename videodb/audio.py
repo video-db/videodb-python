@@ -4,6 +4,8 @@ from videodb._constants import (
     Segmenter,
 )
 
+_VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
+
 
 class Audio:
     """Audio class to interact with the Audio
@@ -57,6 +59,19 @@ class Audio:
         length: int = 1,
         force: bool = None,
     ) -> None:
+        if segmenter not in _VALID_SEGMENTERS:
+            raise ValueError(
+                f"Invalid segmenter '{segmenter}'. "
+                f"Must be one of: {', '.join(sorted(_VALID_SEGMENTERS))}"
+            )
+        if start is not None and start < 0:
+            raise ValueError(f"start must be non-negative, got {start}")
+        if end is not None and end < 0:
+            raise ValueError(f"end must be non-negative, got {end}")
+        if start is not None and end is not None and start > end:
+            raise ValueError(
+                f"start ({start}) must be less than or equal to end ({end})"
+            )
         if self.transcript and not force and not start and not end:
             return
         transcript_data = self._connection.get(
@@ -83,12 +98,18 @@ class Audio:
     ) -> List[Dict[str, Union[float, str]]]:
         """Get timestamped transcript segments for the audio.
 
-        :param int start: Start time in seconds
-        :param int end: End time in seconds
-        :param Segmenter segmenter: Segmentation type (:class:`Segmenter.word`,
-            :class:`Segmenter.sentence`, :class:`Segmenter.time`)
-        :param int length: Length of segments when using time segmenter
-        :param bool force: Force fetch new transcript
+        :param int start: Start time in seconds (must be >= 0 and <= end)
+        :param int end: End time in seconds (must be >= 0 and >= start)
+        :param Segmenter segmenter: How to split the transcript into segments.
+            Must be one of :attr:`Segmenter.word` (default, one segment per word),
+            :attr:`Segmenter.sentence` (one segment per sentence), or
+            :attr:`Segmenter.time` (fixed-duration segments controlled by *length*)
+        :param int length: Duration in seconds for each segment when
+            *segmenter* is :attr:`Segmenter.time` (default 1)
+        :param bool force: Force re-fetch transcript from the server,
+            bypassing the local cache
+        :raises ValueError: If *segmenter* is not a valid value, or if
+            *start*/*end* are negative or *start* > *end*
         :return: List of dicts with keys: start (float), end (float), text (str)
         :rtype: List[Dict[str, Union[float, str]]]
         """
