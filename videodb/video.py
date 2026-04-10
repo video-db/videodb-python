@@ -1000,6 +1000,7 @@ class Video:
         segmentation: Optional[dict] = None,
         sampling: Optional[dict] = None,
         transform: Optional[dict] = None,
+        config: Optional[dict] = None,
         store: bool = False,
         callback_url: Optional[str] = None,
     ) -> Optional[str]:
@@ -1012,6 +1013,8 @@ class Video:
         :param dict segmentation: Segmentation config, e.g. {"type": "time", "window": "1s"}
         :param dict sampling: Sampling config, e.g. {"frame_count": 2}
         :param dict transform: Transform config, e.g. {"frame_size": "480p"}
+        :param dict config: Per-extract-type config, e.g.
+            ``{"faces": {"confidence_threshold": 0.6, "min_face_size": 30}}``
         :param bool store: Whether to persist the understanding result
         :param str callback_url: URL to receive callback when done (optional)
         :return: understanding_id string
@@ -1025,6 +1028,8 @@ class Video:
         }
         if transform:
             data["transform"] = transform
+        if config:
+            data["config"] = config
         if callback_url:
             data["callback_url"] = callback_url
 
