@@ -75,6 +75,7 @@ class HttpClient:
         path: str,
         base_url: Optional[str] = None,
         headers: Optional[dict] = None,
+        wait: bool = True,
         **kwargs,
     ):
         """Make a request to the api
@@ -83,6 +84,7 @@ class HttpClient:
         :param str path: The path to make the request to
         :param str base_url: (optional) The base url to use for the request
         :param dict headers: (optional) The headers to use for the request
+        :param bool wait: If False, return raw data without polling (default True)
         :param kwargs: The keyword arguments to pass to the request method
         :return: json response from the request
         """
@@ -92,6 +94,8 @@ class HttpClient:
             request_headers = {**self.session.headers, **(headers or {})}
             response = method(url, headers=request_headers, timeout=timeout, **kwargs)
             response.raise_for_status()
+            if not wait:
+                return response.json().get("data")
             return self._parse_response(response)
 
         except requests.exceptions.RequestException as e:
@@ -237,12 +241,13 @@ class HttpClient:
         return self._make_request(method=self.session.get, path=path, **kwargs)
 
     def post(
-        self, path: str, data=None, show_progress: Optional[bool] = False, **kwargs
+        self, path: str, data=None, show_progress: Optional[bool] = False,
+        wait: bool = True, **kwargs,
     ) -> requests.Response:
         """Make a post request"""
         self.show_progress = show_progress
         self._apply_poll_overrides(kwargs)
-        return self._make_request(self.session.post, path, json=data, **kwargs)
+        return self._make_request(self.session.post, path, json=data, wait=wait, **kwargs)
 
     def put(self, path: str, data=None, **kwargs) -> requests.Response:
         """Make a put request"""

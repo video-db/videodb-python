@@ -897,8 +897,11 @@ class Video:
         use_for: Optional[List[str]] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
-    ) -> Optional[IndexResult]:
+    ) -> Optional[str]:
         """Create an index on this video.
+
+        Returns the index_id immediately. Use ``get_index(id)`` to poll
+        for the result.
 
         :param source: Source data — an :class:`UnderstandingResult` object
             (calls ``to_source_dict()`` automatically), or a raw dict
@@ -906,8 +909,8 @@ class Video:
         :param list use_for: What this index is used for (e.g. ["search", "query"])
         :param str name: Name for the index
         :param str callback_url: URL to receive callback when done (optional)
-        :return: :class:`IndexResult <IndexResult>` object
-        :rtype: :class:`videodb.face.IndexResult`
+        :return: index_id string
+        :rtype: Optional[str]
         """
         data = {}
         if source is not None:
@@ -927,14 +930,11 @@ class Video:
         response = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
             data=data,
+            wait=False,
         )
         if not response:
             return None
-        return IndexResult(
-            _connection=self._connection,
-            video_id=self.id,
-            **response,
-        )
+        return response.get("index_id")
 
     def get_index(
         self,
@@ -1002,8 +1002,11 @@ class Video:
         transform: Optional[dict] = None,
         store: bool = False,
         callback_url: Optional[str] = None,
-    ) -> Optional[UnderstandingResult]:
-        """Run face understanding (detection) on the video.
+    ) -> Optional[str]:
+        """Launch understanding (detection) on the video.
+
+        Returns the understanding_id immediately. Use
+        ``get_understanding(id)`` to poll for the result.
 
         :param list extract: What to extract, e.g. ["faces"]
         :param dict segmentation: Segmentation config, e.g. {"type": "time", "window": "1s"}
@@ -1011,8 +1014,8 @@ class Video:
         :param dict transform: Transform config, e.g. {"frame_size": "480p"}
         :param bool store: Whether to persist the understanding result
         :param str callback_url: URL to receive callback when done (optional)
-        :return: :class:`UnderstandingResult <UnderstandingResult>` object
-        :rtype: :class:`videodb.understanding.UnderstandingResult`
+        :return: understanding_id string
+        :rtype: Optional[str]
         """
         data = {
             "extract": extract,
@@ -1028,10 +1031,11 @@ class Video:
         response = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}",
             data=data,
+            wait=False,
         )
         if not response:
             return None
-        return UnderstandingResult(_connection=self._connection, **response)
+        return response.get("understanding_id")
 
     def get_understanding(
         self,
