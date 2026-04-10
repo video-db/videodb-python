@@ -936,15 +936,28 @@ class Video:
             **response,
         )
 
-    def get_index(self, index_id: str) -> Optional[IndexResult]:
+    def get_index(
+        self,
+        index_id: str,
+        max_poll_time: Optional[int] = None,
+        poll_interval: Optional[int] = None,
+    ) -> Optional[IndexResult]:
         """Get an index by its ID.
 
         :param str index_id: The index ID
+        :param int max_poll_time: Max seconds to poll if still processing (default: 500)
+        :param int poll_interval: Seconds between polls (default: 5)
         :return: :class:`IndexResult <IndexResult>` object
         :rtype: :class:`videodb.face.IndexResult`
         """
+        poll_kwargs = {}
+        if max_poll_time is not None:
+            poll_kwargs["max_poll_time"] = max_poll_time
+        if poll_interval is not None:
+            poll_kwargs["poll_interval"] = poll_interval
         response = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
+            **poll_kwargs,
         )
         if not response:
             return None
@@ -1020,15 +1033,28 @@ class Video:
             return None
         return UnderstandingResult(_connection=self._connection, **response)
 
-    def get_understanding(self, understanding_id: str) -> Optional[UnderstandingResult]:
+    def get_understanding(
+        self,
+        understanding_id: str,
+        max_poll_time: Optional[int] = None,
+        poll_interval: Optional[int] = None,
+    ) -> Optional[UnderstandingResult]:
         """Fetch a stored understanding result.
 
         :param str understanding_id: The understanding result ID
+        :param int max_poll_time: Max seconds to poll if still processing (default: 500)
+        :param int poll_interval: Seconds between polls (default: 5)
         :return: :class:`UnderstandingResult <UnderstandingResult>` object
         :rtype: :class:`videodb.understanding.UnderstandingResult`
         """
+        poll_kwargs = {}
+        if max_poll_time is not None:
+            poll_kwargs["max_poll_time"] = max_poll_time
+        if poll_interval is not None:
+            poll_kwargs["poll_interval"] = poll_interval
         response = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}",
+            **poll_kwargs,
         )
         if not response:
             return None
