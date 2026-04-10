@@ -4,8 +4,8 @@ class FaceDetection:
     def __init__(self, bbox, confidence, face_detection_id=None, timestamp_ms=None, **kwargs):
         self.face_detection_id = face_detection_id
         self.bbox = bbox
-        self.confidence = confidence
-        self.timestamp_ms = timestamp_ms
+        self.confidence = float(confidence) if confidence is not None else None
+        self.timestamp_ms = int(timestamp_ms) if timestamp_ms is not None else None
 
     def __repr__(self):
         return f"FaceDetection(bbox={self.bbox}, confidence={self.confidence})"
@@ -15,7 +15,7 @@ class SegmentResult:
     """Detection results for a single time segment / frame."""
 
     def __init__(self, timestamp_ms=None, frame_url=None, detections=None, **kwargs):
-        self.timestamp_ms = timestamp_ms
+        self.timestamp_ms = int(timestamp_ms) if timestamp_ms is not None else None
         self.frame_url = frame_url
         self.detections = [
             FaceDetection(**d) if isinstance(d, dict) else d

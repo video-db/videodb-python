@@ -150,11 +150,11 @@ class Face:
         self.identity_id = identity_id
         self.source_index_id = source_index_id
         self.source = source
-        self.timestamp_ms = timestamp_ms
+        self.timestamp_ms = int(timestamp_ms) if timestamp_ms is not None else None
         self.frame_url = frame_url
         self.image_url = image_url
         self.bbox = bbox
-        self.confidence = confidence
+        self.confidence = float(confidence) if confidence is not None else None
         self.created_at = created_at
 
     def delete(self):
