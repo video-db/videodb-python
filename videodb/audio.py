@@ -25,7 +25,7 @@ class Audio:
         self.id = id
         self.collection_id = collection_id
         self.name = kwargs.get("name", None)
-        self.length = kwargs.get("length", None)
+        self.length = float(kwargs.get("length", 0.0))
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
 

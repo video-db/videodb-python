@@ -1,12 +1,19 @@
+import warnings
 from typing import Union
 
 from videodb._constants import ApiPath
 from videodb._utils._video import build_iframe_embed_code
 from videodb.asset import VideoAsset, AudioAsset, ImageAsset, TextAsset
 
+_DEPRECATION_MSG = (
+    "videodb.timeline.Timeline is deprecated and will be removed in a future release. "
+    "Use videodb.editor.Timeline instead."
+)
+
 
 class Timeline(object):
     def __init__(self, connection) -> None:
+        warnings.warn(_DEPRECATION_MSG, DeprecationWarning, stacklevel=2)
         self._connection = connection
         self._timeline = []
         self.stream_url = None
