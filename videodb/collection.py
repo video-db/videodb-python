@@ -17,6 +17,7 @@ from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
 from videodb.search import SearchFactory, SearchResult
+from videodb.store import FaceStore
 
 logger = logging.getLogger(__name__)
 
@@ -774,3 +775,59 @@ class Collection:
                 )
             )
         return sessions
+
+    # ── Stores ────────────────────────────────────────────────────────
+
+    def list_stores(self) -> list:
+        """List all stores in the collection.
+
+        :return: List of store records
+        :rtype: list
+        """
+        response = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.store}",
+        )
+        if not response:
+            return []
+        return response.get("stores", [])
+
+    def get_store(self, store_type: str) -> Optional[dict]:
+        """Get a specific store by type.
+
+        :param str store_type: Store type (e.g. "faces")
+        :return: Store record
+        :rtype: dict
+        """
+        return self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.store}/{store_type}",
+        )
+
+    @property
+    def face_store(self) -> FaceStore:
+        """Access the face store for this collection.
+
+        Provides identity and face management via nested managers::
+
+            store = collection.face_store
+
+            # Identity operations
+            identities = store.identities.list()
+            identity = store.identities.get("abc123")
+            identity.update(name="Ashish")
+            store.identities.merge(source_ids=["id1", "id2"], target_name="Final")
+            store.identities.split("id1", face_ids=["f1"], new_identity_name="New")
+
+            # Face operations
+            faces = store.faces.list(video_id="m-xxx")
+            face = store.faces.get("face_abc")
+            store.faces.delete("face_abc")
+
+        :return: :class:`FaceStore <FaceStore>` object
+        :rtype: :class:`videodb.store.FaceStore`
+        """
+        if not hasattr(self, "_face_store"):
+            self._face_store = FaceStore(
+                _connection=self._connection,
+                _collection_id=self.id,
+            )
+        return self._face_store

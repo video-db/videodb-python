@@ -111,6 +111,13 @@ class ApiPath:
     token = "token"
     websocket = "websocket"
     export = "export"
+    understand = "understand"
+    indexes = "indexes"
+    store = "store"
+    faces = "faces"
+    identities = "identities"
+    merge = "merge"
+    split = "split"
 
 
 class Status:
