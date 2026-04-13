@@ -334,8 +334,11 @@ class AudioAsset(BaseAsset):
 
         :param str id: Unique identifier for the audio asset
         :param int start: Start time offset in seconds (default: 0)
-        :param float volume: Audio volume level (default: 1)
+        :param float volume: Audio volume level between 0 and 5 (default: 1)
+        :raises ValueError: If volume is not between 0 and 5
         """
+        if not (0 <= volume <= 5):
+            raise ValueError("volume must be between 0 and 5")
         self.id = id
         self.start = start
         self.volume = volume
