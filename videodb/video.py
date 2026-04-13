@@ -294,7 +294,10 @@ class Video:
         """Generate transcript for the video.
 
         :param bool force: Force generate new transcript
-        :param str language_code: (optional) Language code of the video
+        :param str language_code: (optional) Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :return: Full transcript text as string
         :rtype: str
         """
@@ -347,7 +350,10 @@ class Video:
     ) -> None:
         """Semantic indexing of spoken words in the video.
 
-        :param str language_code: (optional) Language code of the video
+        :param str language_code: (optional) Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :param SegmentationType segmentation_type: (optional) Segmentation type used for indexing, :class:`SegmentationType <SegmentationType>` object
         :param bool force: (optional) Force to index the video
         :param str callback_url: (optional) URL to receive the callback
@@ -648,7 +654,10 @@ class Video:
         :param str prompt: (optional) Prompt for processing transcript segments
         :param str model_name: (optional) LLM tier to use (e.g. "basic", "pro", "ultra")
         :param dict model_config: (optional) Model configuration
-        :param str language_code: (optional) Language code for transcription
+        :param str language_code: (optional) Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :param dict batch_config: (optional) Segmentation config with keys:
             - "type": Segmentation type ("word", "sentence", or "time")
             - "value": Segment length (words, sentences, or seconds)

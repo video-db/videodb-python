@@ -142,7 +142,10 @@ class Audio:
         """Generate transcript for the audio.
 
         :param bool force: Force generate new transcript
-        :param str language_code: Language code of the spoken audio. If not provided, language is automatically detected.
+        :param str language_code: Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :return: Success dict if transcript generated or already exists
         :rtype: dict
         """
