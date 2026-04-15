@@ -257,12 +257,10 @@ class VideoAsset(BaseAsset):
         :param float start: Start time offset in seconds (default: 0)
         :param float volume: Audio volume level between 0 and 5 (default: 1)
         :param Crop crop: (optional) Crop settings for the video
-        :raises ValueError: If start is negative or volume is not between 0 and 5
+        :raises ValueError: If start is negative
         """
         if start < 0:
             raise ValueError("start must be non-negative")
-        if not (0 <= volume <= 5):
-            raise ValueError("volume must be between 0 and 5")
 
         self.id = id
         self.start = start
@@ -335,10 +333,7 @@ class AudioAsset(BaseAsset):
         :param str id: Unique identifier for the audio asset
         :param int start: Start time offset in seconds (default: 0)
         :param float volume: Audio volume level between 0 and 5 (default: 1)
-        :raises ValueError: If volume is not between 0 and 5
         """
-        if not (0 <= volume <= 5):
-            raise ValueError("volume must be between 0 and 5")
         self.id = id
         self.start = start
         self.volume = volume
