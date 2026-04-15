@@ -99,17 +99,18 @@ class Frame(Image):
             "description": self.description,
         }
 
-    def describe(self, prompt: str = None, model_name=None):
+    def describe(self, prompt: str = None, model_name=None, model_config: dict = None):
         """Describe the frame.
 
         :param str prompt: (optional) The prompt to use for the description
         :param str model_name: (optional) The model to use for the description
+        :param dict model_config: (optional) The model configuration for the description
         :return: The description of the frame
         :rtype: str
         """
         description_data = self._connection.post(
             path=f"{ApiPath.video}/{self.video_id}/{ApiPath.frame}/{self.id}/{ApiPath.describe}",
-            data={"prompt": prompt, "model_name": model_name},
+            data={"prompt": prompt, "model_name": model_name, "model_config": model_config},
         )
         self.description = description_data.get("description", None)
         return self.description

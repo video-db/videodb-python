@@ -44,6 +44,7 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
 - [Quick Start](#quick-start)
     - [Establishing a Connection](#establishing-a-connection)
     - [Uploading Media](#uploading-media)
+    - [Updating Video Metadata](#updating-video-metadata)
     - [Viewing and Streaming Videos](#viewing-and-streaming-videos)
     - [Searching Inside Videos](#searching-inside-videos)
     - [Working with Transcripts](#working-with-transcripts)
@@ -55,6 +56,8 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
 - [Advanced Features](#advanced-features)
     - [Realtime Video Editor](#realtime-video-editor)
     - [Real-Time Streams (RTStream)](#real-time-streams-rtstream)
+    - [Capture Sessions (Desktop Recording)](#capture-sessions-desktop-recording)
+    - [WebSocket Events](#websocket-events)
     - [Meeting Recording](#meeting-recording)
     - [Generative Media](#generative-media)
     - [Video Dubbing and Translation](#video-dubbing-and-translation)
@@ -122,6 +125,13 @@ video = conn.upload(
 
 The `upload()` method returns `Video`, `Audio`, or `Image` objects based on the media type.
 
+### Updating Video Metadata
+
+```python
+# Update video name
+video.update(name="New Video Title")
+```
+
 ### Viewing and Streaming Videos
 
 ```python
@@ -153,6 +163,9 @@ shots = results.get_shots()
 for shot in shots:
     print(f"Found at {shot.start}s - {shot.end}s: {shot.text}")
 
+# Sort results by timestamp instead of relevance score
+results = coll.search(query="morning sunlight", sort_docs_on="start")
+
 # Play compiled results
 results.play()
 ```
@@ -167,6 +180,9 @@ results.play()
 ```python
 # Generate transcript
 video.generate_transcript()
+
+# Generate transcript with language hint
+video.generate_transcript(language_code="en")
 
 # Get transcript with timestamps
 transcript = video.get_transcript()
@@ -210,6 +226,14 @@ scene_collection = video.extract_scenes(
         "frame_count": 1,
         "select_frames": ["first"]
     }
+)
+
+# Describe individual scenes with custom model config
+scenes = video.get_scene_index(scene_collection.scene_index_id)
+scene = scenes[0]
+scene.describe(
+    prompt="Describe this scene",
+    model_config={"model_name": "pro", "temperature": 0.5}
 )
 
 # Index scenes for semantic search
@@ -427,13 +451,93 @@ alert_id = scene_index.create_alert(
 )
 
 # Enable/disable alerts
-
 scene_index.disable_alert(alert_id)
 scene_index.enable_alert(alert_id)
 
+# Generate stream with player metadata
+stream_url = rtstream.generate_stream(
+    start=1711000000,
+    end=1711003600,
+    player_config={
+        "title": "Live Feed",
+        "description": "Stream recording",
+        "slug": "live-feed"
+    }
+)
+
+# Export a stopped stream as a video/audio asset
+rtstream.stop()
+export_result = rtstream.export(name="my_recording")
 
 # List streams
 streams = coll.list_rtstreams()
+```
+
+### Capture Sessions (Desktop Recording)
+
+Record screen, microphone, and system audio from desktop applications using native capture binaries:
+
+```bash
+# Install capture dependencies
+pip install 'videodb[capture]'
+```
+
+```python
+from videodb.capture import CaptureClient
+
+# Backend: Create a capture session
+cap = coll.create_capture_session(
+    end_user_id="user_abc",
+    callback_url="https://example.com/webhook"
+)
+
+# Generate a client token for secure desktop auth
+token = conn.generate_client_token(expires_in=86400)
+
+# Desktop client: Start capture
+client = CaptureClient(session_token=token)
+
+# Request permissions
+await client.request_permission("microphone")
+await client.request_permission("screen")
+
+# Configure channels and start recording
+await client.start_capture_session(
+    session_id=cap.id,
+    channels=[
+        {"type": "mic", "name": "mic:default"},
+        {"type": "system_audio", "name": "system_audio:default"},
+        {"type": "display", "name": "display:1"},
+    ]
+)
+
+# Stop capture
+await client.stop_capture_session()
+
+# Get session details and export
+cap = coll.get_capture_session(cap.id)
+export_result = cap.export()
+
+# List all capture sessions
+sessions = coll.list_capture_sessions()
+```
+
+### WebSocket Events
+
+Receive real-time transcript and indexing events via WebSocket:
+
+```python
+# Connect to WebSocket
+ws = conn.connect_websocket()
+await ws.connect()
+print(f"Connection ID: {ws.connection_id}")
+
+# Stream events
+async for event in ws.receive():
+    print(event)
+
+# Close connection
+await ws.close()
 ```
 
 ### Meeting Recording
@@ -660,6 +764,9 @@ except SearchError as e:
 - **SceneCollection**: Collection of extracted scenes
 - **Meeting**: Meeting recording session
 - **RTStream**: Real-time stream processor
+- **CaptureSession**: Desktop capture session with export
+- **CaptureClient**: Native binary client for screen/audio recording
+- **WebSocketConnection**: Real-time event streaming
 
 ### Constants and Enums
 

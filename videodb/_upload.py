@@ -70,7 +70,7 @@ def upload(
 
     if file_path:
         try:
-            name = file_path.split("/")[-1].split(".")[0] if not name else name
+            name = os.path.splitext(os.path.basename(file_path))[0] if not name else name
             upload_url_data = _connection.get(
                 path=f"{ApiPath.collection}/{collection_id}/{ApiPath.upload_url}",
                 params={"name": name},

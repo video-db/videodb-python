@@ -1,72 +1,92 @@
-name: Continuous Integration Workflow
-# Trigger the workflow on push or pull request, on main branch
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, release-* ]
   pull_request:
     branches: [ main ]
+  workflow_call:
 
-# Define environment variables
-env: 
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
   PYTHON_VERSION: 3.9
-  APP_DIR: ./
 
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
-        run: | 
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
-      
+
       - name: Run linter
-        run: | 
-          ruff check ${{ env.APP_DIR }}
+        run: ruff check --output-format github ./
 
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
-        run: | 
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
       - name: Run tests
-        run: | 
-          python -m pytest tests/
+        run: python -m pytest tests/
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      
+
       - name: Install dependencies
-        run: | 
+        run: |
           python -m pip install --upgrade pip
           pip install setuptools==68.0.0
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
       - name: Build
-        run: | 
+        run: |
           python setup.py sdist bdist_wheel
           twine check dist/*

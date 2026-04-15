@@ -16,4 +16,7 @@ venv/
 .vscode/*
 example.ipynb
 example.py
-videodb-recorder
+
+# Credentials
+*-adminsdk.json
+*.credentials.json

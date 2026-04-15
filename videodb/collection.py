@@ -9,6 +9,7 @@ from videodb._constants import (
     IndexType,
     MediaType,
     SearchType,
+    _InternalSearchType,
 )
 from videodb.video import Video
 from videodb.audio import Audio
@@ -443,7 +444,9 @@ class Collection:
         """Dub a video.
 
         :param str video_id: ID of the video to dub
-        :param str language_code: Language code to dub the video to
+        :param str language_code: Language code to dub the video to.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
         :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Video <Video>` object
         :rtype: :class:`videodb.video.Video`
@@ -543,7 +546,7 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
             data={
                 "query": query,
-                "search_type": SearchType.llm,
+                "search_type": _InternalSearchType.llm,
             },
         )
         return [

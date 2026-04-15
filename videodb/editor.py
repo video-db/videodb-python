@@ -7,6 +7,7 @@ from typing import List, Optional, Union
 from enum import Enum
 
 from videodb._constants import ApiPath
+from videodb._utils._video import build_iframe_embed_code
 from videodb.exceptions import InvalidRequestError
 
 
@@ -236,7 +237,7 @@ class VideoAsset(BaseAsset):
     The src must be a publicly accessible URL to a video resource.
 
     :ivar str id: Unique identifier for the video asset
-    :ivar int start: Start time offset in seconds
+    :ivar float start: Start time offset in seconds
     :ivar float volume: Audio volume level (0 to 5)
     :ivar Crop crop: Crop settings for the video
     """
@@ -246,22 +247,20 @@ class VideoAsset(BaseAsset):
     def __init__(
         self,
         id: str,
-        start: int = 0,
+        start: float = 0,
         volume: float = 1,
         crop: Optional[Crop] = None,
     ):
         """Initialize a VideoAsset instance.
 
         :param str id: Unique identifier for the video asset
-        :param int start: Start time offset in seconds (default: 0)
+        :param float start: Start time offset in seconds (default: 0)
         :param float volume: Audio volume level between 0 and 5 (default: 1)
         :param Crop crop: (optional) Crop settings for the video
-        :raises ValueError: If start is negative or volume is not between 0 and 5
+        :raises ValueError: If start is negative
         """
         if start < 0:
             raise ValueError("start must be non-negative")
-        if not (0 <= volume <= 5):
-            raise ValueError("volume must be between 0 and 5")
 
         self.id = id
         self.start = start
@@ -333,7 +332,7 @@ class AudioAsset(BaseAsset):
 
         :param str id: Unique identifier for the audio asset
         :param int start: Start time offset in seconds (default: 0)
-        :param float volume: Audio volume level (default: 1)
+        :param float volume: Audio volume level between 0 and 5 (default: 1)
         """
         self.id = id
         self.start = start
@@ -1178,4 +1177,39 @@ class Timeline:
         """
         return self.connection.post(
             path=f"{ApiPath.editor}/{ApiPath.download}", data={"stream_url": stream_url}
+        )
+
+    def get_embed_code(
+        self,
+        width: str = "100%",
+        height: int = 405,
+        title: str = "VideoDB Player",
+        allow_fullscreen: bool = True,
+        auto_generate: bool = True,
+    ) -> str:
+        """Generate an HTML iframe embed code for the timeline.
+
+        :param str width: Width of the iframe (default: "100%")
+        :param int height: Height of the iframe in pixels (default: 405)
+        :param str title: Title attribute for the iframe (default: "VideoDB Player")
+        :param bool allow_fullscreen: Whether to allow fullscreen (default: True)
+        :param bool auto_generate: If True and player_url is missing, auto-generate it (default: True)
+        :return: HTML iframe string
+        :rtype: str
+        :raises ValueError: If player_url is not available
+        """
+        if not self.player_url and auto_generate:
+            self.generate_stream()
+
+        if not self.player_url:
+            raise ValueError(
+                "player_url not available. Call generate_stream() first or set auto_generate=True."
+            )
+
+        return build_iframe_embed_code(
+            player_url=self.player_url,
+            width=width,
+            height=height,
+            title=title,
+            allow_fullscreen=allow_fullscreen,
         )
