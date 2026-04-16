@@ -610,6 +610,9 @@ response = coll.generate_text(
     model_name="pro",  # basic, pro, or ultra
     response_type="text"  # text or json
 )
+
+# Large prompts are uploaded automatically with a unique filename and
+# sent as prompt_url instead of inline JSON to avoid request payload limits.
 ```
 
 ### Video Dubbing and Translation

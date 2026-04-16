@@ -2022,12 +2022,16 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - prompt
+              description: Provide either `prompt` for inline text or `prompt_url` for a previously uploaded prompt file.
               properties:
                 prompt:
                   type: string
+                  description: Inline prompt text. Use for smaller prompts.
                   example: "Summarize the content of this video"
+                prompt_url:
+                  type: string
+                  description: URL to a previously uploaded plain-text prompt file. Use for larger prompts.
+                  example: "https://storage.googleapis.com/.../generate_text_prompt_123abc.txt"
                 video_id:
                   type: string
                   example: "m-12345"
@@ -2043,6 +2047,11 @@ paths:
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
+              oneOf:
+                - required:
+                    - prompt
+                - required:
+                    - prompt_url
       responses:
         '200':
           description: Text generation started or completed
