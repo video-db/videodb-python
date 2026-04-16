@@ -22,6 +22,11 @@ class RTStreamChannelType:
 class SearchType:
     semantic = "semantic"
     keyword = "keyword"
+
+
+class _InternalSearchType:
+    """Search types used internally by the SDK."""
+
     scene = "scene"
     llm = "llm"
 

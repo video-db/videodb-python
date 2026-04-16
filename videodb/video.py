@@ -1,5 +1,5 @@
 from typing import Literal, Optional, Union, List, Dict, Tuple, Any
-from videodb._utils._video import play_stream
+from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     ApiPath,
     IndexType,
@@ -17,6 +17,8 @@ from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
 from videodb.face import IndexResult
 from videodb.understanding import UnderstandingResult
+
+_VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
 
 
 class Video:
@@ -156,7 +158,9 @@ class Video:
                 "length": self.length,
             },
         )
-        return stream_data.get("stream_url", None)
+        self.stream_url = stream_data.get("stream_url")
+        self.player_url = stream_data.get("player_url")
+        return self.stream_url
 
     def generate_thumbnail(self, time: Optional[float] = None) -> Union[str, Image]:
         """Generate the thumbnail of the video.
@@ -202,6 +206,19 @@ class Video:
         length: int = 1,
         force: bool = None,
     ) -> None:
+        if segmenter not in _VALID_SEGMENTERS:
+            raise ValueError(
+                f"Invalid segmenter '{segmenter}'. "
+                f"Must be one of: {', '.join(sorted(_VALID_SEGMENTERS))}"
+            )
+        if start is not None and start < 0:
+            raise ValueError(f"start must be non-negative, got {start}")
+        if end is not None and end < 0:
+            raise ValueError(f"end must be non-negative, got {end}")
+        if start is not None and end is not None and start > end:
+            raise ValueError(
+                f"start ({start}) must be less than or equal to end ({end})"
+            )
         if (
             self.transcript
             and not start
@@ -235,12 +252,18 @@ class Video:
     ) -> List[Dict[str, Union[float, str]]]:
         """Get timestamped transcript segments for the video.
 
-        :param int start: Start time in seconds
-        :param int end: End time in seconds
-        :param Segmenter segmenter: Segmentation type (:class:`Segmenter.word`,
-            :class:`Segmenter.sentence`, :class:`Segmenter.time`)
-        :param int length: Length of segments when using time segmenter
-        :param bool force: Force fetch new transcript
+        :param int start: Start time in seconds (must be >= 0 and <= end)
+        :param int end: End time in seconds (must be >= 0 and >= start)
+        :param Segmenter segmenter: How to split the transcript into segments.
+            Must be one of :attr:`Segmenter.word` (default, one segment per word),
+            :attr:`Segmenter.sentence` (one segment per sentence), or
+            :attr:`Segmenter.time` (fixed-duration segments controlled by *length*)
+        :param int length: Duration in seconds for each segment when
+            *segmenter* is :attr:`Segmenter.time` (default 1)
+        :param bool force: Force re-fetch transcript from the server,
+            bypassing the local cache
+        :raises ValueError: If *segmenter* is not a valid value, or if
+            *start*/*end* are negative or *start* > *end*
         :return: List of dicts with keys: start (float), end (float), text (str)
         :rtype: List[Dict[str, Union[float, str]]]
         """
@@ -273,7 +296,10 @@ class Video:
         """Generate transcript for the video.
 
         :param bool force: Force generate new transcript
-        :param str language_code: (optional) Language code of the video
+        :param str language_code: (optional) Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :return: Full transcript text as string
         :rtype: str
         """
@@ -326,7 +352,10 @@ class Video:
     ) -> None:
         """Semantic indexing of spoken words in the video.
 
-        :param str language_code: (optional) Language code of the video
+        :param str language_code: (optional) Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :param SegmentationType segmentation_type: (optional) Segmentation type used for indexing, :class:`SegmentationType <SegmentationType>` object
         :param bool force: (optional) Force to index the video
         :param str callback_url: (optional) URL to receive the callback
@@ -627,7 +656,10 @@ class Video:
         :param str prompt: (optional) Prompt for processing transcript segments
         :param str model_name: (optional) LLM tier to use (e.g. "basic", "pro", "ultra")
         :param dict model_config: (optional) Model configuration
-        :param str language_code: (optional) Language code for transcription
+        :param str language_code: (optional) Language code for transcription.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
+            Defaults to "en_us" if not specified.
         :param dict batch_config: (optional) Segmentation config with keys:
             - "type": Segmentation type ("word", "sentence", or "time")
             - "value": Segment length (words, sentences, or seconds)
@@ -791,6 +823,41 @@ class Video:
         :rtype: str
         """
         return play_stream(self.stream_url)
+
+    def get_embed_code(
+        self,
+        width: str = "100%",
+        height: int = 405,
+        title: str = "VideoDB Player",
+        allow_fullscreen: bool = True,
+        auto_generate: bool = True,
+    ) -> str:
+        """Generate an HTML iframe embed code for the video.
+
+        :param str width: Width of the iframe (default: "100%")
+        :param int height: Height of the iframe in pixels (default: 405)
+        :param str title: Title attribute for the iframe (default: "VideoDB Player")
+        :param bool allow_fullscreen: Whether to allow fullscreen (default: True)
+        :param bool auto_generate: If True and player_url is missing, auto-generate it (default: True)
+        :return: HTML iframe string
+        :rtype: str
+        :raises ValueError: If player_url is not available
+        """
+        if not self.player_url and auto_generate:
+            self.generate_stream()
+
+        if not self.player_url:
+            raise ValueError(
+                "player_url not available. Call generate_stream() first or set auto_generate=True."
+            )
+
+        return build_iframe_embed_code(
+            player_url=self.player_url,
+            width=width,
+            height=height,
+            title=title,
+            allow_fullscreen=allow_fullscreen,
+        )
 
     def get_meeting(self):
         """Get meeting information associated with the video.

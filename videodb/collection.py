@@ -1,14 +1,18 @@
+import json
 import logging
+import uuid
 
 from typing import Optional, Union, List, Dict, Any, Literal
 from videodb._upload import (
     upload,
+    upload_bytes,
 )
 from videodb._constants import (
     ApiPath,
     IndexType,
     MediaType,
     SearchType,
+    _InternalSearchType,
 )
 from videodb.video import Video
 from videodb.audio import Audio
@@ -20,6 +24,8 @@ from videodb.search import SearchFactory, SearchResult
 from videodb.store import FaceStore
 
 logger = logging.getLogger(__name__)
+
+MAX_GENERATE_TEXT_PAYLOAD_SIZE = 250 * 1024
 
 
 class Collection:
@@ -422,20 +428,40 @@ class Collection:
     ) -> Union[str, dict]:
         """Generate text from a prompt using genai offering.
 
+        Small prompts are sent inline as JSON. When the serialized request body
+        approaches the observed gateway limit (~256 KB), the prompt is uploaded
+        via the collection presigned upload URL and referenced as ``prompt_url``
+        to avoid API Gateway/Lambda payload size limits.
+
         :param str prompt: Prompt for the text generation
         :param str model_name: Model name to use ("basic", "pro" or "ultra")
         :param str response_type: Desired response type ("text" or "json")
         :return: Generated text response
         :rtype: Union[str, dict]
         """
+        payload = {
+            "prompt": prompt,
+            "model_name": model_name,
+            "response_type": response_type,
+        }
+
+        payload_size = len(json.dumps(payload).encode("utf-8"))
+        if payload_size > MAX_GENERATE_TEXT_PAYLOAD_SIZE:
+            payload = {
+                "prompt_url": upload_bytes(
+                    _connection=self._connection,
+                    content=prompt,
+                    name=f"generate_text_prompt_{uuid.uuid4().hex}.txt",
+                    content_type="text/plain; charset=utf-8",
+                    collection_id=self.id,
+                ),
+                "model_name": model_name,
+                "response_type": response_type,
+            }
 
         return self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.text}",
-            data={
-                "prompt": prompt,
-                "model_name": model_name,
-                "response_type": response_type,
-            },
+            data=payload,
         )
 
     def dub_video(
@@ -444,7 +470,9 @@ class Collection:
         """Dub a video.
 
         :param str video_id: ID of the video to dub
-        :param str language_code: Language code to dub the video to
+        :param str language_code: Language code to dub the video to.
+            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
+            variants with underscores (e.g., "en_us", "en_uk", "en_au").
         :param str callback_url: URL to receive the callback (optional)
         :return: :class:`Video <Video>` object
         :rtype: :class:`videodb.video.Video`
@@ -544,7 +572,7 @@ class Collection:
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
             data={
                 "query": query,
-                "search_type": SearchType.llm,
+                "search_type": _InternalSearchType.llm,
             },
         )
         return [

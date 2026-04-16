@@ -1,9 +1,9 @@
-import requests
-
-from typing import Optional
-from urllib.parse import urlparse
-from requests import HTTPError
 import os
+from typing import Optional, Union
+from urllib.parse import urlparse
+
+import requests
+from requests import HTTPError
 
 
 from videodb._constants import (
@@ -18,6 +18,31 @@ from videodb.exceptions import (
 def _is_url(path: str) -> bool:
     parsed = urlparse(path)
     return all([parsed.scheme in ("http", "https"), parsed.netloc])
+
+
+def upload_bytes(
+    _connection,
+    content: Union[str, bytes],
+    name: str,
+    content_type: str = "application/octet-stream",
+    collection_id: Optional[str] = None,
+) -> str:
+    """Upload in-memory content using a presigned upload URL and return the object URL."""
+    collection_id = collection_id or _connection.collection_id
+    upload_url_data = _connection.get(
+        path=f"{ApiPath.collection}/{collection_id}/{ApiPath.upload_url}",
+        params={"name": name},
+    )
+    upload_url = upload_url_data.get("upload_url")
+
+    try:
+        files = {"file": (name, content, content_type)}
+        response = requests.post(upload_url, files=files)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise VideodbError("Error while uploading content", cause=e)
+
+    return upload_url
 
 
 def upload(
@@ -70,17 +95,14 @@ def upload(
 
     if file_path:
         try:
-            name = file_path.split("/")[-1].split(".")[0] if not name else name
-            upload_url_data = _connection.get(
-                path=f"{ApiPath.collection}/{collection_id}/{ApiPath.upload_url}",
-                params={"name": name},
-            )
-            upload_url = upload_url_data.get("upload_url")
+            name = os.path.splitext(os.path.basename(file_path))[0] if not name else name
             with open(file_path, "rb") as file:
-                files = {"file": (name, file)}
-                response = requests.post(upload_url, files=files)
-                response.raise_for_status()
-                url = upload_url
+                url = upload_bytes(
+                    _connection=_connection,
+                    content=file,
+                    name=name,
+                    collection_id=collection_id,
+                )
 
         except FileNotFoundError as e:
             raise VideodbError("File not found", cause=e)

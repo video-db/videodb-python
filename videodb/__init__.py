@@ -4,7 +4,7 @@ import os
 import logging
 
 from typing import Optional
-from videodb._utils._video import play_stream
+from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     VIDEO_DB_API,
     IndexType,
@@ -61,6 +61,7 @@ __all__ = [
     "FaceStore",
     "SearchError",
     "play_stream",
+    "build_iframe_embed_code",
     "MediaType",
     "SearchType",
     "SubtitleAlignment",
