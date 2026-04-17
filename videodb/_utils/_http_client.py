@@ -188,7 +188,6 @@ class HttpClient:
                 response_json.get("status") == Status.processing
                 and response_json.get("request_type", "sync") == "sync"
             ):
-                print("inside loop")
                 if self.show_progress:
                     self.progress_bar = tqdm(
                         total=100,
