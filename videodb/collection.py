@@ -425,6 +425,8 @@ class Collection:
         prompt: str,
         model_name: Literal["basic", "pro", "ultra"] = "basic",
         response_type: Literal["text", "json"] = "text",
+        wait: bool = True,
+        callback_url: Optional[str] = None,
     ) -> Union[str, dict]:
         """Generate text from a prompt using genai offering.
 
@@ -436,13 +438,16 @@ class Collection:
         :param str prompt: Prompt for the text generation
         :param str model_name: Model name to use ("basic", "pro" or "ultra")
         :param str response_type: Desired response type ("text" or "json")
-        :return: Generated text response
+        :param bool wait: Wait for the text generation to complete (default: True)
+        :param str callback_url: URL to receive the callback (optional)
+        :return: Generated text response if wait is False, otherwise job id of the text generation
         :rtype: Union[str, dict]
         """
         payload = {
             "prompt": prompt,
             "model_name": model_name,
             "response_type": response_type,
+            "callback_url": callback_url,
         }
 
         payload_size = len(json.dumps(payload).encode("utf-8"))
@@ -457,11 +462,13 @@ class Collection:
                 ),
                 "model_name": model_name,
                 "response_type": response_type,
+                "callback_url": callback_url,
             }
 
         return self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.text}",
             data=payload,
+            wait=wait,
         )
 
     def dub_video(
