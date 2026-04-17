@@ -95,7 +95,10 @@ class HttpClient:
             response = method(url, headers=request_headers, timeout=timeout, **kwargs)
             response.raise_for_status()
             if not wait:
-                return response.json().get("data")
+                data = response.json().get("data")
+                if data is not None:
+                    return data
+                return response.json()
             return self._parse_response(response)
 
         except requests.exceptions.RequestException as e:
@@ -233,12 +236,12 @@ class HttpClient:
         )
 
     def get(
-        self, path: str, show_progress: Optional[bool] = False, **kwargs
+        self, path: str, show_progress: Optional[bool] = False, wait: bool = True, **kwargs
     ) -> requests.Response:
         """Make a get request"""
         self.show_progress = show_progress
         self._apply_poll_overrides(kwargs)
-        return self._make_request(method=self.session.get, path=path, **kwargs)
+        return self._make_request(method=self.session.get, path=path, wait=wait, **kwargs)
 
     def post(
         self, path: str, data=None, show_progress: Optional[bool] = False,

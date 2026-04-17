@@ -123,11 +123,13 @@ class ApiPath:
     identities = "identities"
     merge = "merge"
     split = "split"
+    async_response = "async-response"
 
 
 class Status:
     processing = "processing"
     in_progress = "in progress"
+    complete = "complete"
 
 
 class MeetingStatus:

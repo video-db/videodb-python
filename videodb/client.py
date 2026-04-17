@@ -494,3 +494,12 @@ class Connection(HttpClient):
             data={"expires_in": expires_in},
         )
         return response.get("token")
+
+    def get_async_response(self, id: str) -> dict:
+        """Get the details of an async response.
+
+        :param str id: ID of the async response
+        :return: Details of the async response
+        :rtype: dict
+        """
+        return self.get(path=f"{ApiPath.async_response}/{id}", wait=False)
