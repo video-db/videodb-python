@@ -116,6 +116,7 @@ class ApiPath:
     token = "token"
     websocket = "websocket"
     export = "export"
+    job = "job"
 
 
 class Status:

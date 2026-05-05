@@ -14,6 +14,7 @@ from videodb._constants import (
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
+from videodb.job import GenerationJob
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
@@ -274,25 +275,47 @@ class Collection:
         prompt: str,
         aspect_ratio: Optional[Literal["1:1", "9:16", "16:9", "4:3", "3:4"]] = "1:1",
         callback_url: Optional[str] = None,
-    ) -> Image:
+        model_name: Optional[str] = None,
+        config: Optional[dict] = None,
+        wait: bool = False,
+        poll_interval: int = 5,
+        timeout: int = 600,
+    ) -> Union[Image, GenerationJob]:
         """Generate an image from a prompt.
 
         :param str prompt: Prompt for the image generation
-        :param str aspect_ratio: Aspect ratio of the image (optional)
+        :param str aspect_ratio: Aspect ratio of the image (optional, hosted models)
         :param str callback_url: URL to receive the callback (optional)
-        :return: :class:`Image <Image>` object
-        :rtype: :class:`videodb.image.Image`
+        :param str model_name: Model name. Use ``"flux"`` for FLUX self-inference.
+        :param dict config: Model configuration. Used by FLUX.
+        :param bool wait: If True, wait for self-inference jobs and return Image.
+        :param int poll_interval: Seconds between job polls when wait=True.
+        :param int timeout: Maximum seconds to wait when wait=True.
+        :return: :class:`Image <Image>` or :class:`GenerationJob <GenerationJob>`
+        :rtype: Union[:class:`videodb.image.Image`, :class:`videodb.job.GenerationJob`]
         """
+        payload = {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "callback_url": callback_url,
+        }
+        if model_name:
+            payload["model_name"] = model_name
+        if config is not None:
+            payload["config"] = config
+
         image_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.image}",
-            data={
-                "prompt": prompt,
-                "aspect_ratio": aspect_ratio,
-                "callback_url": callback_url,
-            },
+            data=payload,
         )
-        if image_data:
-            return Image(self._connection, **image_data)
+        if not image_data:
+            return None
+        if image_data.get("job_id"):
+            job = GenerationJob.from_data(
+                self._connection, image_data, result_type="image"
+            )
+            return job.wait(timeout=timeout, interval=poll_interval) if wait else job
+        return Image(self._connection, **image_data)
 
     def generate_music(
         self, prompt: str, duration: int = 5, callback_url: Optional[str] = None
@@ -352,15 +375,23 @@ class Collection:
         voice_name: str = "Default",
         config: dict = {},
         callback_url: Optional[str] = None,
-    ) -> Audio:
+        model_name: str = "elevenlabs",
+        wait: bool = False,
+        poll_interval: int = 5,
+        timeout: int = 600,
+    ) -> Union[Audio, GenerationJob]:
         """Generate voice from text.
 
         :param str text: Text to convert to voice
         :param str voice_name: Name of the voice to use
         :param dict config: Configuration for the voice generation
         :param str callback_url: URL to receive the callback (optional)
-        :return: :class:`Audio <Audio>` object
-        :rtype: :class:`videodb.audio.Audio`
+        :param str model_name: Model name. Use ``"omnivoice"`` for OmniVoice.
+        :param bool wait: If True, wait for self-inference jobs and return Audio.
+        :param int poll_interval: Seconds between job polls when wait=True.
+        :param int timeout: Maximum seconds to wait when wait=True.
+        :return: :class:`Audio <Audio>` or :class:`GenerationJob <GenerationJob>`
+        :rtype: Union[:class:`videodb.audio.Audio`, :class:`videodb.job.GenerationJob`]
         """
         audio_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
@@ -368,12 +399,19 @@ class Collection:
                 "text": text,
                 "audio_type": "voice",
                 "voice_name": voice_name,
+                "model_name": model_name,
                 "config": config,
                 "callback_url": callback_url,
             },
         )
-        if audio_data:
-            return Audio(self._connection, **audio_data)
+        if not audio_data:
+            return None
+        if audio_data.get("job_id"):
+            job = GenerationJob.from_data(
+                self._connection, audio_data, result_type="audio"
+            )
+            return job.wait(timeout=timeout, interval=poll_interval) if wait else job
+        return Audio(self._connection, **audio_data)
 
     def generate_video(
         self,

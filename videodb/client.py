@@ -1,4 +1,5 @@
 import logging
+import requests
 
 from typing import (
     Optional,
@@ -11,6 +12,7 @@ from videodb._constants import (
     TranscodeMode,
     VideoConfig,
     AudioConfig,
+    HttpClientDefaultValues,
 )
 
 from videodb.collection import Collection
@@ -263,6 +265,64 @@ class Connection(HttpClient):
         :rtype: dict
         """
         return self.get(path=f"{ApiPath.transcode}/{job_id}")
+
+    def get_job_status(self, job_id: str) -> dict:
+        """Get status/details for a self-inference generation job.
+
+        This preserves and normalizes the job response wrapper instead of using
+        the standard SDK response parser, because callers need the top-level
+        job status while polling.
+
+        :param str job_id: ID of the generation job
+        :return: Normalized job response with success, status, data, message
+        :rtype: dict
+        """
+        try:
+            url = f"{self.base_url}/{ApiPath.job}/{job_id}"
+            response = self.session.get(url, timeout=HttpClientDefaultValues.timeout)
+            response.raise_for_status()
+            response_json = response.json()
+        except requests.exceptions.RequestException as e:
+            self._handle_request_error(e)
+        except ValueError:
+            from videodb.exceptions import InvalidRequestError
+
+            raise InvalidRequestError("Invalid request: Unable to parse job response") from None
+
+        data = response_json.get("data") or {}
+        status = response_json.get("status") or data.get("status")
+        success = response_json.get("success", False)
+
+        if not status:
+            status = "done" if success else "failed"
+
+        return {
+            "success": success,
+            "status": status,
+            "data": data,
+            "message": response_json.get("message"),
+        }
+
+    def wait_for_job(
+        self,
+        job_id: str,
+        timeout: int = 600,
+        interval: int = 5,
+        result_type: str = None,
+    ):
+        """Poll a self-inference generation job until completion.
+
+        :param str job_id: ID of the generation job
+        :param int timeout: Maximum seconds to wait
+        :param int interval: Seconds between polls
+        :param str result_type: Optional expected result type, "audio" or "image"
+        :return: Generated SDK asset or final job data
+        """
+        from videodb.job import GenerationJob
+
+        return GenerationJob(
+            self, job_id=job_id, result_type=result_type
+        ).wait(timeout=timeout, interval=interval)
 
     def upload(
         self,
