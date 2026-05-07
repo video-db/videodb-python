@@ -261,7 +261,7 @@ class RTStreamSceneIndex:
             f"status={self.status})"
         )
 
-    def get_scenes(self, start: int = None, end: int = None, page=1, page_size=100):
+    def get_scenes(self, start: Optional[int] = None, end: Optional[int] = None, page: int = 1, page_size: int = 100) -> Optional[dict]:
         """Get rtstream scene index scenes.
 
         :param int start: Start time of the scenes
@@ -564,14 +564,14 @@ class RTStream:
 
     def index_scenes(
         self,
-        extraction_type=SceneExtractionType.time_based,
-        extraction_config={"time": 2, "frame_count": 5},
-        prompt="Describe the scene",
-        model_name=None,
-        model_config={},
-        name=None,
+        extraction_type: str = SceneExtractionType.time_based,
+        extraction_config: Dict[str, Any] = {"time": 2, "frame_count": 5},
+        prompt: str = "Describe the scene",
+        model_name: Optional[str] = None,
+        model_config: Dict[str, Any] = {},
+        name: Optional[str] = None,
         ws_connection_id: Optional[str] = None,
-    ):
+    ) -> Optional[RTStreamSceneIndex]:
         """Index scenes from the rtstream.
 
         :param str extraction_type: Type of extraction

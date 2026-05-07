@@ -33,10 +33,10 @@ class Collection:
         self,
         _connection,
         id: str,
-        name: str = None,
-        description: str = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
         is_public: bool = False,
-    ):
+    ) -> None:
         self._connection = _connection
         self.id = id
         self.name = name
@@ -173,11 +173,11 @@ class Collection:
         self,
         url: str,
         name: str,
-        media_types: List[str] = None,
-        sample_rate: int = None,
-        store: bool = None,
-        enable_transcript: bool = None,
-        ws_connection_id: str = None,
+        media_types: Optional[List[str]] = None,
+        sample_rate: Optional[int] = None,
+        store: Optional[bool] = None,
+        enable_transcript: Optional[bool] = None,
+        ws_connection_id: Optional[str] = None,
     ) -> RTStream:
         """Connect to an rtstream.
 
@@ -541,7 +541,13 @@ class Collection:
             filter=filter,
         )
 
-    def search_title(self, query) -> List[Video]:
+    def search_title(self, query: str) -> List[Video]:
+        """Search for videos by title.
+
+        :param str query: Query to search for
+        :return: List of :class:`Video <Video>` objects
+        :rtype: List[:class:`videodb.video.Video`]
+        """
         search_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/{ApiPath.title}",
             data={
@@ -549,10 +555,7 @@ class Collection:
                 "search_type": _InternalSearchType.llm,
             },
         )
-        return [
-            {"video": Video(self._connection, **result.get("video"))}
-            for result in search_data
-        ]
+        return [Video(self._connection, **result.get("video")) for result in search_data]
 
     def upload(
         self,

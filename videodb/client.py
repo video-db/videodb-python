@@ -32,7 +32,13 @@ logger = logging.getLogger(__name__)
 class Connection(HttpClient):
     """Connection class to interact with the VideoDB"""
 
-    def __init__(self, api_key: str = None, session_token: str = None, base_url: str = None, **kwargs) -> "Connection":
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        session_token: Optional[str] = None,
+        base_url: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         """Initializes a new instance of the Connection class with specified API credentials.
 
         Note: Users should not initialize this class directly.
@@ -42,8 +48,7 @@ class Connection(HttpClient):
         :param str session_token: Session token for authentication (alternative to api_key)
         :param str base_url: Base URL of the VideoDB API
         :raise ValueError: If neither API key nor session token is provided
-        :return: :class:`Connection <Connection>` object, to interact with the VideoDB
-        :rtype: :class:`videodb.client.Connection`
+        :return: None
         """
         # Use whichever token is provided
         access_token = api_key or session_token
@@ -160,7 +165,7 @@ class Connection(HttpClient):
         """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.invoices}")
 
-    def create_event(self, event_prompt: str, label: str):
+    def create_event(self, event_prompt: str, label: str) -> str:
         """Create an rtstream event.
 
         :param str event_prompt: Prompt for the event
@@ -175,7 +180,7 @@ class Connection(HttpClient):
 
         return event_data.get("event_id")
 
-    def list_events(self):
+    def list_events(self) -> List[dict]:
         """List all rtstream events.
 
         :return: List of events
@@ -307,10 +312,10 @@ class Connection(HttpClient):
     def record_meeting(
         self,
         meeting_url: str,
-        bot_name: str = None,
-        bot_image_url: str = None,
-        meeting_title: str = None,
-        callback_url: str = None,
+        bot_name: Optional[str] = None,
+        bot_image_url: Optional[str] = None,
+        meeting_title: Optional[str] = None,
+        callback_url: Optional[str] = None,
         callback_data: Optional[dict] = None,
         time_zone: str = "UTC",
     ) -> Meeting:
@@ -359,9 +364,9 @@ class Connection(HttpClient):
         self,
         end_user_id: str,
         collection_id: str = "default",
-        callback_url: str = None,
-        ws_connection_id: str = None,
-        metadata: dict = None,
+        callback_url: Optional[str] = None,
+        ws_connection_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
     ) -> CaptureSession:
         """Create a capture session.
 
@@ -431,8 +436,8 @@ class Connection(HttpClient):
     def list_capture_sessions(
         self,
         collection_id: str = "default",
-        status: str = None,
-    ) -> list[CaptureSession]:
+        status: Optional[str] = None,
+    ) -> List[CaptureSession]:
         """List capture sessions.
 
         :param str collection_id: ID of the collection (default: "default")

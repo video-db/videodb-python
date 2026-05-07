@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from videodb._constants import (
     ApiPath,
     Segmenter,
@@ -136,8 +136,8 @@ class Audio:
 
     def generate_transcript(
         self,
-        force: bool = None,
-        language_code: str = None,
+        force: Optional[bool] = None,
+        language_code: Optional[str] = None,
     ) -> dict:
         """Generate transcript for the audio.
 

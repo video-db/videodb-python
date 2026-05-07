@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Union, List, Dict, Tuple, Any
+from typing import Literal, Optional, Union, List, Dict, Tuple, Any, TYPE_CHECKING
 from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     ApiPath,
@@ -15,6 +15,9 @@ from videodb.image import Image, Frame
 from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
+
+if TYPE_CHECKING:
+    from videodb.meeting import Meeting
 
 _VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
 
@@ -857,14 +860,13 @@ class Video:
             allow_fullscreen=allow_fullscreen,
         )
 
-    def get_meeting(self):
+    def get_meeting(self) -> Optional["Meeting"]:
         """Get meeting information associated with the video.
 
         :return: :class:`Meeting <Meeting>` object if meeting is associated, None otherwise
         :rtype: Optional[:class:`videodb.meeting.Meeting`]
         :raises InvalidRequestError: If the API request fails
         """
-        # TODO: Add type check for Meeting
         from videodb.meeting import Meeting
 
         meeting_data = self._connection.get(

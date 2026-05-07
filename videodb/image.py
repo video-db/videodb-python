@@ -1,3 +1,4 @@
+from typing import Optional, Dict, Any
 from videodb._constants import (
     ApiPath,
 )
@@ -99,7 +100,7 @@ class Frame(Image):
             "description": self.description,
         }
 
-    def describe(self, prompt: str = None, model_name=None, model_config: dict = None):
+    def describe(self, prompt: Optional[str] = None, model_name: Optional[str] = None, model_config: Optional[Dict[str, Any]] = None) -> str:
         """Describe the frame.
 
         :param str prompt: (optional) The prompt to use for the description
