@@ -3,7 +3,7 @@ import logging
 import requests
 import warnings
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 from enum import Enum
 
 from videodb._constants import ApiPath
@@ -201,7 +201,7 @@ class Transition:
     :ivar float duration: Duration of the transition effect in seconds
     """
 
-    def __init__(self, in_: str = None, out: str = None, duration: int = 0.5):
+    def __init__(self, in_: Optional[str] = None, out: Optional[str] = None, duration: float = 0.5) -> None:
         """Initialize a Transition instance.
 
         :param str in_: Entry transition effect name (default: None)
@@ -1034,7 +1034,7 @@ class Track:
         self.clips: List[TrackItem] = []
         self.z_index: int = z_index
 
-    def add_clip(self, start: int, clip: Clip) -> None:
+    def add_clip(self, start: Union[float, int], clip: Clip) -> None:
         """Add a clip to the track at a specific start time.
 
         :param int start: Start time in seconds when the clip begins
@@ -1072,7 +1072,7 @@ class Timeline:
     :ivar str player_url: URL of the video player (populated after generate_stream)
     """
 
-    def __init__(self, connection):
+    def __init__(self, connection: Any) -> None:
         """Initialize a Timeline instance.
 
         :param connection: API connection instance for making requests
