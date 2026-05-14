@@ -21,6 +21,7 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.sandbox import Sandbox
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 
@@ -323,6 +324,50 @@ class Connection(HttpClient):
         return GenerationJob(
             self, job_id=job_id, result_type=result_type
         ).wait(timeout=timeout, interval=interval)
+
+    def create_sandbox(
+        self,
+        tier: Optional[str] = None,
+        name: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> "Sandbox":
+        """Create a new sandbox (GPU compute pool).
+
+        :param str tier: Sandbox tier — "small", "medium", or "large" (default: server decides)
+        :param str name: Human-readable name (auto-generated if not provided)
+        :param str callback_url: URL to receive sandbox lifecycle webhooks
+        :return: :class:`Sandbox <Sandbox>` object in provisioning state
+        :rtype: :class:`videodb.sandbox.Sandbox`
+        """
+        data = self.post(
+            path=ApiPath.sandbox,
+            data={"tier": tier, "name": name, "callback_url": callback_url},
+        )
+        return Sandbox(self, **(data or {}))
+
+    def get_sandbox(self, sandbox_id: str) -> "Sandbox":
+        """Get a sandbox by ID.
+
+        :param str sandbox_id: The sandbox ID
+        :return: :class:`Sandbox <Sandbox>` object
+        :rtype: :class:`videodb.sandbox.Sandbox`
+        """
+        data = self.get(path=f"{ApiPath.sandbox}/{sandbox_id}")
+        return Sandbox(self, **(data or {}))
+
+    def list_sandboxes(self, status: Optional[str] = None) -> List["Sandbox"]:
+        """List all sandboxes, optionally filtered by status.
+
+        :param str status: Filter by sandbox status (optional)
+        :return: List of :class:`Sandbox <Sandbox>` objects
+        :rtype: list[:class:`videodb.sandbox.Sandbox`]
+        """
+        params = {}
+        if status:
+            params["status"] = status
+        data = self.get(path=ApiPath.sandbox, params=params)
+        sandboxes_data = (data or {}).get("sandboxes", [])
+        return [Sandbox(self, **s) for s in sandboxes_data]
 
     def upload(
         self,

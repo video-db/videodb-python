@@ -117,11 +117,27 @@ class ApiPath:
     websocket = "websocket"
     export = "export"
     job = "job"
+    sandbox = "sandbox"
 
 
 class Status:
     processing = "processing"
     in_progress = "in progress"
+
+
+class SandboxTier:
+    small = "small"
+    medium = "medium"
+    large = "large"
+
+
+class SandboxStatus:
+    provisioning = "provisioning"
+    active = "active"
+    stopping = "stopping"
+    stopped = "stopped"
+    failed = "failed"
+    alert = "alert"
 
 
 class MeetingStatus:
