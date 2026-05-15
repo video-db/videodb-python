@@ -333,7 +333,7 @@ class Connection(HttpClient):
     ) -> "Sandbox":
         """Create a new sandbox (GPU compute pool).
 
-        :param str tier: Sandbox tier — "small", "medium", or "large" (default: server decides)
+        :param str tier: Sandbox tier — "small" or "medium" (default: server decides)
         :param str name: Human-readable name (auto-generated if not provided)
         :param str callback_url: URL to receive sandbox lifecycle webhooks
         :return: :class:`Sandbox <Sandbox>` object in provisioning state

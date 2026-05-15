@@ -23,7 +23,5 @@ class SandboxModel(str, Enum):
     QWEN_27B = "Qwen/Qwen3.5-27B"
     QWEN_27B_FP8 = "Qwen/Qwen3.5-27B-FP8"
     FLUX_CANONICAL = "black-forest-labs/FLUX.1-dev"
-
-    # Large tier
     GEMMA_4_31B = "google/gemma-4-31B-it"
-    QWEN_122B = "Qwen/Qwen3.5-122B-A10B"
+

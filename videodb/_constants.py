@@ -128,7 +128,6 @@ class Status:
 class SandboxTier:
     small = "small"
     medium = "medium"
-    large = "large"
 
 
 class SandboxStatus:
