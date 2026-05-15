@@ -277,6 +277,7 @@ class Collection:
         callback_url: Optional[str] = None,
         model_name: Optional[str] = None,
         config: Optional[dict] = None,
+        sandbox_id: Optional[str] = None,
         wait: bool = False,
         poll_interval: int = 5,
         timeout: int = 600,
@@ -288,6 +289,7 @@ class Collection:
         :param str callback_url: URL to receive the callback (optional)
         :param str model_name: Model name. Use ``"flux"`` for FLUX self-inference.
         :param dict config: Model configuration. Used by FLUX.
+        :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
         :param bool wait: If True, wait for self-inference jobs and return Image.
         :param int poll_interval: Seconds between job polls when wait=True.
         :param int timeout: Maximum seconds to wait when wait=True.
@@ -303,6 +305,8 @@ class Collection:
             payload["model_name"] = model_name
         if config is not None:
             payload["config"] = config
+        if sandbox_id:
+            payload["sandbox_id"] = sandbox_id
 
         image_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.image}",
@@ -376,6 +380,7 @@ class Collection:
         config: dict = {},
         callback_url: Optional[str] = None,
         model_name: str = "elevenlabs",
+        sandbox_id: Optional[str] = None,
         wait: bool = False,
         poll_interval: int = 5,
         timeout: int = 600,
@@ -387,6 +392,7 @@ class Collection:
         :param dict config: Configuration for the voice generation
         :param str callback_url: URL to receive the callback (optional)
         :param str model_name: Model name. Use ``"omnivoice"`` for OmniVoice.
+        :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
         :param bool wait: If True, wait for self-inference jobs and return Audio.
         :param int poll_interval: Seconds between job polls when wait=True.
         :param int timeout: Maximum seconds to wait when wait=True.
@@ -402,6 +408,7 @@ class Collection:
                 "model_name": model_name,
                 "config": config,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
             },
         )
         if not audio_data:
