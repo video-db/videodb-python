@@ -5,8 +5,8 @@ class SandboxModel(str, Enum):
     """Models that can run on VideoDB Sandbox compute."""
 
     # GenAI
-    FLUX = "flux"
-    OMNIVOICE = "omnivoice"
+    FLUX = "black-forest-labs/FLUX.1-dev"
+    OMNIVOICE = "k2-fsa/OmniVoice"
 
     # Small tier
     GEMMA_4_E2B = "google/gemma-4-E2B-it"

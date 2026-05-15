@@ -287,7 +287,7 @@ class Collection:
         :param str prompt: Prompt for the image generation
         :param str aspect_ratio: Aspect ratio of the image (optional, hosted models)
         :param str callback_url: URL to receive the callback (optional)
-        :param str model_name: Model name. Use ``"flux"`` for FLUX self-inference.
+        :param str model_name: Model name. Use ``"black-forest-labs/FLUX.1-dev"`` for FLUX self-inference.
         :param dict config: Model configuration. Used by FLUX.
         :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
         :param bool wait: If True, wait for self-inference jobs and return Image.
@@ -391,7 +391,7 @@ class Collection:
         :param str voice_name: Name of the voice to use
         :param dict config: Configuration for the voice generation
         :param str callback_url: URL to receive the callback (optional)
-        :param str model_name: Model name. Use ``"omnivoice"`` for OmniVoice.
+        :param str model_name: Model name. Use ``"k2-fsa/OmniVoice"`` for OmniVoice.
         :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
         :param bool wait: If True, wait for self-inference jobs and return Audio.
         :param int poll_interval: Seconds between job polls when wait=True.
