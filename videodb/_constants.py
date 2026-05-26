@@ -118,6 +118,7 @@ class ApiPath:
     export = "export"
     job = "job"
     sandbox = "sandbox"
+    voice_clone = "voice_clone"
 
 
 class Status:

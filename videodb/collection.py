@@ -15,6 +15,7 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.job import GenerationJob
+from videodb.voice_clone import VoiceClone
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
@@ -133,6 +134,54 @@ class Collection:
         return self._connection.delete(
             path=f"{ApiPath.audio}/{audio_id}", params={"collection_id": self.id}
         )
+
+    def create_voice_clone(
+        self,
+        ref_audio_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        ref_text: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> VoiceClone:
+        """Create a reusable voice clone from an audio in this collection.
+
+        :param str ref_audio_id: Source audio ID to use as the voice reference.
+        :param str name: Human-readable name (optional).
+        :param str description: Description (optional).
+        :param str ref_text: Text spoken in the reference audio (optional).
+        :param str language: Language code, e.g. ``"en"`` (optional).
+        :return: :class:`VoiceClone <VoiceClone>` object.
+        :rtype: :class:`videodb.voice_clone.VoiceClone`
+        """
+        return self._connection.create_voice_clone(
+            ref_audio_id=ref_audio_id,
+            name=name,
+            description=description,
+            ref_text=ref_text,
+            language=language,
+            collection_id=self.id,
+        )
+
+    def get_voice_clone(self, voice_clone_id: str) -> VoiceClone:
+        """Get a voice clone by ID."""
+        return self._connection.get_voice_clone(voice_clone_id)
+
+    def list_voice_clones(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        language: Optional[str] = None,
+    ) -> List[VoiceClone]:
+        """List user voice clones, optionally filtered by language."""
+        return self._connection.list_voice_clones(
+            page=page,
+            page_size=page_size,
+            language=language,
+        )
+
+    def delete_voice_clone(self, voice_clone_id: str) -> None:
+        """Delete a voice clone by ID."""
+        return self._connection.delete_voice_clone(voice_clone_id)
 
     def get_images(self) -> List[Image]:
         """Get all the images in the collection.
@@ -381,6 +430,8 @@ class Collection:
         callback_url: Optional[str] = None,
         model_name: str = "elevenlabs",
         sandbox_id: Optional[str] = None,
+        voice_clone_id: Optional[str] = None,
+        clone_voice_id: Optional[str] = None,
         wait: bool = False,
         poll_interval: int = 5,
         timeout: int = 600,
@@ -393,12 +444,18 @@ class Collection:
         :param str callback_url: URL to receive the callback (optional)
         :param str model_name: Model name. Use ``"k2-fsa/OmniVoice"`` for OmniVoice.
         :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
+        :param str voice_clone_id: ID of a reusable voice clone to use for OmniVoice (optional).
+        :param str clone_voice_id: Alias for ``voice_clone_id`` (optional).
         :param bool wait: If True, wait for self-inference jobs and return Audio.
         :param int poll_interval: Seconds between job polls when wait=True.
         :param int timeout: Maximum seconds to wait when wait=True.
         :return: :class:`Audio <Audio>` or :class:`GenerationJob <GenerationJob>`
         :rtype: Union[:class:`videodb.audio.Audio`, :class:`videodb.job.GenerationJob`]
         """
+        if voice_clone_id and clone_voice_id and voice_clone_id != clone_voice_id:
+            raise ValueError("voice_clone_id and clone_voice_id cannot both be different")
+        resolved_voice_clone_id = voice_clone_id or clone_voice_id
+
         audio_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
             data={
@@ -409,6 +466,7 @@ class Collection:
                 "config": config,
                 "callback_url": callback_url,
                 "sandbox_id": sandbox_id,
+                "voice_clone_id": resolved_voice_clone_id,
             },
         )
         if not audio_data:

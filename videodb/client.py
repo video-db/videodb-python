@@ -22,6 +22,7 @@ from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
 from videodb.sandbox import Sandbox
+from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 
@@ -368,6 +369,63 @@ class Connection(HttpClient):
         data = self.get(path=ApiPath.sandbox, params=params)
         sandboxes_data = (data or {}).get("sandboxes", [])
         return [Sandbox(self, **s) for s in sandboxes_data]
+
+    def create_voice_clone(
+        self,
+        ref_audio_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        ref_text: Optional[str] = None,
+        language: Optional[str] = None,
+        collection_id: Optional[str] = None,
+    ) -> "VoiceClone":
+        """Create a reusable voice clone from an existing audio asset.
+
+        :param str ref_audio_id: Source audio ID to use as the voice reference.
+        :param str name: Human-readable name (optional).
+        :param str description: Description (optional).
+        :param str ref_text: Text spoken in the reference audio (optional).
+        :param str language: Language code, e.g. ``"en"`` (optional).
+        :param str collection_id: Collection associated with the source audio (optional).
+        :return: :class:`VoiceClone <VoiceClone>` object.
+        :rtype: :class:`videodb.voice_clone.VoiceClone`
+        """
+        data = self.post(
+            path=ApiPath.voice_clone,
+            data={
+                "ref_audio_id": ref_audio_id,
+                "name": name,
+                "description": description,
+                "ref_text": ref_text,
+                "language": language,
+                "collection_id": collection_id,
+            },
+        )
+        return VoiceClone(self, **(data or {}))
+
+    def get_voice_clone(self, voice_clone_id: str) -> "VoiceClone":
+        """Get a voice clone by ID."""
+        data = self.get(path=f"{ApiPath.voice_clone}/{voice_clone_id}")
+        return VoiceClone(self, **(data or {}))
+
+    def list_voice_clones(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        language: Optional[str] = None,
+    ) -> List["VoiceClone"]:
+        """List voice clones for the current user."""
+        params = {"page": page, "page_size": page_size}
+        if language:
+            params["language"] = language
+        data = self.get(path=ApiPath.voice_clone, params=params)
+        voice_clones = (data or {}).get("voice_clones", [])
+        return [VoiceClone(self, **v) for v in voice_clones]
+
+    def delete_voice_clone(self, voice_clone_id: str) -> None:
+        """Delete a voice clone by ID."""
+        self.delete(path=f"{ApiPath.voice_clone}/{voice_clone_id}")
+        return None
 
     def upload(
         self,
