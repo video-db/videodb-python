@@ -1,4 +1,5 @@
 import logging
+import requests
 
 from typing import (
     Optional,
@@ -11,6 +12,7 @@ from videodb._constants import (
     TranscodeMode,
     VideoConfig,
     AudioConfig,
+    HttpClientDefaultValues,
 )
 
 from videodb.collection import Collection
@@ -19,6 +21,8 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.sandbox import Sandbox
+from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 
@@ -263,6 +267,165 @@ class Connection(HttpClient):
         :rtype: dict
         """
         return self.get(path=f"{ApiPath.transcode}/{job_id}")
+
+    def get_job_status(self, job_id: str) -> dict:
+        """Get status/details for a self-inference generation job.
+
+        This preserves and normalizes the job response wrapper instead of using
+        the standard SDK response parser, because callers need the top-level
+        job status while polling.
+
+        :param str job_id: ID of the generation job
+        :return: Normalized job response with success, status, data, message
+        :rtype: dict
+        """
+        try:
+            url = f"{self.base_url}/{ApiPath.job}/{job_id}"
+            response = self.session.get(url, timeout=HttpClientDefaultValues.timeout)
+            response.raise_for_status()
+            response_json = response.json()
+        except requests.exceptions.RequestException as e:
+            self._handle_request_error(e)
+        except ValueError:
+            from videodb.exceptions import InvalidRequestError
+
+            raise InvalidRequestError("Invalid request: Unable to parse job response") from None
+
+        data = response_json.get("data") or {}
+        status = response_json.get("status") or data.get("status")
+        success = response_json.get("success", False)
+
+        if not status:
+            status = "done" if success else "failed"
+
+        return {
+            "success": success,
+            "status": status,
+            "data": data,
+            "message": response_json.get("message"),
+        }
+
+    def wait_for_job(
+        self,
+        job_id: str,
+        timeout: int = 600,
+        interval: int = 5,
+        result_type: str = None,
+    ):
+        """Poll a self-inference generation job until completion.
+
+        :param str job_id: ID of the generation job
+        :param int timeout: Maximum seconds to wait
+        :param int interval: Seconds between polls
+        :param str result_type: Optional expected result type, "audio" or "image"
+        :return: Generated SDK asset or final job data
+        """
+        from videodb.job import GenerationJob
+
+        return GenerationJob(
+            self, job_id=job_id, result_type=result_type
+        ).wait(timeout=timeout, interval=interval)
+
+    def create_sandbox(
+        self,
+        tier: Optional[str] = None,
+        name: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> "Sandbox":
+        """Create a new sandbox (GPU compute pool).
+
+        :param str tier: Sandbox tier — "small" or "medium" (default: server decides)
+        :param str name: Human-readable name (auto-generated if not provided)
+        :param str callback_url: URL to receive sandbox lifecycle webhooks
+        :return: :class:`Sandbox <Sandbox>` object in provisioning state
+        :rtype: :class:`videodb.sandbox.Sandbox`
+        """
+        data = self.post(
+            path=ApiPath.sandbox,
+            data={"tier": tier, "name": name, "callback_url": callback_url},
+        )
+        return Sandbox(self, **(data or {}))
+
+    def get_sandbox(self, sandbox_id: str) -> "Sandbox":
+        """Get a sandbox by ID.
+
+        :param str sandbox_id: The sandbox ID
+        :return: :class:`Sandbox <Sandbox>` object
+        :rtype: :class:`videodb.sandbox.Sandbox`
+        """
+        data = self.get(path=f"{ApiPath.sandbox}/{sandbox_id}")
+        return Sandbox(self, **(data or {}))
+
+    def list_sandboxes(self, status: Optional[str] = None) -> List["Sandbox"]:
+        """List all sandboxes, optionally filtered by status.
+
+        :param str status: Filter by sandbox status (optional)
+        :return: List of :class:`Sandbox <Sandbox>` objects
+        :rtype: list[:class:`videodb.sandbox.Sandbox`]
+        """
+        params = {}
+        if status:
+            params["status"] = status
+        data = self.get(path=ApiPath.sandbox, params=params)
+        sandboxes_data = (data or {}).get("sandboxes", [])
+        return [Sandbox(self, **s) for s in sandboxes_data]
+
+    def create_voice_clone(
+        self,
+        ref_audio_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        ref_text: Optional[str] = None,
+        language: Optional[str] = None,
+        collection_id: Optional[str] = None,
+    ) -> "VoiceClone":
+        """Create a reusable voice clone from an existing audio asset.
+
+        :param str ref_audio_id: Source audio ID to use as the voice reference.
+        :param str name: Human-readable name (optional).
+        :param str description: Description (optional).
+        :param str ref_text: Text spoken in the reference audio (optional).
+        :param str language: Language code, e.g. ``"en"`` (optional).
+        :param str collection_id: Collection associated with the source audio (optional).
+        :return: :class:`VoiceClone <VoiceClone>` object.
+        :rtype: :class:`videodb.voice_clone.VoiceClone`
+        """
+        data = self.post(
+            path=ApiPath.voice_clone,
+            data={
+                "ref_audio_id": ref_audio_id,
+                "name": name,
+                "description": description,
+                "ref_text": ref_text,
+                "language": language,
+                "collection_id": collection_id,
+            },
+        )
+        return VoiceClone(self, **(data or {}))
+
+    def get_voice_clone(self, voice_clone_id: str) -> "VoiceClone":
+        """Get a voice clone by ID."""
+        data = self.get(path=f"{ApiPath.voice_clone}/{voice_clone_id}")
+        return VoiceClone(self, **(data or {}))
+
+    def list_voice_clones(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        language: Optional[str] = None,
+    ) -> List["VoiceClone"]:
+        """List voice clones for the current user."""
+        params = {"page": page, "page_size": page_size}
+        if language:
+            params["language"] = language
+        data = self.get(path=ApiPath.voice_clone, params=params)
+        voice_clones = (data or {}).get("voice_clones", [])
+        return [VoiceClone(self, **v) for v in voice_clones]
+
+    def delete_voice_clone(self, voice_clone_id: str) -> None:
+        """Delete a voice clone by ID."""
+        self.delete(path=f"{ApiPath.voice_clone}/{voice_clone_id}")
+        return None
 
     def upload(
         self,
