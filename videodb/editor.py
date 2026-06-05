@@ -1,12 +1,12 @@
 import json
 import logging
-import requests
 import warnings
 
 from typing import List, Optional, Union
 from enum import Enum
 
 from videodb._constants import ApiPath
+from videodb._upload import upload_bytes
 from videodb._utils._video import build_iframe_embed_code
 from videodb.exceptions import InvalidRequestError
 
@@ -1148,25 +1148,19 @@ class Timeline:
         :rtype: str
         :raises InvalidRequestError: If upload fails
         """
-        # Get a presigned upload URL
-        upload_url_data = self.connection.get(
-            path=f"{ApiPath.collection}/{self.connection.collection_id}/{ApiPath.upload_url}",
-            params={"name": "timeline_data.json"},
-        )
-        upload_url = upload_url_data.get("upload_url")
-
-        # Upload the JSON data as a file
         try:
-            files = {"file": ("timeline_data.json", json_str, "application/json")}
-            response = requests.post(upload_url, files=files)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
+            return upload_bytes(
+                _connection=self.connection,
+                content=json_str,
+                name="timeline_data.json",
+                content_type="application/json",
+                collection_id=self.connection.collection_id,
+            )
+        except Exception as e:
             raise InvalidRequestError(
                 f"Failed to upload timeline data: {str(e)}",
                 getattr(e, "response", None),
             ) from None
-
-        return upload_url
 
     def download_stream(self, stream_url: str) -> dict:
         """Download a stream from the timeline.
