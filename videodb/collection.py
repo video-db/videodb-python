@@ -526,10 +526,14 @@ class Collection:
     def generate_text(
         self,
         prompt: str,
-        model_name: Literal["basic", "pro", "ultra"] = "basic",
+        model_name: str = "basic",
         response_type: Literal["text", "json"] = "text",
         wait: bool = True,
         callback_url: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        model_config: Optional[Dict[str, Any]] = None,
     ) -> Union[str, dict]:
         """Generate text from a prompt using genai offering.
 
@@ -539,10 +543,14 @@ class Collection:
         to avoid API Gateway/Lambda payload size limits.
 
         :param str prompt: Prompt for the text generation
-        :param str model_name: Model name to use ("basic", "pro" or "ultra")
+        :param str model_name: Model name to use ("basic", "pro", "ultra", or a self-hosted model)
         :param str response_type: Desired response type ("text" or "json")
         :param bool wait: Wait for the text generation to complete (default: True)
         :param str callback_url: URL to receive the callback (optional)
+        :param str sandbox_id: Sandbox ID to use for self-hosted models (optional)
+        :param int max_tokens: Maximum tokens to generate (optional)
+        :param float temperature: Sampling temperature (optional)
+        :param dict model_config: Additional self-hosted model configuration (optional)
         :return: Generated text response if wait is False, otherwise job id of the text generation
         :rtype: Union[str, dict]
         """
@@ -551,6 +559,10 @@ class Collection:
             "model_name": model_name,
             "response_type": response_type,
             "callback_url": callback_url,
+            "sandbox_id": sandbox_id,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "model_config": model_config,
         }
 
         payload_size = len(json.dumps(payload).encode("utf-8"))
@@ -566,6 +578,10 @@ class Collection:
                 "model_name": model_name,
                 "response_type": response_type,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "model_config": model_config,
             }
 
         return self._connection.post(

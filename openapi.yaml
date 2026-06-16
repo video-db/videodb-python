@@ -2094,13 +2094,22 @@ paths:
                   example: "m-12345"
                 model_name:
                   type: string
-                  example: "gpt-4"
+                  description: Hosted tier (`mini`, `basic`, `pro`, `ultra`) or self-hosted sandbox model name.
+                  example: "Qwen/Qwen3.5-27B"
+                sandbox_id:
+                  type: string
+                  description: Sandbox ID to use when `model_name` is a self-hosted model.
+                  example: "bx-123abc"
                 max_tokens:
                   type: integer
                   example: 500
                 temperature:
                   type: number
                   example: 0.7
+                model_config:
+                  type: object
+                  description: Additional self-hosted model configuration.
+                  additionalProperties: true
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
