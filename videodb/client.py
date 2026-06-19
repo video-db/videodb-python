@@ -331,18 +331,28 @@ class Connection(HttpClient):
         tier: Optional[str] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
+        model_categories: Optional[List[str]] = None,
+        models: Optional[List[str]] = None,
     ) -> "Sandbox":
         """Create a new sandbox (GPU compute pool).
 
         :param str tier: Sandbox tier — "small" or "medium" (default: server decides)
         :param str name: Human-readable name (auto-generated if not provided)
         :param str callback_url: URL to receive sandbox lifecycle webhooks
+        :param list[str] model_categories: Model categories to prepare for this sandbox, e.g. ``["vlm", "image_generation"]`` (optional)
+        :param list[str] models: Specific model names to prepare for this sandbox (optional)
         :return: :class:`Sandbox <Sandbox>` object in provisioning state
         :rtype: :class:`videodb.sandbox.Sandbox`
         """
         data = self.post(
             path=ApiPath.sandbox,
-            data={"tier": tier, "name": name, "callback_url": callback_url},
+            data={
+                "tier": tier,
+                "name": name,
+                "callback_url": callback_url,
+                "model_categories": model_categories,
+                "models": models,
+            },
         )
         return Sandbox(self, **(data or {}))
 

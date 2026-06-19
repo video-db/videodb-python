@@ -10,7 +10,8 @@ class Sandbox:
     """A persistent GPU compute pool for running inference jobs."""
 
     def __init__(self, _connection, sandbox_id=None, id=None, tier=None, status=None,
-                 name=None, created_at=None, started_at=None, stopped_at=None, **kwargs):
+                 name=None, created_at=None, started_at=None, stopped_at=None,
+                 model_categories=None, models=None, **kwargs):
         self._connection = _connection
         self.id = sandbox_id or id
         self.tier = tier
@@ -19,6 +20,8 @@ class Sandbox:
         self.created_at = created_at
         self.started_at = started_at
         self.stopped_at = stopped_at
+        self.model_categories = model_categories or []
+        self.models = models or []
 
     def __repr__(self):
         return f"Sandbox(id={self.id}, tier={self.tier}, status={self.status}, name={self.name})"
@@ -33,6 +36,8 @@ class Sandbox:
         self.created_at = data.get("created_at", self.created_at)
         self.started_at = data.get("started_at", self.started_at)
         self.stopped_at = data.get("stopped_at", self.stopped_at)
+        self.model_categories = data.get("model_categories", self.model_categories)
+        self.models = data.get("models", self.models)
 
     def refresh(self):
         """Fetch latest sandbox state from the server."""
