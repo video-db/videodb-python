@@ -8,6 +8,8 @@ from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     VIDEO_DB_API,
     IndexType,
+    IndexCapability,
+    FieldGroup,
     SceneExtractionType,
     MediaType,
     SearchType,
@@ -53,6 +55,8 @@ __all__ = [
     "AuthenticationError",
     "InvalidRequestError",
     "IndexType",
+    "IndexCapability",
+    "FieldGroup",
     "SearchError",
     "play_stream",
     "build_iframe_embed_code",

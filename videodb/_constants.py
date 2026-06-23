@@ -36,6 +36,24 @@ class IndexType:
     scene = "scene"
 
 
+class IndexCapability:
+    """Retrieval capabilities an index can be built for (``use_for``)."""
+
+    semantic = "semantic"
+    query = "query"
+    aggregate = "aggregate"
+
+
+class FieldGroup:
+    """Field groups that map artifact fields to retrieval capabilities."""
+
+    semantic = "semantic"
+    text = "text"
+    filter = "filter"
+    aggregate = "aggregate"
+    sort = "sort"
+
+
 class SceneExtractionType:
     shot_based = "shot"
     time_based = "time"
@@ -80,6 +98,8 @@ class ApiPath:
     upload_url = "upload_url"
     transcription = "transcription"
     index = "index"
+    indexes = "indexes"
+    records = "records"
     search = "search"
     compile = "compile"
     workflow = "workflow"

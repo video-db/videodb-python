@@ -1,0 +1,209 @@
+from typing import List, Optional
+
+from videodb._constants import ApiPath
+
+
+class FieldSchema:
+    """Schema details for a single indexed field.
+
+    :ivar str type: Data type of the field (e.g. ``"string"``, ``"string[]"``, ``"number"``)
+    :ivar list groups: Field groups this field belongs to (e.g. ``["semantic", "filter"]``)
+    :ivar list operators: Filter operators supported by the field (for filterable fields)
+    """
+
+    def __init__(
+        self,
+        type: Optional[str] = None,
+        groups: Optional[List[str]] = None,
+        operators: Optional[List[str]] = None,
+    ) -> None:
+        self.type = type
+        self.groups = groups or []
+        self.operators = operators or []
+
+    def __repr__(self) -> str:
+        return (
+            f"FieldSchema("
+            f"type={self.type}, "
+            f"groups={self.groups}, "
+            f"operators={self.operators})"
+        )
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+
+class IndexRecord:
+    """A single indexed record (one temporal segment of an index).
+
+    :ivar str video_id: ID of the video the record belongs to
+    :ivar str understanding_id: ID of the understanding run that produced the record
+    :ivar str segment_id: ID of the segment within the artifact
+    :ivar float start_sec: Start time of the segment in seconds
+    :ivar float end_sec: End time of the segment in seconds
+    :ivar dict data: Indexed field values for the segment
+    """
+
+    def __init__(
+        self,
+        video_id: Optional[str] = None,
+        understanding_id: Optional[str] = None,
+        segment_id: Optional[str] = None,
+        start_sec: Optional[float] = None,
+        end_sec: Optional[float] = None,
+        data: Optional[dict] = None,
+    ) -> None:
+        self.video_id = video_id
+        self.understanding_id = understanding_id
+        self.segment_id = segment_id
+        self.start_sec = start_sec
+        self.end_sec = end_sec
+        self.data = data or {}
+
+    def __repr__(self) -> str:
+        return (
+            f"IndexRecord("
+            f"video_id={self.video_id}, "
+            f"segment_id={self.segment_id}, "
+            f"start_sec={self.start_sec}, "
+            f"end_sec={self.end_sec}, "
+            f"data={self.data})"
+        )
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+
+class RecordPage:
+    """A page of indexed records returned by :meth:`Index.records`.
+
+    :ivar list[IndexRecord] records: Records in this page
+    :ivar str next_cursor: Cursor for the next page, ``None`` if there are no more records
+    """
+
+    def __init__(
+        self,
+        records: Optional[List[IndexRecord]] = None,
+        next_cursor: Optional[str] = None,
+    ) -> None:
+        self.records = records or []
+        self.next_cursor = next_cursor
+
+    def __repr__(self) -> str:
+        return (
+            f"RecordPage(records={len(self.records)}, next_cursor={self.next_cursor})"
+        )
+
+    def __iter__(self):
+        return iter(self.records)
+
+    def __getitem__(self, key):
+        return self.records[key]
+
+
+class Index:
+    """Index manifest for a retrieval-ready index built from an understanding artifact.
+
+    Note: Users should not initialize this class directly.
+    Instead use :meth:`Video.index() <videodb.video.Video.index>`,
+    :meth:`Video.get_index() <videodb.video.Video.get_index>`, or
+    :meth:`Video.list_indexes() <videodb.video.Video.list_indexes>`.
+
+    :ivar str index_id: Unique identifier for the index
+    :ivar str video_id: ID of the video this index belongs to
+    :ivar str collection_id: ID of the collection this index belongs to
+    :ivar str name: User-facing name of the index
+    :ivar str status: Build status of the index (e.g. ``"building"``, ``"ready"``, ``"failed"``)
+    :ivar list use_for: Retrieval capabilities the index supports
+        (subset of ``"semantic"``, ``"query"``, ``"aggregate"``)
+    :ivar source: Source artifact reference or records the index was built from
+    :ivar int record_count: Number of records in the index
+    :ivar dict fields: Field groups mapping (``semantic``, ``text``, ``filter``,
+        ``aggregate``, ``sort``) to lists of field names
+    :ivar dict field_schema: Mapping of field name to :class:`FieldSchema <FieldSchema>`
+    """
+
+    def __init__(
+        self, _connection, video_id: str, collection_id: str = None, **kwargs
+    ) -> None:
+        self._connection = _connection
+        self.video_id = video_id
+        self.collection_id = collection_id
+        self.index_id = kwargs.get("index_id")
+        self.name = kwargs.get("name")
+        self.status = kwargs.get("status")
+        self.use_for = kwargs.get("use_for", [])
+        self.source = kwargs.get("source")
+        self.record_count = kwargs.get("record_count")
+        self.fields = kwargs.get("fields", {})
+        self.field_schema = {
+            field: FieldSchema(
+                type=schema.get("type"),
+                groups=schema.get("groups"),
+                operators=schema.get("operators"),
+            )
+            for field, schema in (kwargs.get("field_schema") or {}).items()
+        }
+
+    def __repr__(self) -> str:
+        return (
+            f"Index("
+            f"index_id={self.index_id}, "
+            f"video_id={self.video_id}, "
+            f"name={self.name}, "
+            f"status={self.status}, "
+            f"use_for={self.use_for}, "
+            f"record_count={self.record_count})"
+        )
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def records(self, limit: int = 20, cursor: Optional[str] = None) -> RecordPage:
+        """Preview the records stored in the index.
+
+        Intended for inspection and debugging. Records are paginated via a cursor.
+
+        :param int limit: (optional) Maximum number of records to return (default: 20)
+        :param str cursor: (optional) Cursor returned by a previous page to fetch the next page
+        :return: A page of indexed records, :class:`RecordPage <RecordPage>` object
+        :rtype: :class:`videodb.index.RecordPage`
+        """
+        params = {"limit": limit, "collection_id": self.collection_id}
+        if cursor is not None:
+            params["cursor"] = cursor
+        records_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.video_id}/{ApiPath.indexes}/{self.index_id}/{ApiPath.records}",
+            params={key: value for key, value in params.items() if value is not None},
+        )
+        if not records_data:
+            return RecordPage()
+        records = [
+            IndexRecord(
+                video_id=record.get("video_id"),
+                understanding_id=record.get("understanding_id"),
+                segment_id=record.get("segment_id"),
+                start_sec=record.get("start_sec"),
+                end_sec=record.get("end_sec"),
+                data=record.get("data"),
+            )
+            for record in records_data.get("records", [])
+        ]
+        return RecordPage(records=records, next_cursor=records_data.get("next_cursor"))
+
+    def delete(self) -> None:
+        """Delete the index.
+
+        Removes the index's retrieval structures. It does not delete the original
+        video or stored understanding artifacts.
+
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.video_id}/{ApiPath.indexes}/{self.index_id}",
+            params={"collection_id": self.collection_id}
+            if self.collection_id
+            else None,
+        )

@@ -12,6 +12,7 @@ from videodb._constants import (
     Workflows,
 )
 from videodb.image import Image, Frame
+from videodb.index import Index
 from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
@@ -731,6 +732,174 @@ class Video:
             raise ValueError("scene_index_id is required")
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+        )
+
+    @staticmethod
+    def _format_index_source(source: Union[object, Dict, List]) -> Dict:
+        """Format an index *source* into the request payload.
+
+        The ``source`` identifies where the index data comes from. A single
+        artifact reference is ambiguous on its own, since the same ``extract_type``
+        (e.g. ``"scene"``) can be produced by many understanding runs, so an
+        understanding source must carry the ``understanding_id`` of the run that
+        produced it.
+
+        Accepts:
+          - an understanding artifact object exposing ``to_index_source()``
+            (forward-compatible with the future ``understand()`` outputs)
+          - a dict that already carries a ``type`` (``"understanding"``, ``"s3"``,
+            or ``"inline"``), passed through as-is after light normalization
+          - a dict with ``understanding_id`` (normalized to an understanding source)
+          - a list of user-provided temporal records (wrapped as an inline source)
+
+        :param source: The understanding artifact, source dict, or temporal records
+        :raises ValueError: If the source type is unsupported or empty
+        :return: The serialized ``source`` payload
+        :rtype: dict
+        """
+        if source is None:
+            raise ValueError("source is required")
+
+        # Understanding artifact object (forward-compatible duck typing).
+        if hasattr(source, "to_index_source"):
+            return source.to_index_source()
+
+        # User-provided temporal records -> inline source.
+        if isinstance(source, list):
+            return {"type": "inline", "data": source}
+
+        if isinstance(source, dict):
+            # Already a fully-formed source dict (e.g. understanding/s3/inline).
+            if source.get("type"):
+                return source
+            # Understanding artifact reference.
+            if source.get("understanding_id"):
+                return {
+                    "type": "understanding",
+                    "understanding_id": source["understanding_id"],
+                    "extract_type": source.get("extract_type"),
+                }
+            # Otherwise treat the dict as a single inline temporal record.
+            return {"type": "inline", "data": [source]}
+
+        raise ValueError(
+            "source must be an understanding artifact, a source dict, or a list of records"
+        )
+
+    def _format_index(self, index_data: dict) -> Index:
+        return Index(
+            self._connection,
+            video_id=self.id,
+            collection_id=self.collection_id,
+            **index_data,
+        )
+
+    def index(
+        self,
+        source: Union[object, Dict, List],
+        name: Optional[str] = None,
+        use_for: Optional[List[str]] = None,
+        fields: Optional[Dict[str, List[str]]] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional[Index]:
+        """Create a retrieval-ready index from an understanding artifact.
+
+        Turns an understanding artifact (or user-provided temporal records) into an
+        index that declares retrieval capabilities (``use_for``) and field-level
+        indexing configuration (``fields``).
+
+        :param source: The understanding artifact, an artifact-reference dict, or a
+            list of user-provided temporal record dicts to index
+        :param str name: (optional) User-facing index name. Defaults to the
+            artifact/source name on the server.
+        :param list use_for: (optional) Retrieval capabilities to enable, any of
+            :attr:`IndexCapability.semantic <videodb.IndexCapability.semantic>`,
+            :attr:`IndexCapability.query <videodb.IndexCapability.query>`,
+            :attr:`IndexCapability.aggregate <videodb.IndexCapability.aggregate>`.
+            Defaults to the artifact's defaults on the server.
+        :param dict fields: (optional) Field-level indexing configuration mapping
+            field groups (``semantic``, ``text``, ``filter``, ``aggregate``,
+            ``sort``) to lists of field names
+        :param str callback_url: (optional) URL called when indexing completes
+        :raises ValueError: If ``source`` is missing or of an unsupported type
+        :raises InvalidRequestError: If the index creation fails
+        :return: The created index, :class:`Index <Index>` object
+        :rtype: :class:`videodb.index.Index`
+        """
+        index_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
+            data={
+                "source": self._format_index_source(source),
+                "name": name,
+                "use_for": use_for,
+                "fields": fields,
+                "callback_url": callback_url,
+            },
+        )
+        if not index_data:
+            return None
+        return self._format_index(index_data)
+
+    def get_index(
+        self, index_id: Optional[str] = None, name: Optional[str] = None
+    ) -> Optional[Index]:
+        """Get an index manifest by its ID or name.
+
+        :param str index_id: (optional) The id of the index
+        :param str name: (optional) The name of the index
+        :raises ValueError: If neither ``index_id`` nor ``name`` is provided
+        :return: The index, :class:`Index <Index>` object
+        :rtype: :class:`videodb.index.Index`
+        """
+        if not index_id and not name:
+            raise ValueError("Either index_id or name is required")
+        params = {"collection_id": self.collection_id}
+        if index_id:
+            path = f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}"
+        else:
+            path = f"{ApiPath.video}/{self.id}/{ApiPath.indexes}"
+            params["name"] = name
+        index_data = self._connection.get(path=path, params=params)
+        if not index_data:
+            return None
+        return self._format_index(index_data)
+
+    def list_indexes(self, use_for: Optional[str] = None) -> List[Index]:
+        """List all the indexes of the video.
+
+        :param str use_for: (optional) Filter by retrieval capability, any of
+            :attr:`IndexCapability.semantic <videodb.IndexCapability.semantic>`,
+            :attr:`IndexCapability.query <videodb.IndexCapability.query>`,
+            :attr:`IndexCapability.aggregate <videodb.IndexCapability.aggregate>`
+        :return: List of :class:`Index <Index>` objects
+        :rtype: list[:class:`videodb.index.Index`]
+        """
+        params = {"collection_id": self.collection_id}
+        if use_for is not None:
+            params["use_for"] = use_for
+        index_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
+            params=params,
+        )
+        return [self._format_index(index) for index in index_data.get("indexes", [])]
+
+    def delete_index(self, index_id: str) -> None:
+        """Delete an index.
+
+        Removes the index's retrieval structures. It does not delete the original
+        video or stored understanding artifacts.
+
+        :param str index_id: The id of the index to be deleted
+        :raises ValueError: If ``index_id`` is not provided
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
+        if not index_id:
+            raise ValueError("index_id is required")
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
+            params={"collection_id": self.collection_id},
         )
 
     def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:
