@@ -787,10 +787,13 @@ class Video:
         )
 
     def _format_index(self, index_data: dict) -> Index:
+        index_data = dict(index_data)
+        video_id = index_data.pop("video_id", None) or self.id
+        collection_id = index_data.pop("collection_id", None) or self.collection_id
         return Index(
             self._connection,
-            video_id=self.id,
-            collection_id=self.collection_id,
+            video_id=video_id,
+            collection_id=collection_id,
             **index_data,
         )
 
