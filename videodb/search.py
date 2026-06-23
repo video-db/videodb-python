@@ -17,8 +17,10 @@ from videodb.shot import Shot
 
 
 _LEGACY_SEARCH_WARNING = (
-    "Legacy search parameters detected. This call is routed to legacy search. "
-    "Use legacy_search(...) to keep legacy behavior, or update to the new search interface."
+    "This search() call uses parameters from the previous search API, so VideoDB "
+    "is using legacy_search() for compatibility. To keep this behavior and avoid "
+    "this warning, call legacy_search(...). To use Search v2, call search(...) "
+    "with the new parameters, or use query() / semantic_search()."
 )
 _LEGACY_SEARCH_WARNING_EMITTED = False
 
