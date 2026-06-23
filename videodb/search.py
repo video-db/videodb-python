@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import warnings
+
 from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     IndexType,
@@ -12,6 +14,21 @@ from videodb.exceptions import (
 )
 from typing import Optional, List
 from videodb.shot import Shot
+
+
+_LEGACY_SEARCH_WARNING = (
+    "Legacy search parameters detected. This call is routed to legacy search. "
+    "Use legacy_search(...) to keep legacy behavior, or update to the new search interface."
+)
+_LEGACY_SEARCH_WARNING_EMITTED = False
+
+
+def warn_legacy_search_once():
+    global _LEGACY_SEARCH_WARNING_EMITTED
+    if _LEGACY_SEARCH_WARNING_EMITTED:
+        return
+    _LEGACY_SEARCH_WARNING_EMITTED = True
+    warnings.warn(_LEGACY_SEARCH_WARNING, UserWarning, stacklevel=3)
 
 
 class SearchResult:
@@ -35,7 +52,7 @@ class SearchResult:
     def _format_results(self):
         for result in self._results:
             self.collection_id = result.get("collection_id")
-            for doc in result.get("docs"):
+            for doc in result.get("docs") or []:
                 self.shots.append(
                     Shot(
                         self._connection,
@@ -49,7 +66,7 @@ class SearchResult:
                         scene_index_id=doc.get("scene_index_id"),
                         scene_index_name=doc.get("scene_index_name"),
                         metadata=doc.get("metadata"),
-                        stream_url=doc.get("stream_link"),
+                        stream_url=doc.get("stream_link") or doc.get("stream_url"),
                         player_url=doc.get("player_url"),
                     )
                 )
@@ -62,6 +79,15 @@ class SearchResult:
             f"player_url={self.player_url}, "
             f"shots={self.shots})"
         )
+
+    def __iter__(self):
+        return iter(self.shots)
+
+    def __len__(self):
+        return len(self.shots)
+
+    def __getitem__(self, index):
+        return self.shots[index]
 
     def get_shots(self) -> List[Shot]:
         return self.shots
@@ -137,6 +163,50 @@ class SearchResult:
             title=title,
             allow_fullscreen=allow_fullscreen,
         )
+
+
+class SearchResponse:
+    """Envelope returned by high-level Search v2.
+
+    For ``response_type='shots'``, ``results`` is a :class:`SearchResult`.
+    For ``response_type='aggregate'``, ``results`` is the aggregate dict/list returned by the server.
+    """
+
+    def __init__(self, _connection, **kwargs):
+        self._connection = _connection
+        self.response_type = kwargs.get("response_type")
+        raw_results = kwargs.get("results", [])
+        if self.response_type == "shots":
+            self.results = SearchResult(_connection, results=raw_results)
+            self.shots = self.results.shots
+        else:
+            self.results = raw_results
+            self.shots = []
+
+    def __repr__(self) -> str:
+        return f"SearchResponse(response_type={self.response_type}, results={self.results})"
+
+    def __iter__(self):
+        if self.response_type == "shots":
+            return iter(self.results)
+        if isinstance(self.results, list):
+            return iter(self.results)
+        return iter([self.results])
+
+    def __len__(self):
+        if self.response_type == "shots":
+            return len(self.results)
+        if isinstance(self.results, list):
+            return len(self.results)
+        return 1 if self.results is not None else 0
+
+    def __getitem__(self, index):
+        if self.response_type == "shots":
+            return self.results[index]
+        return self.results[index]
+
+    def get_shots(self) -> List[Shot]:
+        return self.shots
 
 
 class Search(ABC):

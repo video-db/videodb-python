@@ -27,6 +27,7 @@ from videodb._constants import (
     RTStreamChannelType,
 )
 from videodb.client import Connection
+from videodb.search import SearchResponse, SearchResult
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
@@ -58,6 +59,8 @@ __all__ = [
     "IndexCapability",
     "FieldGroup",
     "SearchError",
+    "SearchResult",
+    "SearchResponse",
     "play_stream",
     "build_iframe_embed_code",
     "MediaType",

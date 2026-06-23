@@ -1,6 +1,6 @@
 import logging
 
-from typing import Optional, Union, List, Dict, Any, Literal
+from typing import Optional, Union, List, Dict, Any, Literal, Tuple
 from videodb._upload import (
     upload,
 )
@@ -17,7 +17,7 @@ from videodb.image import Image
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
-from videodb.search import SearchFactory, SearchResult
+from videodb.search import SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
 
 logger = logging.getLogger(__name__)
 
@@ -462,7 +462,135 @@ class Collection:
         if dub_data:
             return Video(self._connection, **dub_data)
 
-    def search(
+    def search(self, query: str, *args, **kwargs) -> Union[SearchResponse, SearchResult, RTStreamSearchResult]:
+        """Search the collection.
+
+        New search is used by default. Calls that use legacy-shaped parameters are
+        routed to :meth:`legacy_search` with a warning.
+        """
+        old_params = {
+            "search_type",
+            "index_type",
+            "result_threshold",
+            "dynamic_score_percentage",
+            "scene_index_id",
+            "index_id",
+            "algorithm",
+            "sort_docs_on",
+            "namespace",
+        }
+        new_params = {
+            "top_k",
+            "mode",
+            "index_names",
+            "index_name",
+            "return_fields",
+            "include_clip",
+        }
+
+        if args:
+            legacy_arg_names = [
+                "search_type",
+                "index_type",
+                "result_threshold",
+                "score_threshold",
+                "dynamic_score_percentage",
+                "filter",
+                "sort_docs_on",
+                "namespace",
+                "scene_index_id",
+            ]
+            for name, value in zip(legacy_arg_names, args):
+                kwargs.setdefault(name, value)
+
+        has_old = bool(args) or any(k in kwargs and kwargs[k] is not None for k in old_params)
+        has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
+
+        if has_old and has_new:
+            raise ValueError(
+                "Cannot mix legacy search params with new search params. "
+                "Use search(...) for new search or legacy_search(...) for legacy search."
+            )
+
+        if has_old:
+            warn_legacy_search_once()
+            return self.legacy_search(query=query, **kwargs)
+
+        return self._new_search(query=query, **kwargs)
+
+    def _new_search(self, query: str, **kwargs) -> SearchResponse:
+        payload = {"query": query, **{k: v for k, v in kwargs.items() if v is not None}}
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/v2",
+            data=payload,
+            show_progress=True,
+        )
+        return SearchResponse(self._connection, **search_data)
+
+    def semantic_search(
+        self,
+        query: str,
+        index_names: List[str],
+        top_k: int = 10,
+        score_threshold: Optional[float] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+    ) -> SearchResult:
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.semantic_search}",
+            data={
+                "query": query,
+                "index_names": index_names,
+                "top_k": top_k,
+                "score_threshold": score_threshold,
+                "filter": filter,
+                "return_fields": return_fields,
+            },
+        )
+        return SearchResult(self._connection, **search_data)
+
+    def query(
+        self,
+        index_name: str,
+        filter: Optional[Union[List, Dict]] = None,
+        limit: int = 100,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+    ) -> SearchResult:
+        query_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.query}",
+            data={
+                "index_name": index_name,
+                "filter": filter,
+                "limit": limit,
+                "return_fields": return_fields,
+                "sort": sort,
+            },
+        )
+        return SearchResult(self._connection, **query_data)
+
+    def aggregate(
+        self,
+        index_name: str,
+        filter: Optional[Union[List, Dict]] = None,
+        group_by: Optional[str] = None,
+        metric: str = "count",
+        limit: int = 100,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+    ) -> Union[Dict, List[Dict]]:
+        return self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.aggregate}",
+            data={
+                "index_name": index_name,
+                "filter": filter,
+                "group_by": group_by,
+                "metric": metric,
+                "limit": limit,
+                "sort": sort,
+            },
+        )
+
+    def legacy_search(
         self,
         query: str,
         search_type: Optional[str] = SearchType.semantic,
@@ -474,6 +602,8 @@ class Collection:
         sort_docs_on: Optional[str] = None,
         namespace: Optional[str] = None,
         scene_index_id: Optional[str] = None,
+        index_id: Optional[str] = None,
+        algorithm: Optional[str] = None,
     ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
 
@@ -493,6 +623,9 @@ class Collection:
         :rtype: Union[:class:`videodb.search.SearchResult`,
             :class:`videodb.rtstream.RTStreamSearchResult`]
         """
+        if scene_index_id is None and index_id is not None:
+            scene_index_id = index_id
+
         if namespace == "rtstream":
             data = {"query": query}
             if scene_index_id is not None:
