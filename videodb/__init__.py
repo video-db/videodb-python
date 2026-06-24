@@ -28,6 +28,7 @@ from videodb._constants import (
 )
 from videodb.client import Connection
 from videodb.search import SearchResponse, SearchResult
+from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
@@ -61,6 +62,8 @@ __all__ = [
     "SearchError",
     "SearchResult",
     "SearchResponse",
+    "Understanding",
+    "UnderstandingAnalyzer",
     "play_stream",
     "build_iframe_embed_code",
     "MediaType",

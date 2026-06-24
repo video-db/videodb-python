@@ -13,6 +13,7 @@ from videodb._constants import (
 )
 from videodb.image import Image, Frame
 from videodb.index import Index
+from videodb.understanding import Understanding, normalize_understanding_analyzers
 from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
 from videodb.shot import Shot
@@ -860,6 +861,94 @@ class Video:
             raise ValueError("scene_index_id is required")
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+        )
+
+    def understand(
+        self,
+        analyzers: List[Dict[str, Any]],
+        segmentation: Optional[Dict[str, Any]] = None,
+        sampling: Optional[Dict[str, Any]] = None,
+        transform: Optional[Dict[str, Any]] = None,
+        audio_chunking: Optional[Dict[str, Any]] = None,
+        callback_url: Optional[str] = None,
+        **kwargs,
+    ) -> Understanding:
+        """Create an understanding run for this video.
+
+        :param list analyzers: Analyzer definitions. The SDK accepts friendly
+            analyzer type ``spoken_words`` and maps it to the server analyzer.
+        :param dict segmentation: Optional run-level segmentation config
+        :param dict sampling: Optional run-level sampling config
+        :param dict transform: Optional run-level transform config
+        :param dict audio_chunking: Optional run-level audio chunking config
+        :param str callback_url: Optional URL called when the run completes
+        :return: :class:`Understanding <videodb.understanding.Understanding>` object
+        """
+        normalized_analyzers = normalize_understanding_analyzers(analyzers)
+        payload = {"analyzers": normalized_analyzers}
+        optional_fields = {
+            "segmentation": segmentation,
+            "sampling": sampling,
+            "transform": transform,
+            "audio_chunking": audio_chunking,
+            "callback_url": callback_url,
+            **kwargs,
+        }
+        payload.update({key: value for key, value in optional_fields.items() if value is not None})
+
+        data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}",
+            data=payload,
+        ) or {}
+        data.setdefault(
+            "analyzers",
+            [
+                {
+                    "name": analyzer.get("name"),
+                    "type": analyzer.get("type"),
+                    "status": "pending",
+                }
+                for analyzer in normalized_analyzers
+            ],
+        )
+        data.setdefault("video_id", self.id)
+        data.setdefault("collection_id", self.collection_id)
+        return Understanding(self._connection, **data)
+
+    def get_understanding(self, understanding_id: str) -> Understanding:
+        """Get an understanding run by id.
+
+        :param str understanding_id: Understanding run id
+        :return: :class:`Understanding <videodb.understanding.Understanding>` object
+        """
+        if not understanding_id:
+            raise ValueError("understanding_id is required")
+        data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}"
+        ) or {}
+        data.setdefault("video_id", self.id)
+        data.setdefault("collection_id", self.collection_id)
+        data.setdefault("understanding_id", understanding_id)
+        return Understanding(self._connection, **data)
+
+    def list_understandings(self) -> List[Understanding]:
+        """List understanding runs for this video."""
+        data = self._connection.get(path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}")
+        results = (data or {}).get("understanding_results") or []
+        understandings = []
+        for item in results:
+            data = dict(item)
+            data.setdefault("video_id", self.id)
+            data.setdefault("collection_id", self.collection_id)
+            understandings.append(Understanding(self._connection, **data))
+        return understandings
+
+    def delete_understanding(self, understanding_id: str) -> None:
+        """Delete an understanding run."""
+        if not understanding_id:
+            raise ValueError("understanding_id is required")
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}"
         )
 
     @staticmethod
