@@ -104,11 +104,10 @@ class Video:
         new_params = {
             "top_k",
             "mode",
-            "index_names",
-            "index_name",
             "return_fields",
             "include_clip",
         }
+        unsupported_params = {"index_name", "index_names"}
 
         if args:
             legacy_arg_names = [
@@ -124,11 +123,17 @@ class Video:
 
         has_old = bool(args) or any(k in kwargs and kwargs[k] is not None for k in old_params)
         has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
+        has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
 
-        if has_old and has_new:
+        if has_old and (has_new or has_unsupported):
             raise ValueError(
                 "Cannot mix legacy search params with new search params. "
                 "Use search(...) for new search or legacy_search(...) for legacy search."
+            )
+        if has_unsupported:
+            raise ValueError(
+                "index_name/index_names are not supported in search(). "
+                "Use semantic_search(), query(), or aggregate() for index-specific calls."
             )
 
         if has_old:
@@ -149,7 +154,7 @@ class Video:
     def semantic_search(
         self,
         query: str,
-        index_names: List[str],
+        index_names: Optional[Union[List[str], str]] = None,
         top_k: int = 10,
         score_threshold: Optional[float] = None,
         filter: Optional[Union[List, Dict]] = None,
