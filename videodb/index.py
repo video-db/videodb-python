@@ -143,6 +143,7 @@ class Index:
         self.index_id = kwargs.get("index_id")
         self.name = kwargs.get("name")
         self.status = kwargs.get("status")
+        self.error = kwargs.get("error")  # failure reason when status == "failed"
         self.use_for = kwargs.get("use_for", [])
         self.source = kwargs.get("source")
         self.record_count = kwargs.get("record_count")
@@ -163,7 +164,8 @@ class Index:
             f"video_id={self.video_id}, "
             f"name={self.name}, "
             f"status={self.status}, "
-            f"use_for={self.use_for}, "
+            + (f"error={self.error}, " if self.error else "")
+            + f"use_for={self.use_for}, "
             f"record_count={self.record_count})"
         )
 
