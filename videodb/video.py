@@ -15,7 +15,7 @@ from videodb.image import Image, Frame
 from videodb.index import Index
 from videodb.understanding import Understanding, normalize_understanding_analyzers
 from videodb.scene import Scene, SceneCollection
-from videodb.search import SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
+from videodb.search import AskResponse, SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
 from videodb.shot import Shot
 
 _VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
@@ -150,6 +150,25 @@ class Video:
             show_progress=True,
         )
         return SearchResponse(self._connection, **search_data)
+
+    def ask(
+        self,
+        question: str,
+        top_k: int = 15,
+        mode: str = "default",
+        include_sources: bool = False,
+    ) -> AskResponse:
+        ask_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.ask}",
+            data={
+                "question": question,
+                "top_k": top_k,
+                "mode": mode,
+                "include_sources": include_sources,
+            },
+            show_progress=True,
+        )
+        return AskResponse(self._connection, **ask_data)
 
     def semantic_search(
         self,
