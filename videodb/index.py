@@ -34,39 +34,50 @@ class FieldSchema:
 
 
 class IndexRecord:
-    """A single indexed record (one temporal segment of an index).
+    """A single indexed record (one temporal scene of an index).
 
     :ivar str video_id: ID of the video the record belongs to
     :ivar str understanding_id: ID of the understanding run that produced the record
-    :ivar str segment_id: ID of the segment within the artifact
-    :ivar float start_sec: Start time of the segment in seconds
-    :ivar float end_sec: End time of the segment in seconds
-    :ivar dict data: Indexed field values for the segment
+    :ivar str scene_id: ID of the scene within the artifact
+    :ivar float start: Start time of the scene in seconds
+    :ivar float end: End time of the scene in seconds
+    :ivar dict data: Indexed field values for the scene
+    :ivar str segment_id: Deprecated alias of ``scene_id``
+    :ivar float start_sec: Deprecated alias of ``start``
+    :ivar float end_sec: Deprecated alias of ``end``
     """
 
     def __init__(
         self,
         video_id: Optional[str] = None,
         understanding_id: Optional[str] = None,
+        scene_id: Optional[str] = None,
+        start: Optional[float] = None,
+        end: Optional[float] = None,
+        data: Optional[dict] = None,
         segment_id: Optional[str] = None,
         start_sec: Optional[float] = None,
         end_sec: Optional[float] = None,
-        data: Optional[dict] = None,
     ) -> None:
         self.video_id = video_id
         self.understanding_id = understanding_id
-        self.segment_id = segment_id
-        self.start_sec = start_sec
-        self.end_sec = end_sec
+        # Prefer the V2 contract names; fall back to legacy aliases for older payloads.
+        self.scene_id = scene_id if scene_id is not None else segment_id
+        self.start = start if start is not None else start_sec
+        self.end = end if end is not None else end_sec
         self.data = data or {}
+        # Backward-compatible aliases.
+        self.segment_id = self.scene_id
+        self.start_sec = self.start
+        self.end_sec = self.end
 
     def __repr__(self) -> str:
         return (
             f"IndexRecord("
             f"video_id={self.video_id}, "
-            f"segment_id={self.segment_id}, "
-            f"start_sec={self.start_sec}, "
-            f"end_sec={self.end_sec}, "
+            f"scene_id={self.scene_id}, "
+            f"start={self.start}, "
+            f"end={self.end}, "
             f"data={self.data})"
         )
 
@@ -182,10 +193,13 @@ class Index:
             IndexRecord(
                 video_id=record.get("video_id"),
                 understanding_id=record.get("understanding_id"),
+                scene_id=record.get("scene_id"),
+                start=record.get("start"),
+                end=record.get("end"),
+                data=record.get("data"),
                 segment_id=record.get("segment_id"),
                 start_sec=record.get("start_sec"),
                 end_sec=record.get("end_sec"),
-                data=record.get("data"),
             )
             for record in records_data.get("records", [])
         ]
