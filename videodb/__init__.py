@@ -27,7 +27,7 @@ from videodb._constants import (
     RTStreamChannelType,
 )
 from videodb.client import Connection
-from videodb.search import SearchResponse, SearchResult
+from videodb.search import AskResponse, SearchResponse, SearchResult
 from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
@@ -62,6 +62,7 @@ __all__ = [
     "SearchError",
     "SearchResult",
     "SearchResponse",
+    "AskResponse",
     "Understanding",
     "UnderstandingAnalyzer",
     "play_stream",

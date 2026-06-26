@@ -165,6 +165,22 @@ class SearchResult:
         )
 
 
+class AskResponse:
+    """Response returned by ``ask()``.
+
+    :ivar str answer: Text answer generated from retrieved video context.
+    :ivar list[Shot] sources: Source shots selected by the LLM when requested.
+    """
+
+    def __init__(self, _connection, **kwargs):
+        self._connection = _connection
+        self.answer = kwargs.get("answer") or ""
+        self.sources = SearchResult(_connection, results=kwargs.get("sources") or []).shots
+
+    def __repr__(self) -> str:
+        return f"AskResponse(answer={self.answer!r}, sources={self.sources})"
+
+
 class SearchResponse:
     """Envelope returned by high-level Search v2.
 

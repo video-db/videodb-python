@@ -17,7 +17,7 @@ from videodb.image import Image
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
-from videodb.search import SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
+from videodb.search import AskResponse, SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
 
 logger = logging.getLogger(__name__)
 
@@ -531,6 +531,25 @@ class Collection:
             show_progress=True,
         )
         return SearchResponse(self._connection, **search_data)
+
+    def ask(
+        self,
+        question: str,
+        top_k: int = 15,
+        mode: str = "default",
+        include_sources: bool = False,
+    ) -> AskResponse:
+        ask_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.ask}",
+            data={
+                "question": question,
+                "top_k": top_k,
+                "mode": mode,
+                "include_sources": include_sources,
+            },
+            show_progress=True,
+        )
+        return AskResponse(self._connection, **ask_data)
 
     def semantic_search(
         self,
