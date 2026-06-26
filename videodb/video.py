@@ -969,8 +969,10 @@ class Video:
         Accepts:
           - an understanding artifact object exposing ``to_index_source()``
             (forward-compatible with the future ``understand()`` outputs)
-          - a dict that already carries a ``type`` (``"understanding"``, ``"s3"``,
-            or ``"inline"``), passed through as-is after light normalization
+          - an analyzer output envelope (``{name, type, status, scenes}`` from
+            ``get_analyzer(...).get_output()``) -> understanding or inline source
+          - a dict that already carries a source ``type`` (``"understanding"`` or
+            ``"inline"``), passed through as-is
           - a dict with ``understanding_id`` (normalized to an understanding source)
           - a list of user-provided temporal records (wrapped as an inline source)
 
@@ -979,6 +981,9 @@ class Video:
         :return: The serialized ``source`` payload
         :rtype: dict
         """
+        # Valid source-dispatch types (NOT analyzer/node types like "object_detection").
+        _SOURCE_TYPES = {"understanding", "inline"}
+
         if source is None:
             raise ValueError("source is required")
 
@@ -991,15 +996,28 @@ class Video:
             return {"type": "inline", "data": source}
 
         if isinstance(source, dict):
-            # Already a fully-formed source dict (e.g. understanding/s3/inline).
-            if source.get("type"):
+            # An analyzer output envelope carries `scenes` and a `type` that is an
+            # analyzer/node type (e.g. "object_detection"), which must NOT be sent as a
+            # source-dispatch type. Translate it: prefer an understanding reference when
+            # an understanding_id is known, else send its scenes as inline records.
+            if "scenes" in source and source.get("type") not in _SOURCE_TYPES:
+                understanding_id = source.get("understanding_id") or source.get("understanding")
+                if understanding_id:
+                    return {
+                        "type": "understanding",
+                        "understanding_id": understanding_id,
+                        "extract_type": source.get("name") or source.get("type"),
+                    }
+                return {"type": "inline", "data": source.get("scenes") or []}
+            # Already a fully-formed source dict (understanding/inline).
+            if source.get("type") in _SOURCE_TYPES:
                 return source
             # Understanding artifact reference.
             if source.get("understanding_id"):
                 return {
                     "type": "understanding",
                     "understanding_id": source["understanding_id"],
-                    "extract_type": source.get("extract_type"),
+                    "extract_type": source.get("extract_type") or source.get("name"),
                 }
             # Otherwise treat the dict as a single inline temporal record.
             return {"type": "inline", "data": [source]}
