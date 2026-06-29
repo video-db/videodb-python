@@ -1027,7 +1027,11 @@ class Video:
                         "understanding_id": understanding_id,
                         "extract_type": source.get("name") or source.get("type"),
                     }
-                return {"type": "inline", "data": source.get("scenes") or []}
+                # Pass the full analyzer envelope through so the server can route it to
+                # the correct typed indexer (e.g. object_detection → label/score columns).
+                # Falling back to bare inline scenes loses the type context and causes the
+                # server to treat every scene's data blob as a generic custom record.
+                return source
             # Already a fully-formed source dict (understanding/inline).
             if source.get("type") in _SOURCE_TYPES:
                 return source
