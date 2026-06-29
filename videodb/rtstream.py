@@ -392,6 +392,10 @@ class RTStream:
         self.channel_id = kwargs.get("channel_id", None)
         self.stream_url = kwargs.get("stream_url", None)
         self.player_url = kwargs.get("player_url", None)
+        # Push-ingest fields (populated when ingest_mode="push"):
+        self.ingest_mode = kwargs.get("ingest_mode", None)
+        self.protocol = kwargs.get("protocol", None)
+        self.push_url = kwargs.get("push_url", None)
 
     def __repr__(self) -> str:
         return (
@@ -403,7 +407,9 @@ class RTStream:
             f"sample_rate={self.sample_rate}, "
             f"status={self.status}, "
             f"stream_url={self.stream_url}, "
-            f"player_url={self.player_url})"
+            f"player_url={self.player_url}, "
+            f"ingest_mode={self.ingest_mode}, "
+            f"push_url={self.push_url})"
         )
 
     def start(self):

@@ -171,17 +171,26 @@ class Collection:
 
     def connect_rtstream(
         self,
-        url: str,
-        name: str,
+        url: str = None,
+        name: str = None,
         media_types: List[str] = None,
         sample_rate: int = None,
         store: bool = None,
         enable_transcript: bool = None,
         ws_connection_id: str = None,
+        ingest_mode: str = "pull",
+        protocol: str = None,
     ) -> RTStream:
         """Connect to an rtstream.
 
-        :param str url: URL of the rtstream
+        Two ingest modes:
+
+        - ``"pull"`` (default): you provide a source ``url`` and VideoDB pulls from it.
+        - ``"push"``: VideoDB provisions a destination and returns a push URL; you
+          publish your feed into it. ``url`` is not provided; ``protocol`` is required.
+          The returned :class:`RTStream` exposes ``push_url``.
+
+        :param str url: Source URL of the rtstream (required for ``ingest_mode="pull"``)
         :param str name: Name of the rtstream
         :param list media_types: List of media types to capture (default: [MediaType.video]).
             Valid values: :attr:`MediaType.audio`, :attr:`MediaType.video`
@@ -190,8 +199,13 @@ class Collection:
             When True, the stream recording is stored and can be exported via :meth:`RTStream.export`.
         :param bool enable_transcript: Enable real-time transcription (optional)
         :param str ws_connection_id: WebSocket connection ID for receiving events (optional)
+        :param str ingest_mode: ``"pull"`` (default) or ``"push"``
+        :param str protocol: Push protocol when ``ingest_mode="push"`` (e.g. ``"rtmp"``)
         :return: :class:`RTStream <RTStream>` object
         """
+        if not name:
+            raise ValueError("name is required")
+
         if media_types is None:
             media_types = [MediaType.video]
 
@@ -202,12 +216,23 @@ class Collection:
                 f"Invalid media_types: {invalid}. Valid values: {MediaType.audio}, {MediaType.video}"
             )
 
+        if ingest_mode not in ("pull", "push"):
+            raise ValueError("ingest_mode must be 'pull' or 'push'")
+        if ingest_mode == "pull" and not url:
+            raise ValueError("url is required for ingest_mode='pull'")
+        if ingest_mode == "push" and not protocol:
+            raise ValueError("protocol is required for ingest_mode='push'")
+
         data = {
             "collection_id": self.id,
-            "url": url,
             "name": name,
             "media_types": media_types,
+            "ingest_mode": ingest_mode,
         }
+        if url is not None:
+            data["url"] = url
+        if protocol is not None:
+            data["protocol"] = protocol
         if sample_rate is not None:
             data["sample_rate"] = sample_rate
         if store is not None:
