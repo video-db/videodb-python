@@ -1,3 +1,5 @@
+import time
+
 from typing import Optional, List, Dict, Any
 
 from videodb._constants import (
@@ -410,6 +412,41 @@ class RTStream:
             f"player_url={self.player_url}, "
             f"ingest_mode={self.ingest_mode}, "
             f"push_url={self.push_url})"
+        )
+
+    def refresh(self) -> "RTStream":
+        """Re-fetch this rtstream's state from the server (in place).
+
+        :return: self
+        :rtype: :class:`RTStream <RTStream>`
+        """
+        data = self._connection.get(path=f"{ApiPath.rtstream}/{self.id}")
+        self.__init__(self._connection, **data)
+        return self
+
+    def wait_until_ready(self, timeout: int = 180, poll_interval: int = 3) -> "RTStream":
+        """Poll until a push destination is provisioned (``push_url`` available).
+
+        Used for ``ingest_mode="push"`` streams, which are provisioned asynchronously.
+
+        :param int timeout: Max seconds to wait (default: 180)
+        :param int poll_interval: Seconds between polls (default: 3)
+        :return: self
+        :rtype: :class:`RTStream <RTStream>`
+        :raises Exception: if provisioning fails
+        :raises TimeoutError: if not ready within ``timeout``
+        """
+        elapsed = 0
+        while elapsed < timeout:
+            if self.push_url:
+                return self
+            if self.status == "failed":
+                raise Exception(f"RTStream {self.id} provisioning failed")
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+            self.refresh()
+        raise TimeoutError(
+            f"Timed out waiting for push destination after {timeout}s (rtstream {self.id})"
         )
 
     def start(self):
