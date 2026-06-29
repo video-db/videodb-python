@@ -180,6 +180,8 @@ class Collection:
         ws_connection_id: str = None,
         ingest_mode: str = "pull",
         protocol: str = None,
+        wait: bool = True,
+        timeout: int = 180,
     ) -> RTStream:
         """Connect to an rtstream.
 
@@ -201,6 +203,9 @@ class Collection:
         :param str ws_connection_id: WebSocket connection ID for receiving events (optional)
         :param str ingest_mode: ``"pull"`` (default) or ``"push"``
         :param str protocol: Push protocol when ``ingest_mode="push"`` (e.g. ``"rtmp"``)
+        :param bool wait: For ``ingest_mode="push"``, block until the destination is
+            provisioned and ``push_url`` is available (default: True). Ignored for pull.
+        :param int timeout: Max seconds to wait for push provisioning (default: 180)
         :return: :class:`RTStream <RTStream>` object
         """
         if not name:
@@ -246,7 +251,14 @@ class Collection:
             path=f"{ApiPath.rtstream}",
             data=data,
         )
-        return RTStream(self._connection, **rtstream_data)
+        rtstream = RTStream(self._connection, **rtstream_data)
+
+        # Push destinations are provisioned asynchronously server-side; poll until
+        # the push URL is available (or the stream fails) before returning.
+        if ingest_mode == "push" and wait:
+            rtstream.wait_until_ready(timeout=timeout)
+
+        return rtstream
 
     def get_rtstream(self, id: str) -> RTStream:
         """Get an rtstream by its ID.
