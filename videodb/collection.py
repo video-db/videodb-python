@@ -485,7 +485,7 @@ class Collection:
             "return_fields",
             "include_clip",
         }
-        unsupported_params = {"index_name", "index_names"}
+        unsupported_params = {"index_name", "index_names", "index_id", "index_ids"}
 
         if args:
             legacy_arg_names = [
@@ -513,7 +513,7 @@ class Collection:
             )
         if has_unsupported:
             raise ValueError(
-                "index_name/index_names are not supported in search(). "
+                "index_name/index_names/index_id/index_ids are not supported in search(). "
                 "Use semantic_search(), query(), or aggregate() for index-specific calls."
             )
 
@@ -559,12 +559,14 @@ class Collection:
         score_threshold: Optional[float] = None,
         filter: Optional[Union[List, Dict]] = None,
         return_fields: Optional[Union[List, Dict, str]] = None,
+        index_ids: Optional[Union[List[str], str]] = None,
     ) -> SearchResult:
         search_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.semantic_search}",
             data={
                 "query": query,
                 "index_names": index_names,
+                "index_ids": index_ids,
                 "top_k": top_k,
                 "score_threshold": score_threshold,
                 "filter": filter,
@@ -575,16 +577,18 @@ class Collection:
 
     def query(
         self,
-        index_name: str,
+        index_name: Optional[str] = None,
         filter: Optional[Union[List, Dict]] = None,
         limit: int = 100,
         return_fields: Optional[Union[List, Dict, str]] = None,
         sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
     ) -> SearchResult:
         query_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.query}",
             data={
                 "index_name": index_name,
+                "index_id": index_id,
                 "filter": filter,
                 "limit": limit,
                 "return_fields": return_fields,
@@ -595,17 +599,19 @@ class Collection:
 
     def aggregate(
         self,
-        index_name: str,
+        index_name: Optional[str] = None,
         filter: Optional[Union[List, Dict]] = None,
         group_by: Optional[str] = None,
         metric: str = "count",
         limit: int = 100,
         sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
     ) -> Union[Dict, List[Dict]]:
         return self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.aggregate}",
             data={
                 "index_name": index_name,
+                "index_id": index_id,
                 "filter": filter,
                 "group_by": group_by,
                 "metric": metric,
