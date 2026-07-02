@@ -481,6 +481,90 @@ class RTStreamUnderstanding:
         )
 
 
+class RTStreamIndex:
+    """RTStreamIndex — a continuous index over an understanding output.
+
+    Produced by :meth:`RTStream.index`. Materializes an understanding's stored
+    output into a searchable index; has its own lifecycle, separate from the
+    understanding.
+
+    :ivar str id: Index id (``idx-...``)
+    :ivar str rtstream_id: ID of the parent RTStream
+    :ivar str name: Index name
+    :ivar str status: ``running`` | ``stopped`` | ``failed``
+    :ivar list use_for: Index capabilities, e.g. ``["semantic"]``
+    :ivar str source_understanding_id: Understanding this index consumes
+    :ivar str output: Analyzer output name being indexed (e.g. ``"scene"``)
+    """
+
+    def __init__(self, _connection, index_id=None, rtstream_id=None, id=None, **kwargs):
+        self._connection = _connection
+        self.id = index_id or id
+        self.rtstream_id = rtstream_id
+        self.name = kwargs.get("name")
+        self.status = kwargs.get("status")
+        self.use_for = kwargs.get("use_for") or ["semantic"]
+        self.source_understanding_id = kwargs.get("source_understanding_id")
+        self.output = kwargs.get("output", "scene")
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamIndex("
+            f"id={self.id}, "
+            f"rtstream_id={self.rtstream_id}, "
+            f"status={self.status}, "
+            f"use_for={self.use_for}, "
+            f"source_understanding_id={self.source_understanding_id})"
+        )
+
+    def refresh(self) -> "RTStreamIndex":
+        """Reload this index from the server."""
+        data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}"
+        )
+        if data:
+            data.setdefault("index_id", self.id)
+            data.setdefault("rtstream_id", self.rtstream_id)
+            self.__init__(self._connection, **data)
+        return self
+
+    def start(self):
+        """Resume materializing new understanding output into the index."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.status}",
+            data={"action": "start"},
+        )
+        self.status = "running"
+
+    def stop(self):
+        """Pause materializing. Existing indexed records remain searchable."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.status}",
+            data={"action": "stop"},
+        )
+        self.status = "stopped"
+
+    def get_records(self, start=None, end=None, page: int = 1, page_size: int = 100):
+        """Get materialized index records.
+
+        :param int start: Start Unix timestamp (optional)
+        :param int end: End Unix timestamp (optional)
+        :param int page: Page number
+        :param int page_size: Records per page
+        :return: Records payload
+        :rtype: dict
+        """
+        params = {"page": page, "page_size": page_size}
+        if start is not None:
+            params["start"] = start
+        if end is not None:
+            params["end"] = end
+        return self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.records}",
+            params=params,
+        )
+
+
 class RTStream:
     """RTStream class to interact with the RTStream
 
@@ -1016,6 +1100,58 @@ class RTStream:
             RTStreamUnderstanding(_connection=self._connection, **item)
             for item in results
         ]
+
+    def index(self, source, name=None, use_for=None) -> "RTStreamIndex":
+        """Materialize an understanding output into a searchable index.
+
+        :param dict source: understanding output descriptor, e.g.
+            ``understanding.outputs["scene"]``
+        :param str name: index name (optional)
+        :param list use_for: capabilities; defaults to ``["semantic"]``
+        :return: The index, :class:`RTStreamIndex <RTStreamIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamIndex`
+        """
+        data = {"source": source}
+        if name is not None:
+            data["name"] = name
+        if use_for is not None:
+            data["use_for"] = use_for
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.indexes}", data=data
+        )
+        if not index_data:
+            return None
+        index_data.setdefault("rtstream_id", self.id)
+        return RTStreamIndex(_connection=self._connection, **index_data)
+
+    def get_index(self, index_id: str) -> "RTStreamIndex":
+        """Get an index by id.
+
+        :param str index_id: ID of the index
+        :return: :class:`RTStreamIndex <RTStreamIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamIndex`
+        """
+        if not index_id:
+            raise ValueError("index_id is required")
+        index_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.indexes}/{index_id}"
+        )
+        if not index_data:
+            return None
+        index_data.setdefault("rtstream_id", self.id)
+        return RTStreamIndex(_connection=self._connection, **index_data)
+
+    def list_indexes(self) -> List["RTStreamIndex"]:
+        """List all indexes on the stream.
+
+        :return: List of indexes
+        :rtype: List[:class:`RTStreamIndex <RTStreamIndex>`]
+        """
+        data = self._connection.get(f"{ApiPath.rtstream}/{self.id}/{ApiPath.indexes}")
+        results = (data or {}).get("indexes") or []
+        for item in results:
+            item.setdefault("rtstream_id", self.id)
+        return [RTStreamIndex(_connection=self._connection, **item) for item in results]
 
     def get_transcript(
         self,
