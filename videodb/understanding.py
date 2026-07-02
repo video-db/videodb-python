@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from videodb._constants import ApiPath
 
 
-UNDERSTANDING_TERMINAL_STATUSES = {"done", "failed", "partial"}
+UNDERSTANDING_TERMINAL_STATUSES = {"done", "failed"}
 ANALYZER_TERMINAL_STATUSES = {"done", "failed", "skipped", "cancelled"}
 
 ANALYZER_TYPE_ALIASES = {
@@ -15,6 +15,10 @@ DEFAULT_ANALYZER_NAMES = {
     "speech_transcription": "transcript",
     "object_detection": "objects",
     "vlm": "scene",
+    "ocr": "text",
+    "brand_detection": "brands",
+    "activity_recognition": "activity",
+    "location_detection": "location",
 }
 
 
@@ -185,7 +189,7 @@ class Understanding:
     ) -> "Understanding":
         """Poll this understanding until it reaches a terminal status.
 
-        Terminal statuses are ``done``, ``failed``, and ``partial``.
+        Terminal statuses are ``done`` and ``failed``.
 
         :param int timeout: Maximum time to wait, in seconds
         :param int poll_interval: Seconds between status checks
