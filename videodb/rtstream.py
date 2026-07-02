@@ -368,6 +368,119 @@ class RTStreamSceneIndex:
         )
 
 
+class RTStreamUnderstanding:
+    """RTStreamUnderstanding class to interact with a continuous understanding job.
+
+    Produced by :meth:`RTStream.understand`. It runs VLM analysis over stream
+    windows and, when ``store=True``, persists the output so it can be indexed
+    later. Understanding is independent of scene indexing.
+
+    :ivar str id: Understanding id (``und-...``)
+    :ivar str rtstream_id: ID of the parent RTStream
+    :ivar str status: Job status (``running`` | ``stopped`` | ``failed``)
+    :ivar bool store: Whether output is persisted for later indexing
+    :ivar dict segmentation: Time segmentation, e.g. ``{"type": "time", "window": "10s"}``
+    :ivar list analyzers: Analyzer specs for this understanding
+    :ivar dict outputs: Named output source descriptors, e.g. ``outputs["scene"]``
+    """
+
+    def __init__(
+        self,
+        _connection,
+        understanding_id: str = None,
+        rtstream_id: str = None,
+        id: str = None,
+        **kwargs,
+    ) -> None:
+        self._connection = _connection
+        self.id = understanding_id or id
+        self.rtstream_id = rtstream_id
+        self.status = kwargs.get("status", None)
+        self.store = kwargs.get("store", True)
+        self.segmentation = kwargs.get("segmentation", {})
+        self.analyzers = kwargs.get("analyzers", [])
+        self.outputs = kwargs.get("outputs", {})
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamUnderstanding("
+            f"id={self.id}, "
+            f"rtstream_id={self.rtstream_id}, "
+            f"status={self.status}, "
+            f"store={self.store}, "
+            f"analyzers={len(self.analyzers)})"
+        )
+
+    def refresh(self) -> "RTStreamUnderstanding":
+        """Reload this understanding from the server.
+
+        :return: This understanding, updated
+        :rtype: :class:`RTStreamUnderstanding <RTStreamUnderstanding>`
+        """
+        data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}"
+        )
+        if data:
+            data.setdefault("understanding_id", self.id)
+            data.setdefault("rtstream_id", self.rtstream_id)
+            self.__init__(self._connection, **data)
+        return self
+
+    def start(self):
+        """Resume processing new stream windows.
+
+        :return: None
+        :rtype: None
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.status}",
+            data={"action": "start"},
+        )
+        self.status = "running"
+
+    def stop(self):
+        """Pause processing new stream windows. Existing records remain available.
+
+        :return: None
+        :rtype: None
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.status}",
+            data={"action": "stop"},
+        )
+        self.status = "stopped"
+
+    def get_records(
+        self,
+        start: float,
+        end: float,
+        output: str = "scene",
+        page: int = 1,
+        page_size: int = 100,
+    ):
+        """Get understanding output records for a time range.
+
+        :param float start: Start Unix timestamp
+        :param float end: End Unix timestamp
+        :param str output: Analyzer output name (default: ``"scene"``)
+        :param int page: Page number (default: 1)
+        :param int page_size: Records per page (default: 100)
+        :return: Records payload with ``records`` and ``next_page``
+        :rtype: dict
+        """
+        params = {
+            "start": start,
+            "end": end,
+            "output": output,
+            "page": page,
+            "page_size": page_size,
+        }
+        return self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.records}",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+
+
 class RTStream:
     """RTStream class to interact with the RTStream
 
@@ -828,6 +941,81 @@ class RTStream:
             name=index_data.get("name"),
             status=index_data.get("status"),
         )
+
+    def understand(
+        self,
+        segmentation: Dict = None,
+        analyzers: List[Dict] = None,
+        store: bool = True,
+        ws_connection_id: str = None,
+    ) -> "RTStreamUnderstanding":
+        """Start a continuous VLM understanding job on the stream.
+
+        Understanding is independent of indexing: it produces VLM output per
+        stream window and (when ``store=True``) persists it so it can be indexed
+        later. Initial support is one ``vlm`` analyzer with time segmentation.
+
+        :param dict segmentation: Time segmentation, e.g. ``{"type": "time", "window": "10s"}``
+        :param list analyzers: Exactly one VLM analyzer spec, e.g.
+            ``[{"type": "vlm", "name": "scene", "sampling": {"frame_count": 5}, "config": {"prompt": "...", "model": "basic"}}]``
+        :param bool store: Persist output for later indexing (default: True)
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :return: The understanding job, :class:`RTStreamUnderstanding <RTStreamUnderstanding>` object
+        :rtype: :class:`videodb.rtstream.RTStreamUnderstanding`
+        """
+        data = {
+            "segmentation": segmentation or {},
+            "analyzers": analyzers or [],
+            "store": store,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        understanding_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.understand}",
+            data=data,
+        )
+        if not understanding_data:
+            return None
+        understanding_data.setdefault("rtstream_id", self.id)
+        return RTStreamUnderstanding(
+            _connection=self._connection, **understanding_data
+        )
+
+    def get_understanding(self, understanding_id: str) -> "RTStreamUnderstanding":
+        """Get an understanding job by id.
+
+        :param str understanding_id: ID of the understanding job
+        :return: The understanding job, :class:`RTStreamUnderstanding <RTStreamUnderstanding>` object
+        :rtype: :class:`videodb.rtstream.RTStreamUnderstanding`
+        """
+        if not understanding_id:
+            raise ValueError("understanding_id is required")
+        understanding_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.understand}/{understanding_id}"
+        )
+        if not understanding_data:
+            return None
+        understanding_data.setdefault("rtstream_id", self.id)
+        return RTStreamUnderstanding(
+            _connection=self._connection, **understanding_data
+        )
+
+    def list_understanding(self) -> List["RTStreamUnderstanding"]:
+        """List all understanding jobs on the stream.
+
+        :return: List of understanding jobs
+        :rtype: List[:class:`RTStreamUnderstanding <RTStreamUnderstanding>`]
+        """
+        data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.understand}"
+        )
+        results = (data or {}).get("understandings") or []
+        for item in results:
+            item.setdefault("rtstream_id", self.id)
+        return [
+            RTStreamUnderstanding(_connection=self._connection, **item)
+            for item in results
+        ]
 
     def get_transcript(
         self,
