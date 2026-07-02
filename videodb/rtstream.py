@@ -564,6 +564,49 @@ class RTStreamIndex:
             params=params,
         )
 
+    def create_alert(self, event_id, callback_url, ws_connection_id=None) -> str:
+        """Attach an event alert to this index.
+
+        :param str event_id: ID of the event
+        :param str callback_url: URL to receive the alert callback
+        :param str ws_connection_id: WebSocket connection ID for real-time alerts (optional)
+        :return: Alert ID
+        :rtype: str
+        """
+        data = {"event_id": event_id, "callback_url": callback_url}
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        alert_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}",
+            data=data,
+        )
+        return (alert_data or {}).get("alert_id")
+
+    def list_alerts(self):
+        """List all alerts on this index.
+
+        :return: List of alerts
+        :rtype: List[dict]
+        """
+        alert_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}"
+        )
+        return (alert_data or {}).get("alerts", [])
+
+    def enable_alert(self, alert_id):
+        """Enable an alert on this index."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"action": "enable"},
+        )
+
+    def disable_alert(self, alert_id):
+        """Disable an alert on this index."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"action": "disable"},
+        )
+
 
 class RTStream:
     """RTStream class to interact with the RTStream
