@@ -7,6 +7,7 @@ from typing import Optional
 from videodb._utils._video import play_stream
 from videodb._constants import (
     VIDEO_DB_API,
+    AgenticStreamRunStatus,
     IndexType,
     SceneExtractionType,
     MediaType,
@@ -22,6 +23,8 @@ from videodb._constants import (
     AudioConfig,
 )
 from videodb.client import Connection
+from videodb.agentic_stream import AgenticStream, AgenticStreamRun
+from videodb.schedule import Schedule
 from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
@@ -33,6 +36,10 @@ logger: logging.Logger = logging.getLogger("videodb")
 
 
 __all__ = [
+    "AgenticStream",
+    "AgenticStreamRun",
+    "AgenticStreamRunStatus",
+    "Schedule",
     "VideodbError",
     "AuthenticationError",
     "InvalidRequestError",

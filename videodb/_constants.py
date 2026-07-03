@@ -97,6 +97,12 @@ class ApiPath:
     record = "record"
     editor = "editor"
     reframe = "reframe"
+    agentic_stream = "agentic_stream"
+    runs = "runs"
+    schedule = "schedule"
+    templates = "templates"
+    events = "events"
+    logs = "logs"
 
 
 class Status:
@@ -108,6 +114,15 @@ class MeetingStatus:
     initializing = "initializing"
     processing = "processing"
     done = "done"
+
+
+class AgenticStreamRunStatus:
+    queued = "queued"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
+    terminal = {"completed", "failed", "cancelled"}
 
 
 class HttpClientDefaultValues:

@@ -19,6 +19,8 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.agentic_stream import AgenticStream
+from videodb.schedule import Schedule
 
 from videodb._upload import (
     upload,
@@ -347,3 +349,120 @@ class Connection(HttpClient):
         meeting = Meeting(self, id=meeting_id, collection_id="default")
         meeting.refresh()
         return meeting
+
+    def create_agentic_stream(
+        self,
+        name: str,
+        template_id: str,
+        prompt: str,
+        sources: Optional[List[str]] = None,
+        max_duration: Optional[int] = None,
+        voice: Optional[str] = None,
+        language: Optional[str] = None,
+        aspect_ratio: Optional[str] = None,
+        captions: Optional[bool] = None,
+        model: Optional[str] = None,
+        callback_url: Optional[str] = None,
+        callback_data: Optional[dict] = None,
+    ) -> AgenticStream:
+        """Create an agentic stream in the default collection.
+
+        Shortcut for ``conn.get_collection().create_agentic_stream(...)``.
+
+        :param str name: Human-readable name for the stream
+        :param str template_id: Template ID from
+            :meth:`Collection.list_agentic_stream_templates() <videodb.collection.Collection.list_agentic_stream_templates>`
+        :param str prompt: Content instructions for the agent
+        :param list sources: (optional) Keywords and/or website URLs for research
+        :param int max_duration: (optional) Target output duration in seconds
+        :param str voice: (optional) TTS voice name for narration
+        :param str language: (optional) Output language
+        :param str aspect_ratio: (optional) "16:9", "9:16", or "1:1"
+        :param bool captions: (optional) Burn captions into the output
+        :param str model: (optional) Quality tier: "basic" or "pro"
+        :param str callback_url: (optional) Default webhook for all runs
+        :param dict callback_data: (optional) Data echoed in webhook payloads
+        :return: The created agentic stream
+        :rtype: :class:`AgenticStream <videodb.agentic_stream.AgenticStream>`
+        """
+        return self.get_collection().create_agentic_stream(
+            name=name,
+            template_id=template_id,
+            prompt=prompt,
+            sources=sources,
+            max_duration=max_duration,
+            voice=voice,
+            language=language,
+            aspect_ratio=aspect_ratio,
+            captions=captions,
+            model=model,
+            callback_url=callback_url,
+            callback_data=callback_data,
+        )
+
+    def create_schedule(
+        self,
+        target: AgenticStream,
+        trigger: str,
+        timezone: Optional[str] = None,
+        callback_url: Optional[str] = None,
+        callback_data: Optional[dict] = None,
+    ) -> Schedule:
+        """Create a recurring schedule that triggers runs of an agentic stream.
+
+        :param AgenticStream target: The agentic stream to trigger
+        :param str trigger: EventBridge cron expression, e.g. ``"0 9 * * ? *"``
+        :param str timezone: (optional) IANA timezone name, default UTC
+        :param str callback_url: (optional) Webhook for each scheduled run
+        :param dict callback_data: (optional) Data echoed in webhook payloads
+        :return: The created schedule
+        :rtype: :class:`Schedule <videodb.schedule.Schedule>`
+        """
+        data = {
+            "target_type": "agentic_stream",
+            "target_id": target.id,
+            "trigger": trigger,
+        }
+        if timezone is not None:
+            data["timezone"] = timezone
+        if callback_url is not None:
+            data["callback_url"] = callback_url
+        if callback_data is not None:
+            data["callback_data"] = callback_data
+        response = self.post(path=f"{ApiPath.schedule}/", data=data)
+        return Schedule(
+            self,
+            id=response.get("id"),
+            **{k: v for k, v in response.items() if k != "id"},
+        )
+
+    def get_schedule(self, schedule_id: str) -> Schedule:
+        """Get a schedule by its ID.
+
+        :param str schedule_id: ID of the schedule
+        :return: The schedule
+        :rtype: :class:`Schedule <videodb.schedule.Schedule>`
+        """
+        response = self.get(path=f"{ApiPath.schedule}/{schedule_id}/")
+        return Schedule(
+            self,
+            id=response.get("id"),
+            **{k: v for k, v in response.items() if k != "id"},
+        )
+
+    def list_schedules(self) -> List[Schedule]:
+        """List all schedules for the authenticated user.
+
+        :return: List of schedules
+        :rtype: List[:class:`Schedule <videodb.schedule.Schedule>`]
+        """
+        response = self.get(path=f"{ApiPath.schedule}/")
+        schedules = (response or {}).get("schedules", [])
+        return [
+            Schedule(
+                self,
+                id=sched.get("id"),
+                **{k: v for k, v in sched.items() if k != "id"},
+            )
+            for sched in schedules
+        ]
