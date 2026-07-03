@@ -236,9 +236,9 @@ class AgenticStream:
         return self
 
     def update(self, **kwargs) -> "AgenticStream":
-        """Update stream fields. template_id cannot be changed.
+        """Update stream fields.
 
-        :param kwargs: Fields to update (name, prompt, sources, max_duration,
+        :param kwargs: Fields to update (name, template_id, prompt, sources, max_duration,
             voice, language, aspect_ratio, captions, model, callback_url,
             callback_data)
         :return: The updated stream instance
