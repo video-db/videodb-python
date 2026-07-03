@@ -141,6 +141,12 @@ class ApiPath:
     token = "token"
     websocket = "websocket"
     export = "export"
+    agentic_stream = "agentic_stream"
+    runs = "runs"
+    schedule = "schedule"
+    templates = "templates"
+    events = "events"
+    logs = "logs"
 
 
 class Status:
@@ -153,6 +159,15 @@ class MeetingStatus:
     processing = "processing"
     joined = "joined"
     done = "done"
+
+
+class AgenticStreamRunStatus:
+    queued = "queued"
+    running = "running"
+    completed = "completed"
+    failed = "failed"
+    cancelled = "cancelled"
+    terminal = {"completed", "failed", "cancelled"}
 
 
 class HttpClientDefaultValues:

@@ -7,6 +7,7 @@ from typing import Optional
 from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     VIDEO_DB_API,
+    AgenticStreamRunStatus,
     IndexType,
     IndexCapability,
     FieldGroup,
@@ -29,6 +30,8 @@ from videodb._constants import (
 from videodb.client import Connection
 from videodb.search import AskResponse, SearchResponse, SearchResult
 from videodb.understanding import Understanding, UnderstandingAnalyzer
+from videodb.agentic_stream import AgenticStream, AgenticStreamRun
+from videodb.schedule import Schedule
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
@@ -45,6 +48,10 @@ logger: logging.Logger = logging.getLogger("videodb")
 
 __all__ = [
     "connect",
+    "AgenticStream",
+    "AgenticStreamRun",
+    "AgenticStreamRunStatus",
+    "Schedule",
     "CaptureSession",
     "WebSocketConnection",
     "CaptureClient",

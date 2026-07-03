@@ -15,6 +15,7 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.meeting import Meeting
+from videodb.agentic_stream import AgenticStream
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
 from videodb.search import AskResponse, SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
@@ -940,3 +941,111 @@ class Collection:
                 )
             )
         return sessions
+
+    def create_agentic_stream(
+        self,
+        name: str,
+        template_id: str,
+        prompt: str,
+        sources: Optional[List[str]] = None,
+        max_duration: Optional[int] = None,
+        voice: Optional[str] = None,
+        language: Optional[str] = None,
+        aspect_ratio: Optional[str] = None,
+        captions: Optional[bool] = None,
+        model: Optional[str] = None,
+        callback_url: Optional[str] = None,
+        callback_data: Optional[dict] = None,
+    ) -> AgenticStream:
+        """Create a persistent agentic stream in this collection.
+
+        :param str name: Human-readable name for the stream
+        :param str template_id: Template ID from
+            :meth:`Connection.list_agentic_stream_templates() <videodb.client.Connection.list_agentic_stream_templates>`
+        :param str prompt: Content instructions for the agent
+        :param list sources: (optional) Keywords and/or website URLs for research
+        :param int max_duration: (optional) Target output duration in seconds
+        :param str voice: (optional) TTS voice name for narration
+        :param str language: (optional) Output language
+        :param str aspect_ratio: (optional) "16:9", "9:16", or "1:1"
+        :param bool captions: (optional) Burn captions into the output
+        :param str model: (optional) Quality tier: "basic" or "pro"
+        :param str callback_url: (optional) Default webhook for all runs
+        :param dict callback_data: (optional) Data echoed in webhook payloads
+        :return: The created agentic stream
+        :rtype: :class:`AgenticStream <videodb.agentic_stream.AgenticStream>`
+        """
+        data = {
+            "name": name,
+            "template_id": template_id,
+            "prompt": prompt,
+            "sources": sources,
+            "max_duration": max_duration,
+            "voice": voice,
+            "language": language,
+            "aspect_ratio": aspect_ratio,
+            "captions": captions,
+            "model": model,
+            "callback_url": callback_url,
+            "callback_data": callback_data,
+        }
+        data = {k: v for k, v in data.items() if v is not None}
+        response = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.agentic_stream}/",
+            data=data,
+        )
+        return AgenticStream(
+            self._connection,
+            id=response.get("id"),
+            collection_id=self.id,
+            **{k: v for k, v in response.items() if k not in ("id", "collection_id")},
+        )
+
+    def get_agentic_stream(self, agentic_stream_id: str) -> AgenticStream:
+        """Get an agentic stream by its ID.
+
+        :param str agentic_stream_id: ID of the agentic stream
+        :return: The agentic stream
+        :rtype: :class:`AgenticStream <videodb.agentic_stream.AgenticStream>`
+        """
+        response = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.agentic_stream}/{agentic_stream_id}/"
+        )
+        return AgenticStream(
+            self._connection,
+            id=response.get("id"),
+            collection_id=self.id,
+            **{k: v for k, v in response.items() if k not in ("id", "collection_id")},
+        )
+
+    def list_agentic_streams(self) -> List[AgenticStream]:
+        """List agentic streams in this collection.
+
+        :return: List of agentic streams
+        :rtype: List[:class:`AgenticStream <videodb.agentic_stream.AgenticStream>`]
+        """
+        response = self._connection.get(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.agentic_stream}/"
+        )
+        streams = (response or {}).get("agentic_streams", [])
+        return [
+            AgenticStream(
+                self._connection,
+                id=stream.get("id"),
+                collection_id=self.id,
+                **{k: v for k, v in stream.items() if k not in ("id", "collection_id")},
+            )
+            for stream in streams
+        ]
+
+    def list_agentic_stream_templates(self) -> List[dict]:
+        """List all available agentic stream templates.
+
+        :return: List of template dicts with id, name, description, github_url,
+            default_max_duration, supported_aspect_ratios, supports_captions
+        :rtype: List[dict]
+        """
+        response = self._connection.get(
+            path=f"{ApiPath.agentic_stream}/{ApiPath.templates}/"
+        )
+        return (response or {}).get("templates", [])
