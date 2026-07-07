@@ -184,15 +184,18 @@ class AskResponse:
 class SearchResponse:
     """Envelope returned by high-level Search v2.
 
-    For ``response_type='shots'``, ``results`` is a :class:`SearchResult`.
+    For ``response_type='shots'`` or ``response_type='deepsearch'``, ``results`` is a :class:`SearchResult`.
     For ``response_type='aggregate'``, ``results`` is the aggregate dict/list returned by the server.
     """
 
     def __init__(self, _connection, **kwargs):
         self._connection = _connection
         self.response_type = kwargs.get("response_type")
+        self.session_id = kwargs.get("session_id")
+        self.waiting_for = kwargs.get("waiting_for") or "none"
+        self.clarification = kwargs.get("clarification")
         raw_results = kwargs.get("results", [])
-        if self.response_type == "shots":
+        if self.response_type in {"shots", "deepsearch"}:
             self.results = SearchResult(_connection, results=raw_results)
             self.shots = self.results.shots
         else:
@@ -203,21 +206,21 @@ class SearchResponse:
         return f"SearchResponse(response_type={self.response_type}, results={self.results})"
 
     def __iter__(self):
-        if self.response_type == "shots":
+        if self.response_type in {"shots", "deepsearch"}:
             return iter(self.results)
         if isinstance(self.results, list):
             return iter(self.results)
         return iter([self.results])
 
     def __len__(self):
-        if self.response_type == "shots":
+        if self.response_type in {"shots", "deepsearch"}:
             return len(self.results)
         if isinstance(self.results, list):
             return len(self.results)
         return 1 if self.results is not None else 0
 
     def __getitem__(self, index):
-        if self.response_type == "shots":
+        if self.response_type in {"shots", "deepsearch"}:
             return self.results[index]
         return self.results[index]
 

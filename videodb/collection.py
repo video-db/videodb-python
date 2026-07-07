@@ -484,6 +484,7 @@ class Collection:
             "mode",
             "return_fields",
             "include_clip",
+            "session_id",
         }
         unsupported_params = {"index_name", "index_names", "index_id", "index_ids"}
 
@@ -506,6 +507,8 @@ class Collection:
         has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
         has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
 
+        if kwargs.get("deepsearch_config") is not None:
+            raise ValueError("deepsearch_config is internal and cannot be passed to search().")
         if has_old and (has_new or has_unsupported):
             raise ValueError(
                 "Cannot mix legacy search params with new search params. "
