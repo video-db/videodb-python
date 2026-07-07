@@ -203,6 +203,15 @@ class SearchResponse:
             self.shots = []
 
     def __repr__(self) -> str:
+        if self.response_type == "deepsearch":
+            return (
+                "SearchResponse("
+                f"response_type={self.response_type}, "
+                f"session_id={self.session_id!r}, "
+                f"waiting_for={self.waiting_for!r}, "
+                f"clarification={self.clarification!r}, "
+                f"results={self.results})"
+            )
         return f"SearchResponse(response_type={self.response_type}, results={self.results})"
 
     def __iter__(self):
