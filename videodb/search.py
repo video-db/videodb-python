@@ -194,6 +194,7 @@ class SearchResponse:
         self.session_id = kwargs.get("session_id")
         self.waiting_for = kwargs.get("waiting_for") or "none"
         self.clarification = kwargs.get("clarification")
+        self.trace = kwargs.get("trace")
         raw_results = kwargs.get("results", [])
         if self.response_type in {"shots", "deepsearch"}:
             self.results = SearchResult(_connection, results=raw_results)

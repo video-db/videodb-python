@@ -84,7 +84,13 @@ class Video:
         if name is not None:
             self.name = response_data.get("name", name)
 
-    def search(self, query: str, *args, **kwargs) -> Union[SearchResponse, SearchResult]:
+    def search(
+        self,
+        query: str,
+        *args,
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Union[SearchResponse, SearchResult]:
         """Search this video.
 
         New search is used by default. Calls that use legacy-shaped parameters are
@@ -107,8 +113,12 @@ class Video:
             "return_fields",
             "include_clip",
             "session_id",
+            "config",
         }
         unsupported_params = {"index_name", "index_names", "index_id", "index_ids"}
+
+        if config is not None:
+            kwargs["config"] = config
 
         if args:
             legacy_arg_names = [
