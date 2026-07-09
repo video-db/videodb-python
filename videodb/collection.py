@@ -462,7 +462,13 @@ class Collection:
         if dub_data:
             return Video(self._connection, **dub_data)
 
-    def search(self, query: str, *args, **kwargs) -> Union[SearchResponse, SearchResult, RTStreamSearchResult]:
+    def search(
+        self,
+        query: str,
+        *args,
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Union[SearchResponse, SearchResult, RTStreamSearchResult]:
         """Search the collection.
 
         New search is used by default. Calls that use legacy-shaped parameters are
@@ -485,8 +491,12 @@ class Collection:
             "return_fields",
             "include_clip",
             "session_id",
+            "config",
         }
         unsupported_params = {"index_name", "index_names", "index_id", "index_ids"}
+
+        if config is not None:
+            kwargs["config"] = config
 
         if args:
             legacy_arg_names = [
