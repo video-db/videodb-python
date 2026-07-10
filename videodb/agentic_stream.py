@@ -208,6 +208,7 @@ class AgenticStream:
         self.language = data.get("language")
         self.aspect_ratio = data.get("aspect_ratio")
         self.captions = data.get("captions")
+        self.caption_style = data.get("caption_style")
         self.model = data.get("model")
         self.callback_url = data.get("callback_url")
         self.callback_data = data.get("callback_data")
@@ -239,7 +240,7 @@ class AgenticStream:
         """Update stream fields.
 
         :param kwargs: Fields to update (name, template_id, prompt, sources, max_duration,
-            voice, language, aspect_ratio, captions, model, callback_url,
+            voice, language, aspect_ratio, captions, caption_style, model, callback_url,
             callback_data)
         :return: The updated stream instance
         :rtype: AgenticStream
