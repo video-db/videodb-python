@@ -591,6 +591,7 @@ class Collection:
         language: Optional[str] = None,
         aspect_ratio: Optional[str] = None,
         captions: Optional[bool] = None,
+        caption_style: Optional[dict] = None,
         model: Optional[str] = None,
         callback_url: Optional[str] = None,
         callback_data: Optional[dict] = None,
@@ -607,6 +608,8 @@ class Collection:
         :param str language: (optional) Output language
         :param str aspect_ratio: (optional) "16:9", "9:16", or "1:1"
         :param bool captions: (optional) Burn captions into the output
+        :param dict caption_style: (optional) Caption style recipe
+            (mode/font/size/colors/position); implies captions=True
         :param str model: (optional) Quality tier: "basic" or "pro"
         :param str callback_url: (optional) Default webhook for all runs
         :param dict callback_data: (optional) Data echoed in webhook payloads
@@ -623,6 +626,7 @@ class Collection:
             "language": language,
             "aspect_ratio": aspect_ratio,
             "captions": captions,
+            "caption_style": caption_style,
             "model": model,
             "callback_url": callback_url,
             "callback_data": callback_data,
