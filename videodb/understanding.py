@@ -106,6 +106,27 @@ class UnderstandingAnalyzer:
             raise ValueError("Analyzer id or name is required")
         return self.understanding.get_analyzer_output(identifier)
 
+    def to_index_source(self) -> Dict:
+        """Serialize this analyzer as an index ``source`` reference.
+
+        Sends only identifiers — the server re-fetches the analyzer's output from its
+        own store, so scenes never round-trip through the client:
+
+            for analyzer in understanding.list_analyzers():
+                if analyzer.is_successful:
+                    video.index(name=analyzer.name, source=analyzer)
+
+        :raises ValueError: If the analyzer has no id or its understanding id is unknown
+        """
+        understanding_id = getattr(self.understanding, "id", None)
+        if not understanding_id or not self.id:
+            raise ValueError("analyzer source requires understanding id and analyzer id")
+        # ids + type — the server's analyzer record stays the source of truth for the
+            "understanding_id": understanding_id,
+            "analyzer_id": self.id,
+            "analyzer_type": self.type,
+        }
+
 
 class Understanding:
     """A video understanding run.

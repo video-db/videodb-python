@@ -995,77 +995,42 @@ class Video:
         )
 
     @staticmethod
-    def _format_index_source(source: Union[object, Dict, List]) -> Dict:
+    def _format_index_source(source: Union[object, Dict]) -> Dict:
         """Format an index *source* into the request payload.
 
-        The ``source`` identifies where the index data comes from. A single
-        artifact reference is ambiguous on its own, since the same ``extract_type``
-        (e.g. ``"scene"``) can be produced by many understanding runs, so an
-        understanding source must carry the ``understanding_id`` of the run that
-        produced it.
+        Exactly two source kinds are supported:
 
-        Accepts:
-          - an understanding artifact object exposing ``to_index_source()``
-            (forward-compatible with the future ``understand()`` outputs)
-          - an analyzer output envelope (``{name, type, status, scenes}`` from
-            ``get_analyzer(...).get_output()``) -> understanding or inline source
-          - a dict that already carries a source ``type`` (``"understanding"`` or
-            ``"inline"``), passed through as-is
-          - a dict with ``understanding_id`` (normalized to an understanding source)
-          - a list of user-provided temporal records (wrapped as an inline source)
+          - an :class:`UnderstandingAnalyzer <videodb.understanding.UnderstandingAnalyzer>`
+            (anything exposing ``to_index_source()``) — serialized as a light reference
+            ``{understanding_id, analyzer_id, ...}``; the server re-fetches the analyzer
+            output from its own store, so scenes never round-trip through the client
+          - a dict carrying either ``scenes`` (user-provided temporal records) or an
+            ``understanding_id`` reference (optionally with ``analyzer_id`` /
+            ``analyzer_type``), passed through as-is
 
-        :param source: The understanding artifact, source dict, or temporal records
-        :raises ValueError: If the source type is unsupported or empty
+        :param source: The analyzer object or source dict
+        :raises ValueError: If the source is missing or of an unsupported type
         :return: The serialized ``source`` payload
         :rtype: dict
         """
-        # Valid source-dispatch types (NOT analyzer/node types like "object_detection").
-        _SOURCE_TYPES = {"understanding", "inline"}
-
         if source is None:
             raise ValueError("source is required")
 
-        # Understanding artifact object (forward-compatible duck typing).
+        # Analyzer (or any object that knows how to reference itself).
         if hasattr(source, "to_index_source"):
             return source.to_index_source()
 
-        # User-provided temporal records -> inline source.
-        if isinstance(source, list):
-            return {"type": "inline", "data": source}
-
         if isinstance(source, dict):
-            # An analyzer output envelope carries `scenes` and a `type` that is an
-            # analyzer/node type (e.g. "object_detection"), which must NOT be sent as a
-            # source-dispatch type. Translate it: prefer an understanding reference when
-            # an understanding_id is known, else send its scenes as inline records.
-            if "scenes" in source and source.get("type") not in _SOURCE_TYPES:
-                understanding_id = source.get("understanding_id") or source.get("understanding")
-                if understanding_id:
-                    return {
-                        "type": "understanding",
-                        "understanding_id": understanding_id,
-                        "extract_type": source.get("name") or source.get("type"),
-                    }
-                # Pass the full analyzer envelope through so the server can route it to
-                # the correct typed indexer (e.g. object_detection → label/score columns).
-                # Falling back to bare inline scenes loses the type context and causes the
-                # server to treat every scene's data blob as a generic custom record.
+            if isinstance(source.get("scenes"), list) or source.get("understanding_id"):
                 return source
-            # Already a fully-formed source dict (understanding/inline).
-            if source.get("type") in _SOURCE_TYPES:
-                return source
-            # Understanding artifact reference.
-            if source.get("understanding_id"):
-                return {
-                    "type": "understanding",
-                    "understanding_id": source["understanding_id"],
-                    "extract_type": source.get("extract_type") or source.get("name"),
-                }
-            # Otherwise treat the dict as a single inline temporal record.
-            return {"type": "inline", "data": [source]}
+            raise ValueError(
+                "source dict must carry 'scenes' (temporal records) or an "
+                "'understanding_id' reference"
+            )
 
         raise ValueError(
-            "source must be an understanding artifact, a source dict, or a list of records"
+            "source must be an analyzer object or a dict with 'scenes' or "
+            "'understanding_id' — got " + type(source).__name__
         )
 
     def _format_index(self, index_data: dict) -> Index:
@@ -1093,8 +1058,9 @@ class Video:
         index that declares retrieval capabilities (``use_for``) and field-level
         indexing configuration (``fields``).
 
-        :param source: The understanding artifact, an artifact-reference dict, or a
-            list of user-provided temporal record dicts to index
+        :param source: An :class:`UnderstandingAnalyzer` object (indexed by reference —
+            scenes never leave the server), or a dict carrying ``scenes`` (temporal
+            records) or an ``understanding_id`` reference
         :param str name: (optional) User-facing index name. Defaults to the
             artifact/source name on the server.
         :param list use_for: (optional) Retrieval capabilities to enable, any of
