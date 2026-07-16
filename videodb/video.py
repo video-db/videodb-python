@@ -1007,8 +1007,9 @@ class Video:
           - a dict carrying either ``scenes`` (user-provided temporal records) or an
             ``understanding_id`` reference (optionally with ``analyzer_id`` /
             ``analyzer_type``), passed through as-is
+          - a bare list of temporal record dicts — sugar for ``{"scenes": [...]}``
 
-        :param source: The analyzer object or source dict
+        :param source: The analyzer object, source dict, or list of temporal records
         :raises ValueError: If the source is missing or of an unsupported type
         :return: The serialized ``source`` payload
         :rtype: dict
@@ -1020,6 +1021,10 @@ class Video:
         if hasattr(source, "to_index_source"):
             return source.to_index_source()
 
+        # A bare list can only mean temporal records — canonicalize to the dict form.
+        if isinstance(source, list):
+            return {"scenes": source}
+
         if isinstance(source, dict):
             if isinstance(source.get("scenes"), list) or source.get("understanding_id"):
                 return source
@@ -1029,8 +1034,9 @@ class Video:
             )
 
         raise ValueError(
-            "source must be an analyzer object or a dict with 'scenes' or "
-            "'understanding_id' — got " + type(source).__name__
+            "source must be an analyzer object, a dict with 'scenes' or "
+            "'understanding_id', or a list of temporal records — got "
+            + type(source).__name__
         )
 
     def _format_index(self, index_data: dict) -> Index:
