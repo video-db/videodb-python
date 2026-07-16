@@ -122,6 +122,7 @@ class UnderstandingAnalyzer:
         if not understanding_id or not self.id:
             raise ValueError("analyzer source requires understanding id and analyzer id")
         # ids + type — the server's analyzer record stays the source of truth for the
+        return {
             "understanding_id": understanding_id,
             "analyzer_id": self.id,
             "analyzer_type": self.type,
