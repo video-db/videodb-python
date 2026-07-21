@@ -64,12 +64,14 @@ class Scene:
         prompt: Optional[str] = None,
         model_name: Optional[str] = None,
         model_config: Optional[Dict] = None,
+        sandbox_id: Optional[str] = None,
     ) -> None:
         """Describe the scene.
 
         :param str prompt: (optional) The prompt to use for the description
         :param str model_name: (optional) The model to use for the description
         :param dict model_config: (optional) The model configuration for the description
+        :param str sandbox_id: (optional) ID of the sandbox to route the job to
         :return: The description of the scene
         :rtype: str
         """
@@ -81,6 +83,7 @@ class Scene:
                 "prompt": prompt,
                 "model_name": model_name,
                 "model_config": model_config,
+                "sandbox_id": sandbox_id,
             },
         )
         self.description = description_data.get("description", None)
