@@ -1,6 +1,11 @@
+import time
+
 from typing import List, Optional
 
 from videodb._constants import ApiPath
+
+
+INDEX_TERMINAL_STATUSES = {"ready", "failed"}
 
 
 class FieldSchema:
@@ -140,22 +145,27 @@ class Index:
         self._connection = _connection
         self.video_id = video_id
         self.collection_id = collection_id
-        self.index_id = kwargs.get("index_id")
-        self.name = kwargs.get("name")
-        self.status = kwargs.get("status")
-        self.error = kwargs.get("error")  # failure reason when status == "failed"
-        self.use_for = kwargs.get("use_for", [])
-        self.source = kwargs.get("source")
-        self.record_count = kwargs.get("record_count")
-        self.fields = kwargs.get("fields", {})
+        self.update_from_response(kwargs)
+
+    def update_from_response(self, data: dict) -> "Index":
+        data = data or {}
+        self.index_id = data.get("index_id") or getattr(self, "index_id", None)
+        self.name = data.get("name")
+        self.status = data.get("status")
+        self.error = data.get("error")  # failure reason when status == "failed"
+        self.use_for = data.get("use_for", [])
+        self.source = data.get("source")
+        self.record_count = data.get("record_count")
+        self.fields = data.get("fields", {})
         self.field_schema = {
             field: FieldSchema(
                 type=schema.get("type"),
                 groups=schema.get("groups"),
                 operators=schema.get("operators"),
             )
-            for field, schema in (kwargs.get("field_schema") or {}).items()
+            for field, schema in (data.get("field_schema") or {}).items()
         }
+        return self
 
     def __repr__(self) -> str:
         return (
@@ -171,6 +181,49 @@ class Index:
 
     def __getitem__(self, key):
         return self.__dict__[key]
+
+    @property
+    def is_complete(self) -> bool:
+        """Return True when the index build is in a terminal status."""
+        return self.status in INDEX_TERMINAL_STATUSES
+
+    @property
+    def is_successful(self) -> bool:
+        """Return True when the index build completed successfully."""
+        return self.status == "ready"
+
+    def refresh(self) -> "Index":
+        """Refresh the index manifest and build status from the API."""
+        data = self._connection.get(
+            path=f"{ApiPath.video}/{self.video_id}/{ApiPath.indexes}/{self.index_id}",
+            params={"collection_id": self.collection_id}
+            if self.collection_id
+            else None,
+        )
+        return self.update_from_response(data)
+
+    def wait_until_complete(
+        self,
+        timeout: int = 1800,
+        poll_interval: int = 10,
+    ) -> "Index":
+        """Poll this index until it reaches a terminal status.
+
+        Terminal statuses are ``ready`` and ``failed``.
+
+        :param int timeout: Maximum time to wait, in seconds
+        :param int poll_interval: Seconds between status checks
+        :raises TimeoutError: If the build does not complete before timeout
+        :return: This index with refreshed status
+        """
+        deadline = time.time() + timeout
+        while True:
+            self.refresh()
+            if self.is_complete:
+                return self
+            if time.time() >= deadline:
+                raise TimeoutError(f"Index {self.index_id} did not complete within {timeout}s")
+            time.sleep(poll_interval)
 
     def records(self, limit: int = 20, cursor: Optional[str] = None) -> RecordPage:
         """Preview the records stored in the index.
