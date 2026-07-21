@@ -160,7 +160,6 @@ class Video:
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.search}/v2",
             data=payload,
-            show_progress=True,
         )
         return SearchResponse(self._connection, **search_data)
 
@@ -179,7 +178,6 @@ class Video:
                 "mode": mode,
                 "include_sources": include_sources,
             },
-            show_progress=True,
         )
         return AskResponse(self._connection, **ask_data)
 
