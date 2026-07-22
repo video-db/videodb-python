@@ -1,11 +1,12 @@
 import time
 from typing import Any, Dict, List, Optional
 
-from videodb._constants import ApiPath
+from videodb._constants import (
+    ApiPath,
+    ANALYZER_TERMINAL_STATUSES,
+    UNDERSTANDING_TERMINAL_STATUSES,
+)
 
-
-UNDERSTANDING_TERMINAL_STATUSES = {"done", "failed"}
-ANALYZER_TERMINAL_STATUSES = {"done", "failed", "skipped", "cancelled"}
 
 ANALYZER_TYPE_ALIASES = {
     "spoken_words": "speech_transcription",
