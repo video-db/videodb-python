@@ -1915,14 +1915,6 @@ paths:
                 aspect_ratio:
                   type: string
                   example: "16:9"
-                model_name:
-                  type: string
-                  description: Use `flux` for FLUX self-inference image generation.
-                  example: "flux"
-                config:
-                  type: object
-                  description: Model configuration. For FLUX supports size, num_inference_steps, guidance_scale, negative_prompt, and seed.
-                  additionalProperties: true
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
@@ -1991,32 +1983,16 @@ paths:
             schema:
               type: object
               required:
+                - prompt
                 - audio_type
               properties:
                 prompt:
                   type: string
-                  description: Prompt for music or sound effect generation.
                   example: "Generate upbeat background music"
-                text:
-                  type: string
-                  description: Text to convert to speech when `audio_type` is `voice`.
-                  example: "Hello, welcome to VideoDB."
                 audio_type:
                   type: string
-                  enum: [voice, sound_effect, music]
-                  example: "voice"
-                voice_name:
-                  type: string
-                  description: Voice name for hosted text-to-speech.
-                  example: "Default"
-                model_name:
-                  type: string
-                  description: Use `omnivoice` for OmniVoice self-inference text-to-speech.
-                  example: "omnivoice"
-                config:
-                  type: object
-                  description: Voice configuration. For OmniVoice supports instructions, ref_audio, ref_text, response_format, speed, language, and max_new_tokens.
-                  additionalProperties: true
+                  enum: [speech, sound_effect, music]
+                  example: "music"
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
@@ -2027,39 +2003,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsyncResponse'
-
-  /job/{job_id}:
-    get:
-      summary: Get self-inference generation job status
-      security:
-        - ApiKeyAuth: []
-      parameters:
-        - name: job_id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "550e8400-e29b-41d4-a716-446655440000"
-      responses:
-        '200':
-          description: Generation job status or final generated asset
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  status:
-                    type: string
-                    enum: [processing, done, failed]
-                  data:
-                    type: object
-                    additionalProperties: true
-                  message:
-                    type: string
-        '404':
-          description: Job not found
 
   /collection/{collection_id}/generate/text/:
     post:
@@ -2079,45 +2022,27 @@ paths:
           application/json:
             schema:
               type: object
-              description: Provide either `prompt` for inline text or `prompt_url` for a previously uploaded prompt file.
+              required:
+                - prompt
               properties:
                 prompt:
                   type: string
-                  description: Inline prompt text. Use for smaller prompts.
                   example: "Summarize the content of this video"
-                prompt_url:
-                  type: string
-                  description: URL to a previously uploaded plain-text prompt file. Use for larger prompts.
-                  example: "https://storage.googleapis.com/.../generate_text_prompt_123abc.txt"
                 video_id:
                   type: string
                   example: "m-12345"
                 model_name:
                   type: string
-                  description: Hosted tier (`mini`, `basic`, `pro`, `ultra`) or self-hosted sandbox model name.
-                  example: "Qwen/Qwen3.5-27B"
-                sandbox_id:
-                  type: string
-                  description: Sandbox ID to use when `model_name` is a self-hosted model.
-                  example: "bx-123abc"
+                  example: "gpt-4"
                 max_tokens:
                   type: integer
                   example: 500
                 temperature:
                   type: number
                   example: 0.7
-                model_config:
-                  type: object
-                  description: Additional self-hosted model configuration.
-                  additionalProperties: true
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
-              oneOf:
-                - required:
-                    - prompt
-                - required:
-                    - prompt_url
       responses:
         '200':
           description: Text generation started or completed
