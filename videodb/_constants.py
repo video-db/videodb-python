@@ -147,6 +147,11 @@ class Status:
     in_progress = "in progress"
 
 
+INDEX_TERMINAL_STATUSES = {"ready", "failed"}
+UNDERSTANDING_TERMINAL_STATUSES = {"done", "failed"}
+ANALYZER_TERMINAL_STATUSES = {"done", "failed", "skipped", "cancelled"}
+
+
 class MeetingStatus:
     initializing = "initializing"
     processing = "processing"
