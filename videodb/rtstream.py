@@ -235,6 +235,7 @@ class RTStreamSceneIndex:
     :ivar str prompt: Prompt for scene extraction
     :ivar str name: Name of the scene index
     :ivar str status: Status of the scene index
+    :ivar str sandbox_id: Sandbox ID used for self-hosted inference
     """
 
     def __init__(
@@ -248,6 +249,7 @@ class RTStreamSceneIndex:
         self.prompt = kwargs.get("prompt", None)
         self.name = kwargs.get("name", None)
         self.status = kwargs.get("status", None)
+        self.sandbox_id = kwargs.get("sandbox_id", None)
 
     def __repr__(self) -> str:
         return (
@@ -258,7 +260,8 @@ class RTStreamSceneIndex:
             f"extraction_config={self.extraction_config}, "
             f"prompt={self.prompt}, "
             f"name={self.name}, "
-            f"status={self.status})"
+            f"status={self.status}, "
+            f"sandbox_id={self.sandbox_id})"
         )
 
     def get_scenes(self, start: int = None, end: int = None, page=1, page_size=100):
@@ -571,6 +574,7 @@ class RTStream:
         model_config={},
         name=None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index scenes from the rtstream.
 
@@ -581,6 +585,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the scene index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -594,6 +599,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -610,6 +617,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def index_spoken_words(
@@ -621,6 +629,7 @@ class RTStream:
         model_config: dict = {},
         name: str = None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index spoken words from the rtstream transcript.
 
@@ -632,6 +641,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the spoken words index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -650,6 +660,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -666,6 +678,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def index_audio(
@@ -676,6 +689,7 @@ class RTStream:
         model_config: dict = {},
         name: str = None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index audio from the rtstream transcript.
 
@@ -687,6 +701,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the audio index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -708,6 +723,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -724,6 +741,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def index_visuals(
@@ -734,6 +752,7 @@ class RTStream:
         model_config: dict = {},
         name: str = None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index visuals (scenes) from the rtstream.
 
@@ -746,6 +765,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the visual index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -767,6 +787,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -783,6 +805,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def list_scene_indexes(self):
@@ -804,6 +827,7 @@ class RTStream:
                 prompt=index.get("prompt"),
                 name=index.get("name"),
                 status=index.get("status"),
+                sandbox_id=index.get("sandbox_id"),
             )
             for index in index_data.get("scene_indexes", [])
         ]
@@ -827,6 +851,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def get_transcript(

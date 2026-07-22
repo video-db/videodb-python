@@ -15,6 +15,8 @@ from videodb.image import Image, Frame
 from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
+from videodb.face import IndexResult
+from videodb.understanding import UnderstandingResult
 
 _VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
 
@@ -528,6 +530,7 @@ class Video:
         name: Optional[str] = None,
         scenes: Optional[List[Scene]] = None,
         callback_url: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index the scenes of the video.
 
@@ -554,6 +557,7 @@ class Video:
         :param str name: (optional) The name of the scene index
         :param list[Scene] scenes: (optional) The scenes to be indexed, List of :class:`Scene <Scene>` objects
         :param str callback_url: (optional) The callback url
+        :param str sandbox_id: (optional) ID of the sandbox to route the job to
         :raises InvalidRequestError: If the index fails or index already exists
         :return: The scene index id
         :rtype: str
@@ -570,6 +574,7 @@ class Video:
                 "name": name,
                 "scenes": [scene.to_json() for scene in scenes] if scenes else None,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -584,6 +589,7 @@ class Video:
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index visuals (scenes) from the video.
 
@@ -597,6 +603,7 @@ class Video:
         :param dict model_config: Configuration for the model
         :param str name: Name of the visual index
         :param str callback_url: URL to receive the callback (optional)
+        :param str sandbox_id: ID of the sandbox to route the job to (optional)
         :return: The scene index id
         :rtype: str
         """
@@ -629,6 +636,7 @@ class Video:
                 "model_config": model_config or {},
                 "name": name,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -952,3 +960,214 @@ class Video:
 
         download_name = name or self.name or f"video_{self.id}"
         return self._connection.download(self.stream_url, download_name)
+
+    # ── Generic Index ──────────────────────────────────────────────────
+
+    def index(
+        self,
+        source=None,
+        config: Optional[Dict] = None,
+        use_for: Optional[List[str]] = None,
+        name: Optional[str] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional[str]:
+        """Create an index on this video.
+
+        Returns the index_id immediately. Use ``get_index(id)`` to poll
+        for the result.
+
+        :param source: Source data — an :class:`UnderstandingResult` object
+            (calls ``to_source_dict()`` automatically), or a raw dict
+        :param dict config: Configuration for the index
+        :param list use_for: What this index is used for (e.g. ["search", "query"])
+        :param str name: Name for the index
+        :param str callback_url: URL to receive callback when done (optional)
+        :return: index_id string
+        :rtype: Optional[str]
+        """
+        data = {}
+        if source is not None:
+            if hasattr(source, "to_source_dict"):
+                data["source"] = source.to_source_dict()
+            elif isinstance(source, dict):
+                data["source"] = source
+        if config is not None:
+            data["config"] = config
+        if use_for is not None:
+            data["use_for"] = use_for
+        if name is not None:
+            data["name"] = name
+        if callback_url is not None:
+            data["callback_url"] = callback_url
+
+        response = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
+            data=data,
+            wait=False,
+        )
+        if not response:
+            return None
+        return response.get("index_id")
+
+    def get_index(
+        self,
+        index_id: str,
+        max_poll_time: Optional[int] = None,
+        poll_interval: Optional[int] = None,
+    ) -> Optional[IndexResult]:
+        """Get an index by its ID.
+
+        :param str index_id: The index ID
+        :param int max_poll_time: Max seconds to poll if still processing (default: 500)
+        :param int poll_interval: Seconds between polls (default: 5)
+        :return: :class:`IndexResult <IndexResult>` object
+        :rtype: :class:`videodb.face.IndexResult`
+        """
+        poll_kwargs = {}
+        if max_poll_time is not None:
+            poll_kwargs["max_poll_time"] = max_poll_time
+        if poll_interval is not None:
+            poll_kwargs["poll_interval"] = poll_interval
+        response = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
+            **poll_kwargs,
+        )
+        if not response:
+            return None
+        return IndexResult(
+            _connection=self._connection,
+            video_id=self.id,
+            **response,
+        )
+
+    def list_indexes(self) -> List[IndexResult]:
+        """List all indexes for this video.
+
+        :return: List of :class:`IndexResult <IndexResult>` objects
+        :rtype: List[:class:`videodb.face.IndexResult`]
+        """
+        response = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
+        )
+        if not response:
+            return []
+        return [
+            IndexResult(_connection=self._connection, video_id=self.id, **idx)
+            for idx in response.get("indexes", [])
+        ]
+
+    def delete_index(self, index_id: str) -> None:
+        """Delete an index.
+
+        :param str index_id: The index ID to delete
+        """
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
+        )
+
+    # ── Understanding ──────────────────────────────────────────────────
+
+    def understand(
+        self,
+        extract: list,
+        segmentation: Optional[dict] = None,
+        sampling: Optional[dict] = None,
+        transform: Optional[dict] = None,
+        config: Optional[dict] = None,
+        store: bool = False,
+        callback_url: Optional[str] = None,
+    ) -> Optional[str]:
+        """Launch understanding (detection) on the video.
+
+        Returns the understanding_id immediately. Use
+        ``get_understanding(id)`` to poll for the result.
+
+        :param list extract: What to extract, e.g. ["faces"]
+        :param dict segmentation: Segmentation config, e.g. {"type": "time", "window": "1s"}
+        :param dict sampling: Sampling config, e.g. {"frame_count": 2}
+        :param dict transform: Transform config, e.g. {"frame_size": "480p"}
+        :param dict config: Per-extract-type config, e.g.
+            ``{"faces": {"confidence_threshold": 0.6, "min_face_size": 30}}``
+        :param bool store: Whether to persist the understanding result
+        :param str callback_url: URL to receive callback when done (optional)
+        :return: understanding_id string
+        :rtype: Optional[str]
+        """
+        data = {
+            "extract": extract,
+            "segmentation": segmentation or {"type": "time", "window": "1s"},
+            "sampling": sampling or {"frame_count": 2},
+            "store": store,
+        }
+        if transform:
+            data["transform"] = transform
+        if config:
+            data["config"] = config
+        if callback_url:
+            data["callback_url"] = callback_url
+
+        response = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}",
+            data=data,
+            wait=False,
+        )
+        if not response:
+            return None
+        return response.get("understanding_id")
+
+    def get_understanding(
+        self,
+        understanding_id: str,
+        max_poll_time: Optional[int] = None,
+        poll_interval: Optional[int] = None,
+    ) -> Optional[UnderstandingResult]:
+        """Fetch a stored understanding result.
+
+        :param str understanding_id: The understanding result ID
+        :param int max_poll_time: Max seconds to poll if still processing (default: 500)
+        :param int poll_interval: Seconds between polls (default: 5)
+        :return: :class:`UnderstandingResult <UnderstandingResult>` object
+        :rtype: :class:`videodb.understanding.UnderstandingResult`
+        """
+        poll_kwargs = {}
+        if max_poll_time is not None:
+            poll_kwargs["max_poll_time"] = max_poll_time
+        if poll_interval is not None:
+            poll_kwargs["poll_interval"] = poll_interval
+        response = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}",
+            **poll_kwargs,
+        )
+        if not response:
+            return None
+        return UnderstandingResult(_connection=self._connection, **response)
+
+    def list_understanding(self, extract: Optional[list] = None) -> list:
+        """List understanding results for this video.
+
+        :param list extract: Filter by extract type, e.g. ["faces"]
+        :return: List of :class:`UnderstandingResult <UnderstandingResult>` summaries
+        :rtype: list
+        """
+        params = {}
+        if extract:
+            params["extract"] = ",".join(extract) if isinstance(extract, list) else extract
+        response = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}",
+            params=params,
+        )
+        if not response:
+            return []
+        return [
+            UnderstandingResult(_connection=self._connection, **r)
+            for r in response.get("understanding_results", [])
+        ]
+
+    def delete_understanding(self, understanding_id: str) -> None:
+        """Delete a stored understanding result.
+
+        :param str understanding_id: The understanding result ID
+        """
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}",
+        )
