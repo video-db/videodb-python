@@ -17,7 +17,15 @@ from videodb.image import Image
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
-from videodb.search import AskResponse, SearchFactory, SearchResponse, SearchResult, warn_legacy_search_once
+from videodb.search import (
+    AskResponse,
+    SearchFactory,
+    SearchResponse,
+    SearchResult,
+    warn_explicit_legacy_search_once,
+    warn_legacy_search_once,
+    warn_response_warnings_once,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -493,7 +501,7 @@ class Collection:
             "session_id",
             "config",
         }
-        unsupported_params = {"index_name", "index_names", "index_id", "index_ids"}
+        unsupported_params = {"index_name", "index_names", "index_ids"}
 
         if config is not None:
             kwargs["config"] = config
@@ -518,21 +526,23 @@ class Collection:
         has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
 
         if kwargs.get("deepsearch_config") is not None:
-            raise ValueError("deepsearch_config is internal and cannot be passed to search().")
+            raise ValueError(
+                "deepsearch_config is not a public search() option. Use mode='deepsearch', top_k, session_id, and return_fields for DeepSearch requests."
+            )
         if has_old and (has_new or has_unsupported):
             raise ValueError(
-                "Cannot mix legacy search params with new search params. "
-                "Use search(...) for new search or legacy_search(...) for legacy search."
+                "Cannot mix legacy search parameters with Search V2 parameters. "
+                "Use legacy_search(...) for older indexes, or remove legacy parameters and use Search V2 search(...)."
             )
         if has_unsupported:
             raise ValueError(
-                "index_name/index_names/index_id/index_ids are not supported in search(). "
-                "Use semantic_search(), query(), or aggregate() for index-specific calls."
+                "search() chooses indexes automatically and does not accept index selectors. "
+                "Use semantic_search() for semantic index selection, query() for structured filtering, or aggregate() for counts and facets."
             )
 
         if has_old:
             warn_legacy_search_once()
-            return self.legacy_search(query=query, **kwargs)
+            return self.legacy_search(query=query, _skip_warning=True, **kwargs)
 
         return self._new_search(query=query, **kwargs)
 
@@ -618,7 +628,7 @@ class Collection:
         sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
         index_id: Optional[str] = None,
     ) -> Union[Dict, List[Dict]]:
-        return self._connection.post(
+        aggregate_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.aggregate}",
             data={
                 "index_name": index_name,
@@ -630,6 +640,9 @@ class Collection:
                 "sort": sort,
             },
         )
+        if isinstance(aggregate_data, dict):
+            warn_response_warnings_once(aggregate_data.get("warnings") or [])
+        return aggregate_data
 
     def legacy_search(
         self,
@@ -645,6 +658,7 @@ class Collection:
         scene_index_id: Optional[str] = None,
         index_id: Optional[str] = None,
         algorithm: Optional[str] = None,
+        _skip_warning: bool = False,
     ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
 
@@ -664,6 +678,8 @@ class Collection:
         :rtype: Union[:class:`videodb.search.SearchResult`,
             :class:`videodb.rtstream.RTStreamSearchResult`]
         """
+        if not _skip_warning:
+            warn_explicit_legacy_search_once()
         if scene_index_id is None and index_id is not None:
             scene_index_id = index_id
 
@@ -713,6 +729,8 @@ class Collection:
             dynamic_score_percentage=dynamic_score_percentage,
             sort_docs_on=sort_docs_on,
             filter=filter,
+            scene_index_id=scene_index_id,
+            algorithm=algorithm,
         )
 
     def search_title(self, query) -> List[Video]:
