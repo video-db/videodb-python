@@ -699,7 +699,6 @@ class Video:
         name: Optional[str] = None,
         scenes: Optional[List[Scene]] = None,
         callback_url: Optional[str] = None,
-        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index the scenes of the video.
 
@@ -726,7 +725,6 @@ class Video:
         :param str name: (optional) The name of the scene index
         :param list[Scene] scenes: (optional) The scenes to be indexed, List of :class:`Scene <Scene>` objects
         :param str callback_url: (optional) The callback url
-        :param str sandbox_id: (optional) ID of the sandbox to route the job to
         :raises InvalidRequestError: If the index fails or index already exists
         :return: The scene index id
         :rtype: str
@@ -743,7 +741,6 @@ class Video:
                 "name": name,
                 "scenes": [scene.to_json() for scene in scenes] if scenes else None,
                 "callback_url": callback_url,
-                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -758,7 +755,6 @@ class Video:
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
-        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index visuals (scenes) from the video.
 
@@ -772,7 +768,6 @@ class Video:
         :param dict model_config: Configuration for the model
         :param str name: Name of the visual index
         :param str callback_url: URL to receive the callback (optional)
-        :param str sandbox_id: ID of the sandbox to route the job to (optional)
         :return: The scene index id
         :rtype: str
         """
@@ -805,7 +800,6 @@ class Video:
                 "model_config": model_config or {},
                 "name": name,
                 "callback_url": callback_url,
-                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
