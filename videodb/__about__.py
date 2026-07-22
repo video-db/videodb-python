@@ -2,7 +2,7 @@
 
 
 
-__version__ = "0.4.5"
+__version__ = "0.5.0"
 __title__ = "videodb"
 __author__ = "videodb"
 __email__ = "contact@videodb.io"

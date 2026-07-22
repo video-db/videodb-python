@@ -1,6 +1,6 @@
 import logging
 
-from typing import Optional, Union, List, Dict, Any, Literal
+from typing import Optional, Union, List, Dict, Any, Literal, Tuple
 from videodb._upload import (
     upload,
 )
@@ -17,7 +17,13 @@ from videodb.image import Image
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
-from videodb.search import SearchFactory, SearchResult
+from videodb.search import (
+    AskResponse,
+    SearchFactory,
+    SearchResponse,
+    SearchResult,
+    warn_response_warnings_once,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -465,6 +471,243 @@ class Collection:
     def search(
         self,
         query: str,
+        *args,
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Union[SearchResponse, SearchResult, RTStreamSearchResult]:
+        """Search this collection using Search V2 by default.
+
+        Pass Search V2 options such as ``top_k``, ``mode``, ``return_fields``,
+        ``include_clip``, ``session_id``, or ``config`` for the new search API.
+        Calls with legacy options such as ``search_type``, ``index_type``,
+        ``result_threshold``, ``scene_index_id``, ``index_id``, ``stitch``,
+        ``rerank``, or ``rerank_params`` are routed to :meth:`legacy_search`.
+        Do not mix Search V2 and legacy options in one call.
+
+        Server-provided warnings are exposed on ``response.warnings`` and are
+        emitted as Python ``UserWarning`` messages.
+
+        :param str query: Natural-language search query.
+        :param dict config: Optional Search V2 request configuration.
+        :return: ``SearchResponse`` for Search V2, ``SearchResult`` for legacy, or ``RTStreamSearchResult`` for RTStream legacy search.
+        """
+        old_params = {
+            "search_type",
+            "index_type",
+            "result_threshold",
+            "dynamic_score_percentage",
+            "scene_index_id",
+            "index_id",
+            "algorithm",
+            "sort_docs_on",
+            "namespace",
+            "stitch",
+            "rerank",
+            "rerank_params",
+        }
+        new_params = {
+            "top_k",
+            "mode",
+            "return_fields",
+            "include_clip",
+            "session_id",
+            "config",
+        }
+        unsupported_params = {"index_name", "index_names", "index_ids"}
+
+        if config is not None:
+            kwargs["config"] = config
+
+        if args:
+            legacy_arg_names = [
+                "search_type",
+                "index_type",
+                "result_threshold",
+                "score_threshold",
+                "dynamic_score_percentage",
+                "filter",
+                "sort_docs_on",
+                "namespace",
+                "scene_index_id",
+            ]
+            for name, value in zip(legacy_arg_names, args):
+                kwargs.setdefault(name, value)
+
+        has_old = bool(args) or any(k in kwargs and kwargs[k] is not None for k in old_params)
+        has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
+        has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
+
+        if has_old and (has_new or has_unsupported):
+            raise ValueError(
+                "Cannot mix legacy search parameters with Search V2 parameters. "
+                "Use legacy_search(...) for older indexes, or remove legacy parameters and use Search V2 search(...)."
+            )
+        if has_unsupported:
+            raise ValueError(
+                "search() chooses indexes automatically and does not accept index selectors. "
+                "Use semantic_search() for semantic index selection, query() for structured filtering, or aggregate() for counts and facets."
+            )
+
+        if has_old:
+            return self.legacy_search(query=query, _skip_warning=True, **kwargs)
+
+        return self._new_search(query=query, **kwargs)
+
+    def _new_search(self, query: str, **kwargs) -> SearchResponse:
+        payload = {"query": query, **{k: v for k, v in kwargs.items() if v is not None}}
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/v2",
+            data=payload,
+        )
+        return SearchResponse(self._connection, **search_data)
+
+    def ask(
+        self,
+        question: str,
+        top_k: int = 15,
+        mode: str = "default",
+        include_sources: bool = False,
+    ) -> AskResponse:
+        """Ask a question over this collection's Search V2 indexes.
+
+        ``ask()`` is Search V2 only; it does not search legacy indexes. If the
+        server cannot answer from indexed content, warnings are available on
+        ``response.warnings``.
+
+        :param str question: Question to answer from the collection.
+        :param int top_k: Maximum number of source shots to retrieve.
+        :param str mode: Search mode to use.
+        :param bool include_sources: Include source shots in the response.
+        :return: ``AskResponse`` with ``answer``, ``sources``, and ``warnings``.
+        """
+        ask_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.ask}",
+            data={
+                "question": question,
+                "top_k": top_k,
+                "mode": mode,
+                "include_sources": include_sources,
+            },
+        )
+        return AskResponse(self._connection, **ask_data)
+
+    def semantic_search(
+        self,
+        query: str,
+        index_names: Optional[Union[List[str], str]] = None,
+        top_k: int = 10,
+        score_threshold: Optional[float] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        index_ids: Optional[Union[List[str], str]] = None,
+    ) -> SearchResult:
+        """Run direct Search V2 semantic retrieval for this collection.
+
+        Use ``index_names`` or ``index_ids`` to target semantic indexes. Singular
+        legacy selectors such as ``index_name``/``index_id`` are not accepted by
+        this method.
+
+        :param str query: Natural-language query.
+        :param index_names: Optional Search V2 semantic index name or names.
+        :param int top_k: Maximum number of shots to return.
+        :param float score_threshold: Optional minimum similarity score.
+        :param filter: Optional Search V2 filter.
+        :param return_fields: Optional metadata fields to include.
+        :param index_ids: Optional Search V2 index ID or IDs.
+        :return: ``SearchResult`` with shots and server-provided ``warnings``.
+        """
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.semantic_search}",
+            data={
+                "query": query,
+                "index_names": index_names,
+                "index_ids": index_ids,
+                "top_k": top_k,
+                "score_threshold": score_threshold,
+                "filter": filter,
+                "return_fields": return_fields,
+            },
+        )
+        return SearchResult(self._connection, **search_data)
+
+    def query(
+        self,
+        index_name: Optional[str] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        limit: int = 100,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
+    ) -> SearchResult:
+        """Run a structured Search V2 query for this collection.
+
+        ``query()`` is V2-only and is intended for filtering, sorting, and
+        retrieving indexed records without natural-language planning.
+
+        :param str index_name: Optional Search V2 index name.
+        :param filter: Optional Search V2 filter.
+        :param int limit: Maximum number of records to return.
+        :param return_fields: Optional fields to include in each result.
+        :param sort: Optional sort field or ``[(field, direction)]`` list.
+        :param str index_id: Optional Search V2 index ID.
+        :return: ``SearchResult`` with shots and server-provided ``warnings``.
+        """
+        query_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.query}",
+            data={
+                "index_name": index_name,
+                "index_id": index_id,
+                "filter": filter,
+                "limit": limit,
+                "return_fields": return_fields,
+                "sort": sort,
+            },
+        )
+        return SearchResult(self._connection, **query_data)
+
+    def aggregate(
+        self,
+        index_name: Optional[str] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        group_by: Optional[str] = None,
+        metric: str = "count",
+        limit: int = 100,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
+    ) -> Union[Dict, List[Dict]]:
+        """Run a Search V2 aggregate over this collection's indexed records.
+
+        Use this for counts, facets, and grouped metrics. ``aggregate()`` is
+        V2-only and returns the server aggregate payload directly.
+
+        :param str index_name: Optional Search V2 index name.
+        :param filter: Optional Search V2 filter.
+        :param str group_by: Optional field to group by.
+        :param str metric: Aggregate metric, default ``"count"``.
+        :param int limit: Maximum number of aggregate rows.
+        :param sort: Optional sort field or ``[(field, direction)]`` list.
+        :param str index_id: Optional Search V2 index ID.
+        :return: Aggregate dict/list; dict responses may include ``warnings``.
+        """
+        aggregate_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.aggregate}",
+            data={
+                "index_name": index_name,
+                "index_id": index_id,
+                "filter": filter,
+                "group_by": group_by,
+                "metric": metric,
+                "limit": limit,
+                "sort": sort,
+            },
+        )
+        if isinstance(aggregate_data, dict):
+            warn_response_warnings_once(aggregate_data.get("warnings") or [])
+        return aggregate_data
+
+    def legacy_search(
+        self,
+        query: str,
         search_type: Optional[str] = SearchType.semantic,
         index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
@@ -474,25 +717,43 @@ class Collection:
         sort_docs_on: Optional[str] = None,
         namespace: Optional[str] = None,
         scene_index_id: Optional[str] = None,
+        index_id: Optional[str] = None,
+        algorithm: Optional[str] = None,
+        stitch: Optional[bool] = None,
+        rerank: Optional[bool] = None,
+        rerank_params: Optional[Dict[str, Any]] = None,
+        _skip_warning: bool = False,
     ) -> Union[SearchResult, RTStreamSearchResult]:
-        """Search for a query in the collection.
+        """Search this collection using legacy spoken-word, scene, or RTStream indexes.
 
-        :param str query: Query to search for
-        :param SearchType search_type: Type of search to perform (optional)
-        :param IndexType index_type: Type of index to search (optional)
-        :param int result_threshold: Number of results to return (optional)
-        :param float score_threshold: Threshold score for the search (optional)
-        :param float dynamic_score_percentage: Percentage of dynamic score to consider (optional)
-        :param list filter: Additional metadata filters (optional)
-        :param str sort_docs_on: Sort docs within each video by "score" or "start" (optional)
-        :param str namespace: Search namespace (optional, "rtstream" to search RTStreams)
-        :param str scene_index_id: Filter by specific scene index (optional)
-        :raise SearchError: If the search fails
-        :return: :class:`SearchResult <SearchResult>` or
-            :class:`RTStreamSearchResult <videodb.rtstream.RTStreamSearchResult>` object
-        :rtype: Union[:class:`videodb.search.SearchResult`,
-            :class:`videodb.rtstream.RTStreamSearchResult`]
+        Use this when you intentionally want older indexes. New applications
+        should prefer :meth:`search`, :meth:`semantic_search`, :meth:`query`,
+        :meth:`aggregate`, or :meth:`ask` for Search V2 indexes. Set
+        ``namespace="rtstream"`` to search legacy RTStream results. The
+        ``index_id`` keyword is accepted as an alias for ``scene_index_id``.
+
+        Server-provided migration warnings are available on ``result.warnings``.
+
+        :param str query: Query to search for.
+        :param SearchType search_type: Legacy search type.
+        :param IndexType index_type: Legacy index type.
+        :param int result_threshold: Number of results to return.
+        :param float score_threshold: Minimum score threshold.
+        :param float dynamic_score_percentage: Dynamic score percentage.
+        :param list filter: Legacy metadata filters.
+        :param str sort_docs_on: Sort docs within each video by ``"score"`` or ``"start"``.
+        :param str namespace: Search namespace; use ``"rtstream"`` for RTStream legacy search.
+        :param str scene_index_id: Filter by a specific scene index.
+        :param str index_id: Alias for ``scene_index_id``.
+        :param str algorithm: Legacy keyword search algorithm when applicable.
+        :param bool stitch: Whether legacy search should stitch adjacent results.
+        :param bool rerank: Whether legacy search should rerank results.
+        :param dict rerank_params: Legacy reranking parameters.
+        :return: ``SearchResult`` with warnings, or ``RTStreamSearchResult`` for RTStream legacy search.
         """
+        if scene_index_id is None and index_id is not None:
+            scene_index_id = index_id
+
         if namespace == "rtstream":
             data = {"query": query}
             if scene_index_id is not None:
@@ -528,6 +789,14 @@ class Collection:
             ]
             return RTStreamSearchResult(collection_id=self.id, shots=shots)
 
+        legacy_options = {}
+        if stitch is not None:
+            legacy_options["stitch"] = stitch
+        if rerank is not None:
+            legacy_options["rerank"] = rerank
+        if rerank_params is not None:
+            legacy_options["rerank_params"] = rerank_params
+
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
             collection_id=self.id,
@@ -539,6 +808,9 @@ class Collection:
             dynamic_score_percentage=dynamic_score_percentage,
             sort_docs_on=sort_docs_on,
             filter=filter,
+            scene_index_id=scene_index_id,
+            algorithm=algorithm,
+            **legacy_options,
         )
 
     def search_title(self, query) -> List[Video]:

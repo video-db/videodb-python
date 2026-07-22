@@ -36,6 +36,23 @@ class IndexType:
     scene = "scene"
 
 
+class IndexCapability:
+    """Retrieval capabilities an index can be built for (``use_for``)."""
+
+    semantic = "semantic"
+    query = "query"
+    aggregate = "aggregate"
+
+
+class FieldGroup:
+    """Field groups that map artifact fields to retrieval capabilities."""
+
+    semantic = "semantic"
+    filter = "filter"
+    aggregate = "aggregate"
+    sort = "sort"
+
+
 class SceneExtractionType:
     shot_based = "shot"
     time_based = "time"
@@ -80,7 +97,14 @@ class ApiPath:
     upload_url = "upload_url"
     transcription = "transcription"
     index = "index"
+    indexes = "indexes"
+    records = "records"
+    understand = "understand"
     search = "search"
+    ask = "ask"
+    semantic_search = "semantic-search"
+    query = "query"
+    aggregate = "aggregate"
     compile = "compile"
     workflow = "workflow"
     timeline = "timeline"
@@ -121,6 +145,11 @@ class ApiPath:
 class Status:
     processing = "processing"
     in_progress = "in progress"
+
+
+INDEX_TERMINAL_STATUSES = {"ready", "failed"}
+UNDERSTANDING_TERMINAL_STATUSES = {"done", "failed"}
+ANALYZER_TERMINAL_STATUSES = {"done", "failed", "skipped", "cancelled"}
 
 
 class MeetingStatus:

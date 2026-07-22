@@ -8,6 +8,8 @@ from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     VIDEO_DB_API,
     IndexType,
+    IndexCapability,
+    FieldGroup,
     SceneExtractionType,
     MediaType,
     SearchType,
@@ -25,6 +27,8 @@ from videodb._constants import (
     RTStreamChannelType,
 )
 from videodb.client import Connection
+from videodb.search import AskResponse, SearchResponse, SearchResult
+from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
@@ -53,7 +57,14 @@ __all__ = [
     "AuthenticationError",
     "InvalidRequestError",
     "IndexType",
+    "IndexCapability",
+    "FieldGroup",
     "SearchError",
+    "SearchResult",
+    "SearchResponse",
+    "AskResponse",
+    "Understanding",
+    "UnderstandingAnalyzer",
     "play_stream",
     "build_iframe_embed_code",
     "MediaType",
