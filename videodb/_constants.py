@@ -48,7 +48,7 @@ class FieldGroup:
     """Field groups that map artifact fields to retrieval capabilities."""
 
     semantic = "semantic"
-    text = "text"
+    fts = "fts"
     filter = "filter"
     aggregate = "aggregate"
     sort = "sort"
