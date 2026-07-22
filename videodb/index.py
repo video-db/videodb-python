@@ -2,10 +2,7 @@ import time
 
 from typing import List, Optional
 
-from videodb._constants import ApiPath
-
-
-INDEX_TERMINAL_STATUSES = {"ready", "failed"}
+from videodb._constants import ApiPath, INDEX_TERMINAL_STATUSES
 
 
 class FieldSchema:
