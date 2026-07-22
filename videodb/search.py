@@ -16,32 +16,14 @@ from typing import Optional, List
 from videodb.shot import Shot
 
 
-_LEGACY_SEARCH_WARNING = (
-    "This search used legacy search because legacy parameters were provided. "
-    "Use legacy_search(...) to keep searching older indexes, or remove legacy parameters and create Search V2 indexes. "
-    "Docs: https://videodb-docs-indexing-search-v2.mintlify.app/api-reference/search-v2/legacy-search"
-)
-_EXPLICIT_LEGACY_SEARCH_WARNING = (
-    "legacy_search() searches older spoken-word and scene indexes only. "
-    "Create Search V2 indexes to use search(), semantic_search(), query(), aggregate(), and ask(). "
-    "Docs: https://videodb-docs-indexing-search-v2.mintlify.app/pages/understand/indexing-pipelines/create-an-index"
-)
-_LEGACY_SEARCH_WARNING_EMITTED = set()
+_RESPONSE_WARNING_EMITTED = set()
 
 
 def _warn_once(key: str, message: str, stacklevel: int = 4):
-    if key in _LEGACY_SEARCH_WARNING_EMITTED:
+    if key in _RESPONSE_WARNING_EMITTED:
         return
-    _LEGACY_SEARCH_WARNING_EMITTED.add(key)
+    _RESPONSE_WARNING_EMITTED.add(key)
     warnings.warn(message, UserWarning, stacklevel=stacklevel)
-
-
-def warn_legacy_search_once():
-    _warn_once("legacy_params", _LEGACY_SEARCH_WARNING)
-
-
-def warn_explicit_legacy_search_once():
-    _warn_once("legacy_search", _EXPLICIT_LEGACY_SEARCH_WARNING)
 
 
 def _warning_docs_text(warning: dict) -> str:
