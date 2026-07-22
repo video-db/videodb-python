@@ -1,5 +1,5 @@
 from typing import Literal, Optional, Union, List, Dict, Tuple, Any
-from videodb._utils._video import play_stream, build_iframe_embed_code
+from videodb._utils._video import play_stream
 from videodb._constants import (
     ApiPath,
     IndexType,
@@ -17,8 +17,6 @@ from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
 from videodb.face import IndexResult
 from videodb.understanding import UnderstandingResult
-
-_VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
 
 
 class Video:
@@ -158,9 +156,7 @@ class Video:
                 "length": self.length,
             },
         )
-        self.stream_url = stream_data.get("stream_url")
-        self.player_url = stream_data.get("player_url")
-        return self.stream_url
+        return stream_data.get("stream_url", None)
 
     def generate_thumbnail(self, time: Optional[float] = None) -> Union[str, Image]:
         """Generate the thumbnail of the video.
@@ -206,19 +202,6 @@ class Video:
         length: int = 1,
         force: bool = None,
     ) -> None:
-        if segmenter not in _VALID_SEGMENTERS:
-            raise ValueError(
-                f"Invalid segmenter '{segmenter}'. "
-                f"Must be one of: {', '.join(sorted(_VALID_SEGMENTERS))}"
-            )
-        if start is not None and start < 0:
-            raise ValueError(f"start must be non-negative, got {start}")
-        if end is not None and end < 0:
-            raise ValueError(f"end must be non-negative, got {end}")
-        if start is not None and end is not None and start > end:
-            raise ValueError(
-                f"start ({start}) must be less than or equal to end ({end})"
-            )
         if (
             self.transcript
             and not start
@@ -252,18 +235,12 @@ class Video:
     ) -> List[Dict[str, Union[float, str]]]:
         """Get timestamped transcript segments for the video.
 
-        :param int start: Start time in seconds (must be >= 0 and <= end)
-        :param int end: End time in seconds (must be >= 0 and >= start)
-        :param Segmenter segmenter: How to split the transcript into segments.
-            Must be one of :attr:`Segmenter.word` (default, one segment per word),
-            :attr:`Segmenter.sentence` (one segment per sentence), or
-            :attr:`Segmenter.time` (fixed-duration segments controlled by *length*)
-        :param int length: Duration in seconds for each segment when
-            *segmenter* is :attr:`Segmenter.time` (default 1)
-        :param bool force: Force re-fetch transcript from the server,
-            bypassing the local cache
-        :raises ValueError: If *segmenter* is not a valid value, or if
-            *start*/*end* are negative or *start* > *end*
+        :param int start: Start time in seconds
+        :param int end: End time in seconds
+        :param Segmenter segmenter: Segmentation type (:class:`Segmenter.word`,
+            :class:`Segmenter.sentence`, :class:`Segmenter.time`)
+        :param int length: Length of segments when using time segmenter
+        :param bool force: Force fetch new transcript
         :return: List of dicts with keys: start (float), end (float), text (str)
         :rtype: List[Dict[str, Union[float, str]]]
         """
@@ -296,10 +273,7 @@ class Video:
         """Generate transcript for the video.
 
         :param bool force: Force generate new transcript
-        :param str language_code: (optional) Language code for transcription.
-            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
-            variants with underscores (e.g., "en_us", "en_uk", "en_au").
-            Defaults to "en_us" if not specified.
+        :param str language_code: (optional) Language code of the video
         :return: Full transcript text as string
         :rtype: str
         """
@@ -352,10 +326,7 @@ class Video:
     ) -> None:
         """Semantic indexing of spoken words in the video.
 
-        :param str language_code: (optional) Language code for transcription.
-            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
-            variants with underscores (e.g., "en_us", "en_uk", "en_au").
-            Defaults to "en_us" if not specified.
+        :param str language_code: (optional) Language code of the video
         :param SegmentationType segmentation_type: (optional) Segmentation type used for indexing, :class:`SegmentationType <SegmentationType>` object
         :param bool force: (optional) Force to index the video
         :param str callback_url: (optional) URL to receive the callback
@@ -530,7 +501,6 @@ class Video:
         name: Optional[str] = None,
         scenes: Optional[List[Scene]] = None,
         callback_url: Optional[str] = None,
-        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index the scenes of the video.
 
@@ -557,7 +527,6 @@ class Video:
         :param str name: (optional) The name of the scene index
         :param list[Scene] scenes: (optional) The scenes to be indexed, List of :class:`Scene <Scene>` objects
         :param str callback_url: (optional) The callback url
-        :param str sandbox_id: (optional) ID of the sandbox to route the job to
         :raises InvalidRequestError: If the index fails or index already exists
         :return: The scene index id
         :rtype: str
@@ -574,7 +543,6 @@ class Video:
                 "name": name,
                 "scenes": [scene.to_json() for scene in scenes] if scenes else None,
                 "callback_url": callback_url,
-                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -589,7 +557,6 @@ class Video:
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
-        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index visuals (scenes) from the video.
 
@@ -603,7 +570,6 @@ class Video:
         :param dict model_config: Configuration for the model
         :param str name: Name of the visual index
         :param str callback_url: URL to receive the callback (optional)
-        :param str sandbox_id: ID of the sandbox to route the job to (optional)
         :return: The scene index id
         :rtype: str
         """
@@ -636,7 +602,6 @@ class Video:
                 "model_config": model_config or {},
                 "name": name,
                 "callback_url": callback_url,
-                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -662,10 +627,7 @@ class Video:
         :param str prompt: (optional) Prompt for processing transcript segments
         :param str model_name: (optional) LLM tier to use (e.g. "basic", "pro", "ultra")
         :param dict model_config: (optional) Model configuration
-        :param str language_code: (optional) Language code for transcription.
-            Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
-            variants with underscores (e.g., "en_us", "en_uk", "en_au").
-            Defaults to "en_us" if not specified.
+        :param str language_code: (optional) Language code for transcription
         :param dict batch_config: (optional) Segmentation config with keys:
             - "type": Segmentation type ("word", "sentence", or "time")
             - "value": Segment length (words, sentences, or seconds)
@@ -830,41 +792,6 @@ class Video:
         """
         return play_stream(self.stream_url)
 
-    def get_embed_code(
-        self,
-        width: str = "100%",
-        height: int = 405,
-        title: str = "VideoDB Player",
-        allow_fullscreen: bool = True,
-        auto_generate: bool = True,
-    ) -> str:
-        """Generate an HTML iframe embed code for the video.
-
-        :param str width: Width of the iframe (default: "100%")
-        :param int height: Height of the iframe in pixels (default: 405)
-        :param str title: Title attribute for the iframe (default: "VideoDB Player")
-        :param bool allow_fullscreen: Whether to allow fullscreen (default: True)
-        :param bool auto_generate: If True and player_url is missing, auto-generate it (default: True)
-        :return: HTML iframe string
-        :rtype: str
-        :raises ValueError: If player_url is not available
-        """
-        if not self.player_url and auto_generate:
-            self.generate_stream()
-
-        if not self.player_url:
-            raise ValueError(
-                "player_url not available. Call generate_stream() first or set auto_generate=True."
-            )
-
-        return build_iframe_embed_code(
-            player_url=self.player_url,
-            width=width,
-            height=height,
-            title=title,
-            allow_fullscreen=allow_fullscreen,
-        )
-
     def get_meeting(self):
         """Get meeting information associated with the video.
 
@@ -970,11 +897,8 @@ class Video:
         use_for: Optional[List[str]] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
-    ) -> Optional[str]:
+    ) -> Optional[IndexResult]:
         """Create an index on this video.
-
-        Returns the index_id immediately. Use ``get_index(id)`` to poll
-        for the result.
 
         :param source: Source data — an :class:`UnderstandingResult` object
             (calls ``to_source_dict()`` automatically), or a raw dict
@@ -982,8 +906,8 @@ class Video:
         :param list use_for: What this index is used for (e.g. ["search", "query"])
         :param str name: Name for the index
         :param str callback_url: URL to receive callback when done (optional)
-        :return: index_id string
-        :rtype: Optional[str]
+        :return: :class:`IndexResult <IndexResult>` object
+        :rtype: :class:`videodb.face.IndexResult`
         """
         data = {}
         if source is not None:
@@ -1003,34 +927,24 @@ class Video:
         response = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
             data=data,
-            wait=False,
         )
         if not response:
             return None
-        return response.get("index_id")
+        return IndexResult(
+            _connection=self._connection,
+            video_id=self.id,
+            **response,
+        )
 
-    def get_index(
-        self,
-        index_id: str,
-        max_poll_time: Optional[int] = None,
-        poll_interval: Optional[int] = None,
-    ) -> Optional[IndexResult]:
+    def get_index(self, index_id: str) -> Optional[IndexResult]:
         """Get an index by its ID.
 
         :param str index_id: The index ID
-        :param int max_poll_time: Max seconds to poll if still processing (default: 500)
-        :param int poll_interval: Seconds between polls (default: 5)
         :return: :class:`IndexResult <IndexResult>` object
         :rtype: :class:`videodb.face.IndexResult`
         """
-        poll_kwargs = {}
-        if max_poll_time is not None:
-            poll_kwargs["max_poll_time"] = max_poll_time
-        if poll_interval is not None:
-            poll_kwargs["poll_interval"] = poll_interval
         response = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
-            **poll_kwargs,
         )
         if not response:
             return None
@@ -1073,25 +987,19 @@ class Video:
         segmentation: Optional[dict] = None,
         sampling: Optional[dict] = None,
         transform: Optional[dict] = None,
-        config: Optional[dict] = None,
         store: bool = False,
         callback_url: Optional[str] = None,
-    ) -> Optional[str]:
-        """Launch understanding (detection) on the video.
-
-        Returns the understanding_id immediately. Use
-        ``get_understanding(id)`` to poll for the result.
+    ) -> Optional[UnderstandingResult]:
+        """Run face understanding (detection) on the video.
 
         :param list extract: What to extract, e.g. ["faces"]
         :param dict segmentation: Segmentation config, e.g. {"type": "time", "window": "1s"}
         :param dict sampling: Sampling config, e.g. {"frame_count": 2}
         :param dict transform: Transform config, e.g. {"frame_size": "480p"}
-        :param dict config: Per-extract-type config, e.g.
-            ``{"faces": {"confidence_threshold": 0.6, "min_face_size": 30}}``
         :param bool store: Whether to persist the understanding result
         :param str callback_url: URL to receive callback when done (optional)
-        :return: understanding_id string
-        :rtype: Optional[str]
+        :return: :class:`UnderstandingResult <UnderstandingResult>` object
+        :rtype: :class:`videodb.understanding.UnderstandingResult`
         """
         data = {
             "extract": extract,
@@ -1101,42 +1009,26 @@ class Video:
         }
         if transform:
             data["transform"] = transform
-        if config:
-            data["config"] = config
         if callback_url:
             data["callback_url"] = callback_url
 
         response = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}",
             data=data,
-            wait=False,
         )
         if not response:
             return None
-        return response.get("understanding_id")
+        return UnderstandingResult(_connection=self._connection, **response)
 
-    def get_understanding(
-        self,
-        understanding_id: str,
-        max_poll_time: Optional[int] = None,
-        poll_interval: Optional[int] = None,
-    ) -> Optional[UnderstandingResult]:
+    def get_understanding(self, understanding_id: str) -> Optional[UnderstandingResult]:
         """Fetch a stored understanding result.
 
         :param str understanding_id: The understanding result ID
-        :param int max_poll_time: Max seconds to poll if still processing (default: 500)
-        :param int poll_interval: Seconds between polls (default: 5)
         :return: :class:`UnderstandingResult <UnderstandingResult>` object
         :rtype: :class:`videodb.understanding.UnderstandingResult`
         """
-        poll_kwargs = {}
-        if max_poll_time is not None:
-            poll_kwargs["max_poll_time"] = max_poll_time
-        if poll_interval is not None:
-            poll_kwargs["poll_interval"] = poll_interval
         response = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}",
-            **poll_kwargs,
         )
         if not response:
             return None
