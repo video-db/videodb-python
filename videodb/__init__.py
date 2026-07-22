@@ -29,8 +29,7 @@ from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
 
-from videodb.face import IndexResult, Identity, Face
-from videodb.store import FaceStore
+from videodb.index import IndexResult
 from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
@@ -56,9 +55,6 @@ __all__ = [
     "InvalidRequestError",
     "IndexType",
     "IndexResult",
-    "Identity",
-    "Face",
-    "FaceStore",
     "SearchError",
     "play_stream",
     "build_iframe_embed_code",

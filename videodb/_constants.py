@@ -118,11 +118,6 @@ class ApiPath:
     export = "export"
     understand = "understand"
     indexes = "indexes"
-    store = "store"
-    faces = "faces"
-    identities = "identities"
-    merge = "merge"
-    split = "split"
     async_response = "async-response"
 
 

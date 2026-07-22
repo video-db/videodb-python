@@ -15,7 +15,7 @@ from videodb.image import Image, Frame
 from videodb.scene import Scene, SceneCollection
 from videodb.search import SearchFactory, SearchResult
 from videodb.shot import Shot
-from videodb.face import IndexResult
+from videodb.index import IndexResult
 from videodb.understanding import UnderstandingResult
 
 
@@ -907,7 +907,7 @@ class Video:
         :param str name: Name for the index
         :param str callback_url: URL to receive callback when done (optional)
         :return: :class:`IndexResult <IndexResult>` object
-        :rtype: :class:`videodb.face.IndexResult`
+        :rtype: :class:`videodb.index.IndexResult`
         """
         data = {}
         if source is not None:
@@ -941,7 +941,7 @@ class Video:
 
         :param str index_id: The index ID
         :return: :class:`IndexResult <IndexResult>` object
-        :rtype: :class:`videodb.face.IndexResult`
+        :rtype: :class:`videodb.index.IndexResult`
         """
         response = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
@@ -958,7 +958,7 @@ class Video:
         """List all indexes for this video.
 
         :return: List of :class:`IndexResult <IndexResult>` objects
-        :rtype: List[:class:`videodb.face.IndexResult`]
+        :rtype: List[:class:`videodb.index.IndexResult`]
         """
         response = self._connection.get(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
