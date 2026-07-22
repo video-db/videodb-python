@@ -12,8 +12,18 @@ from videodb._constants import (
     Workflows,
 )
 from videodb.image import Image, Frame
+from videodb.index import Index
+from videodb.understanding import Understanding, normalize_understanding_analyzers
 from videodb.scene import Scene, SceneCollection
-from videodb.search import SearchFactory, SearchResult
+from videodb.search import (
+    AskResponse,
+    SearchFactory,
+    SearchResponse,
+    SearchResult,
+    warn_explicit_legacy_search_once,
+    warn_legacy_search_once,
+    warn_response_warnings_once,
+)
 from videodb.shot import Shot
 
 _VALID_SEGMENTERS = {Segmenter.word, Segmenter.sentence, Segmenter.time}
@@ -85,6 +95,177 @@ class Video:
     def search(
         self,
         query: str,
+        *args,
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Union[SearchResponse, SearchResult]:
+        """Search this video.
+
+        New search is used by default. Calls that use legacy-shaped parameters are
+        routed to :meth:`legacy_search` with a warning.
+        """
+        old_params = {
+            "search_type",
+            "index_type",
+            "result_threshold",
+            "dynamic_score_percentage",
+            "scene_index_id",
+            "index_id",
+            "algorithm",
+            "sort_docs_on",
+            "namespace",
+        }
+        new_params = {
+            "top_k",
+            "mode",
+            "return_fields",
+            "include_clip",
+            "session_id",
+            "config",
+        }
+        unsupported_params = {"index_name", "index_names", "index_ids"}
+
+        if config is not None:
+            kwargs["config"] = config
+
+        if args:
+            legacy_arg_names = [
+                "search_type",
+                "index_type",
+                "result_threshold",
+                "score_threshold",
+                "dynamic_score_percentage",
+                "filter",
+            ]
+            for name, value in zip(legacy_arg_names, args):
+                kwargs.setdefault(name, value)
+
+        has_old = bool(args) or any(k in kwargs and kwargs[k] is not None for k in old_params)
+        has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
+        has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
+
+        if kwargs.get("deepsearch_config") is not None:
+            raise ValueError(
+                "deepsearch_config is not a public search() option. Use mode='deepsearch', top_k, session_id, and return_fields for DeepSearch requests."
+            )
+        if has_old and (has_new or has_unsupported):
+            raise ValueError(
+                "Cannot mix legacy search parameters with Search V2 parameters. "
+                "Use legacy_search(...) for older indexes, or remove legacy parameters and use Search V2 search(...)."
+            )
+        if has_unsupported:
+            raise ValueError(
+                "search() chooses indexes automatically and does not accept index selectors. "
+                "Use semantic_search() for semantic index selection, query() for structured filtering, or aggregate() for counts and facets."
+            )
+
+        if has_old:
+            warn_legacy_search_once()
+            return self.legacy_search(query=query, _skip_warning=True, **kwargs)
+
+        return self._new_search(query=query, **kwargs)
+
+    def _new_search(self, query: str, **kwargs) -> SearchResponse:
+        payload = {"query": query, **{k: v for k, v in kwargs.items() if v is not None}}
+        search_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.search}/v2",
+            data=payload,
+        )
+        return SearchResponse(self._connection, **search_data)
+
+    def ask(
+        self,
+        question: str,
+        top_k: int = 15,
+        mode: str = "default",
+        include_sources: bool = False,
+    ) -> AskResponse:
+        ask_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.ask}",
+            data={
+                "question": question,
+                "top_k": top_k,
+                "mode": mode,
+                "include_sources": include_sources,
+            },
+        )
+        return AskResponse(self._connection, **ask_data)
+
+    def semantic_search(
+        self,
+        query: str,
+        index_names: Optional[Union[List[str], str]] = None,
+        top_k: int = 10,
+        score_threshold: Optional[float] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        index_ids: Optional[Union[List[str], str]] = None,
+    ) -> SearchResult:
+        search_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.semantic_search}",
+            data={
+                "query": query,
+                "index_names": index_names,
+                "index_ids": index_ids,
+                "top_k": top_k,
+                "score_threshold": score_threshold,
+                "filter": filter,
+                "return_fields": return_fields,
+            },
+        )
+        return SearchResult(self._connection, **search_data)
+
+    def query(
+        self,
+        index_name: Optional[str] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        limit: int = 100,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
+    ) -> SearchResult:
+        query_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.query}",
+            data={
+                "index_name": index_name,
+                "index_id": index_id,
+                "filter": filter,
+                "limit": limit,
+                "return_fields": return_fields,
+                "sort": sort,
+            },
+        )
+        return SearchResult(self._connection, **query_data)
+
+    def aggregate(
+        self,
+        index_name: Optional[str] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        group_by: Optional[str] = None,
+        metric: str = "count",
+        limit: int = 100,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
+    ) -> Union[Dict, List[Dict]]:
+        aggregate_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.aggregate}",
+            data={
+                "index_name": index_name,
+                "index_id": index_id,
+                "filter": filter,
+                "group_by": group_by,
+                "metric": metric,
+                "limit": limit,
+                "sort": sort,
+            },
+        )
+        if isinstance(aggregate_data, dict):
+            warn_response_warnings_once(aggregate_data.get("warnings") or [])
+        return aggregate_data
+
+    def legacy_search(
+        self,
+        query: str,
         search_type: Optional[str] = SearchType.semantic,
         index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
@@ -105,6 +286,11 @@ class Video:
         :return: :class:`SearchResult <SearchResult>` object
         :rtype: :class:`videodb.search.SearchResult`
         """
+        if not kwargs.pop("_skip_warning", False):
+            warn_explicit_legacy_search_once()
+        if kwargs.get("scene_index_id") is None and kwargs.get("index_id") is not None:
+            kwargs["scene_index_id"] = kwargs.get("index_id")
+        kwargs.pop("index_id", None)
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_video(
             video_id=self.id,
@@ -528,6 +714,7 @@ class Video:
         name: Optional[str] = None,
         scenes: Optional[List[Scene]] = None,
         callback_url: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index the scenes of the video.
 
@@ -554,6 +741,7 @@ class Video:
         :param str name: (optional) The name of the scene index
         :param list[Scene] scenes: (optional) The scenes to be indexed, List of :class:`Scene <Scene>` objects
         :param str callback_url: (optional) The callback url
+        :param str sandbox_id: (optional) ID of the sandbox to route the job to
         :raises InvalidRequestError: If the index fails or index already exists
         :return: The scene index id
         :rtype: str
@@ -570,6 +758,7 @@ class Video:
                 "name": name,
                 "scenes": [scene.to_json() for scene in scenes] if scenes else None,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -584,6 +773,7 @@ class Video:
         model_config: Optional[Dict] = None,
         name: Optional[str] = None,
         callback_url: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ) -> Optional[str]:
         """Index visuals (scenes) from the video.
 
@@ -597,6 +787,7 @@ class Video:
         :param dict model_config: Configuration for the model
         :param str name: Name of the visual index
         :param str callback_url: URL to receive the callback (optional)
+        :param str sandbox_id: ID of the sandbox to route the job to (optional)
         :return: The scene index id
         :rtype: str
         """
@@ -629,6 +820,7 @@ class Video:
                 "model_config": model_config or {},
                 "name": name,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
             },
         )
         if not scenes_data:
@@ -731,6 +923,257 @@ class Video:
             raise ValueError("scene_index_id is required")
         self._connection.delete(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.index}/{ApiPath.scene}/{scene_index_id}"
+        )
+
+    def understand(
+        self,
+        analyzers: List[Dict[str, Any]],
+        segmentation: Optional[Dict[str, Any]] = None,
+        sampling: Optional[Dict[str, Any]] = None,
+        transform: Optional[Dict[str, Any]] = None,
+        audio_chunking: Optional[Dict[str, Any]] = None,
+        callback_url: Optional[str] = None,
+        **kwargs,
+    ) -> Understanding:
+        """Create an understanding run for this video.
+
+        :param list analyzers: Analyzer definitions. The SDK accepts friendly
+            analyzer type ``spoken_words`` and maps it to the server analyzer.
+        :param dict segmentation: Optional run-level segmentation config
+        :param dict sampling: Optional run-level sampling config
+        :param dict transform: Optional run-level transform config
+        :param dict audio_chunking: Optional run-level audio chunking config
+        :param str callback_url: Optional URL called when the run completes
+        :return: :class:`Understanding <videodb.understanding.Understanding>` object
+        """
+        normalized_analyzers = normalize_understanding_analyzers(analyzers)
+        payload = {"analyzers": normalized_analyzers}
+        optional_fields = {
+            "segmentation": segmentation,
+            "sampling": sampling,
+            "transform": transform,
+            "audio_chunking": audio_chunking,
+            "callback_url": callback_url,
+            **kwargs,
+        }
+        payload.update({key: value for key, value in optional_fields.items() if value is not None})
+
+        data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}",
+            data=payload,
+        ) or {}
+        data.setdefault(
+            "analyzers",
+            [
+                {
+                    "name": analyzer.get("name"),
+                    "type": analyzer.get("type"),
+                    "status": "pending",
+                }
+                for analyzer in normalized_analyzers
+            ],
+        )
+        data.setdefault("video_id", self.id)
+        data.setdefault("collection_id", self.collection_id)
+        return Understanding(self._connection, **data)
+
+    def get_understanding(self, understanding_id: str) -> Understanding:
+        """Get an understanding run by id.
+
+        :param str understanding_id: Understanding run id
+        :return: :class:`Understanding <videodb.understanding.Understanding>` object
+        """
+        if not understanding_id:
+            raise ValueError("understanding_id is required")
+        data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}"
+        ) or {}
+        data.setdefault("video_id", self.id)
+        data.setdefault("collection_id", self.collection_id)
+        data.setdefault("understanding_id", understanding_id)
+        return Understanding(self._connection, **data)
+
+    def list_understandings(self) -> List[Understanding]:
+        """List understanding runs for this video."""
+        data = self._connection.get(path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}")
+        results = (data or {}).get("understanding_results") or []
+        understandings = []
+        for item in results:
+            data = dict(item)
+            data.setdefault("video_id", self.id)
+            data.setdefault("collection_id", self.collection_id)
+            understandings.append(Understanding(self._connection, **data))
+        return understandings
+
+    def delete_understanding(self, understanding_id: str) -> None:
+        """Delete an understanding run."""
+        if not understanding_id:
+            raise ValueError("understanding_id is required")
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.understand}/{understanding_id}"
+        )
+
+    @staticmethod
+    def _format_index_source(source: Union[object, Dict]) -> Dict:
+        """Format an index *source* into the request payload.
+
+        Exactly two source kinds are supported:
+
+          - an :class:`UnderstandingAnalyzer <videodb.understanding.UnderstandingAnalyzer>`
+            (anything exposing ``to_index_source()``) — serialized as a light reference
+            ``{understanding_id, analyzer_id, ...}``; the server re-fetches the analyzer
+            output from its own store, so scenes never round-trip through the client
+          - a dict carrying either ``scenes`` (user-provided temporal records) or an
+            ``understanding_id`` reference (optionally with ``analyzer_id`` /
+            ``analyzer_type``), passed through as-is
+          - a bare list of temporal record dicts — sugar for ``{"scenes": [...]}``
+
+        :param source: The analyzer object, source dict, or list of temporal records
+        :raises ValueError: If the source is missing or of an unsupported type
+        :return: The serialized ``source`` payload
+        :rtype: dict
+        """
+        if source is None:
+            raise ValueError("source is required")
+
+        if hasattr(source, "to_index_source"):
+            return source.to_index_source()
+
+        if isinstance(source, list):
+            return {"scenes": source}
+
+        if isinstance(source, dict):
+            if isinstance(source.get("scenes"), list) or source.get("understanding_id"):
+                return source
+            raise ValueError(
+                "source dict must carry 'scenes' (temporal records) or an "
+                "'understanding_id' reference"
+            )
+
+        raise ValueError(
+            "source must be an analyzer object, a dict with 'scenes' or "
+            "'understanding_id', or a list of temporal records — got "
+            + type(source).__name__
+        )
+
+    def _format_index(self, index_data: dict) -> Index:
+        index_data = dict(index_data)
+        video_id = index_data.pop("video_id", None) or self.id
+        collection_id = index_data.pop("collection_id", None) or self.collection_id
+        return Index(
+            self._connection,
+            video_id=video_id,
+            collection_id=collection_id,
+            **index_data,
+        )
+
+    def index(
+        self,
+        source: Union[object, Dict, List],
+        name: Optional[str] = None,
+        use_for: Optional[List[str]] = None,
+        fields: Optional[Dict[str, List[str]]] = None,
+        callback_url: Optional[str] = None,
+    ) -> Optional[Index]:
+        """Create a retrieval-ready index from an understanding artifact.
+
+        Turns an understanding artifact (or user-provided temporal records) into an
+        index that declares retrieval capabilities (``use_for``) and field-level
+        indexing configuration (``fields``).
+
+        :param source: An :class:`UnderstandingAnalyzer` object (indexed by reference —
+            scenes never leave the server), or a dict carrying ``scenes`` (temporal
+            records) or an ``understanding_id`` reference
+        :param str name: (optional) User-facing index name. Defaults to the
+            artifact/source name on the server.
+        :param list use_for: (optional) Retrieval capabilities to enable, any of
+            :attr:`IndexCapability.semantic <videodb.IndexCapability.semantic>`,
+            :attr:`IndexCapability.query <videodb.IndexCapability.query>`,
+            :attr:`IndexCapability.aggregate <videodb.IndexCapability.aggregate>`.
+            Defaults to the artifact's defaults on the server.
+        :param dict fields: (optional) Field-level indexing configuration mapping
+            field groups (``semantic``, ``filter``, ``aggregate``,
+            ``sort``) to lists of field names
+        :param str callback_url: (optional) URL called when indexing completes
+        :raises ValueError: If ``source`` is missing or of an unsupported type
+        :raises InvalidRequestError: If the index creation fails
+        :return: The created index, :class:`Index <Index>` object
+        :rtype: :class:`videodb.index.Index`
+        """
+        index_data = self._connection.post(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
+            data={
+                "source": self._format_index_source(source),
+                "name": name,
+                "use_for": use_for,
+                "fields": fields,
+                "callback_url": callback_url,
+            },
+        )
+        if not index_data:
+            return None
+        return self._format_index(index_data)
+
+    def get_index(
+        self, index_id: Optional[str] = None, name: Optional[str] = None
+    ) -> Optional[Index]:
+        """Get an index manifest by its ID or name.
+
+        :param str index_id: (optional) The id of the index
+        :param str name: (optional) The name of the index
+        :raises ValueError: If neither ``index_id`` nor ``name`` is provided
+        :return: The index, :class:`Index <Index>` object
+        :rtype: :class:`videodb.index.Index`
+        """
+        if not index_id and not name:
+            raise ValueError("Either index_id or name is required")
+        params = {"collection_id": self.collection_id}
+        if index_id:
+            path = f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}"
+        else:
+            path = f"{ApiPath.video}/{self.id}/{ApiPath.indexes}"
+            params["name"] = name
+        index_data = self._connection.get(path=path, params=params)
+        if not index_data:
+            return None
+        return self._format_index(index_data)
+
+    def list_indexes(self, use_for: Optional[str] = None) -> List[Index]:
+        """List all the indexes of the video.
+
+        :param str use_for: (optional) Filter by retrieval capability, any of
+            :attr:`IndexCapability.semantic <videodb.IndexCapability.semantic>`,
+            :attr:`IndexCapability.query <videodb.IndexCapability.query>`,
+            :attr:`IndexCapability.aggregate <videodb.IndexCapability.aggregate>`
+        :return: List of :class:`Index <Index>` objects
+        :rtype: list[:class:`videodb.index.Index`]
+        """
+        params = {"collection_id": self.collection_id}
+        if use_for is not None:
+            params["use_for"] = use_for
+        index_data = self._connection.get(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}",
+            params=params,
+        )
+        return [self._format_index(index) for index in index_data.get("indexes", [])]
+
+    def delete_index(self, index_id: str) -> None:
+        """Delete an index.
+
+        Removes the index's retrieval structures. It does not delete the original
+        video or stored understanding artifacts.
+
+        :param str index_id: The id of the index to be deleted
+        :raises ValueError: If ``index_id`` is not provided
+        :raises InvalidRequestError: If the delete fails
+        :return: None if the delete is successful
+        :rtype: None
+        """
+        if not index_id:
+            raise ValueError("index_id is required")
+        self._connection.delete(
+            path=f"{ApiPath.video}/{self.id}/{ApiPath.indexes}/{index_id}",
+            params={"collection_id": self.collection_id},
         )
 
     def add_subtitle(self, style: SubtitleStyle = SubtitleStyle()) -> str:

@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import warnings
+
 from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     IndexType,
@@ -12,6 +14,60 @@ from videodb.exceptions import (
 )
 from typing import Optional, List
 from videodb.shot import Shot
+
+
+_LEGACY_SEARCH_WARNING = (
+    "This search used legacy search because legacy parameters were provided. "
+    "Use legacy_search(...) to keep searching older indexes, or remove legacy parameters and create Search V2 indexes. "
+    "Docs: https://videodb-docs-indexing-search-v2.mintlify.app/api-reference/search-v2/legacy-search"
+)
+_EXPLICIT_LEGACY_SEARCH_WARNING = (
+    "legacy_search() searches older spoken-word and scene indexes only. "
+    "Create Search V2 indexes to use search(), semantic_search(), query(), aggregate(), and ask(). "
+    "Docs: https://videodb-docs-indexing-search-v2.mintlify.app/pages/understand/indexing-pipelines/create-an-index"
+)
+_LEGACY_SEARCH_WARNING_EMITTED = set()
+
+
+def _warn_once(key: str, message: str, stacklevel: int = 4):
+    if key in _LEGACY_SEARCH_WARNING_EMITTED:
+        return
+    _LEGACY_SEARCH_WARNING_EMITTED.add(key)
+    warnings.warn(message, UserWarning, stacklevel=stacklevel)
+
+
+def warn_legacy_search_once():
+    _warn_once("legacy_params", _LEGACY_SEARCH_WARNING)
+
+
+def warn_explicit_legacy_search_once():
+    _warn_once("legacy_search", _EXPLICIT_LEGACY_SEARCH_WARNING)
+
+
+def _warning_docs_text(warning: dict) -> str:
+    docs = warning.get("docs") or []
+    parts = []
+    for item in docs:
+        if not isinstance(item, dict):
+            continue
+        label = item.get("label")
+        url = item.get("url")
+        if label and url:
+            parts.append(f"{label}: {url}")
+        elif url:
+            parts.append(str(url))
+    return f" Docs: {'; '.join(parts)}" if parts else ""
+
+
+def warn_response_warnings_once(response_warnings, stacklevel: int = 5):
+    if isinstance(response_warnings, dict):
+        response_warnings = [response_warnings]
+    for warning in response_warnings or []:
+        if not isinstance(warning, dict):
+            continue
+        code = str(warning.get("code") or warning.get("message") or "response_warning")
+        message = str(warning.get("message") or f"VideoDB warning: {code}").strip()
+        _warn_once(f"response:{code}", f"{message}{_warning_docs_text(warning)}", stacklevel=stacklevel)
 
 
 class SearchResult:
@@ -29,13 +85,16 @@ class SearchResult:
         self.stream_url = None
         self.player_url = None
         self.collection_id = "default"
+        self.warnings = kwargs.get("warnings") or []
+        if kwargs.get("_emit_warnings", True):
+            warn_response_warnings_once(self.warnings, stacklevel=5)
         self._results = kwargs.get("results", [])
         self._format_results()
 
     def _format_results(self):
         for result in self._results:
             self.collection_id = result.get("collection_id")
-            for doc in result.get("docs"):
+            for doc in result.get("docs") or []:
                 self.shots.append(
                     Shot(
                         self._connection,
@@ -49,7 +108,7 @@ class SearchResult:
                         scene_index_id=doc.get("scene_index_id"),
                         scene_index_name=doc.get("scene_index_name"),
                         metadata=doc.get("metadata"),
-                        stream_url=doc.get("stream_link"),
+                        stream_url=doc.get("stream_link") or doc.get("stream_url"),
                         player_url=doc.get("player_url"),
                     )
                 )
@@ -62,6 +121,15 @@ class SearchResult:
             f"player_url={self.player_url}, "
             f"shots={self.shots})"
         )
+
+    def __iter__(self):
+        return iter(self.shots)
+
+    def __len__(self):
+        return len(self.shots)
+
+    def __getitem__(self, index):
+        return self.shots[index]
 
     def get_shots(self) -> List[Shot]:
         return self.shots
@@ -137,6 +205,141 @@ class SearchResult:
             title=title,
             allow_fullscreen=allow_fullscreen,
         )
+
+
+class AskResponse:
+    """Response returned by ``ask()``.
+
+    :ivar str answer: Text answer generated from retrieved video context.
+    :ivar list[Shot] sources: Source shots selected by the LLM when requested.
+    """
+
+    def __init__(self, _connection, **kwargs):
+        self._connection = _connection
+        self.answer = kwargs.get("answer") or ""
+        self.warnings = kwargs.get("warnings") or []
+        warn_response_warnings_once(self.warnings, stacklevel=5)
+        self.sources = SearchResult(
+            _connection,
+            results=kwargs.get("sources") or [],
+            warnings=self.warnings,
+            _emit_warnings=False,
+        ).shots
+
+    def __repr__(self) -> str:
+        return f"AskResponse(answer={self.answer!r}, sources={self.sources})"
+
+
+class SearchResponse:
+    """Envelope returned by high-level Search v2.
+
+    For ``response_type='shots'`` or ``response_type='deepsearch'``, ``results`` is a :class:`SearchResult`.
+    For ``response_type='aggregate'``, ``results`` is the aggregate dict/list returned by the server.
+    """
+
+    def __init__(self, _connection, **kwargs):
+        self._connection = _connection
+        self.response_type = kwargs.get("response_type")
+        self.session_id = kwargs.get("session_id")
+        self.waiting_for = kwargs.get("waiting_for") or "none"
+        self.clarification = kwargs.get("clarification")
+        self.trace = kwargs.get("trace")
+        self.warnings = kwargs.get("warnings") or []
+        warn_response_warnings_once(self.warnings, stacklevel=6)
+        raw_results = kwargs.get("results", [])
+        if self.response_type in {"shots", "deepsearch"}:
+            self.results = SearchResult(
+                _connection,
+                results=raw_results,
+                warnings=self.warnings,
+                _emit_warnings=False,
+            )
+            self.shots = self.results.shots
+        else:
+            self.results = raw_results
+            self.shots = []
+
+    def __repr__(self) -> str:
+        if self.response_type == "deepsearch":
+            return (
+                "SearchResponse("
+                f"response_type={self.response_type}, "
+                f"session_id={self.session_id!r}, "
+                f"waiting_for={self.waiting_for!r}, "
+                f"clarification={self.clarification!r}, "
+                f"results={self.results})"
+            )
+        return f"SearchResponse(response_type={self.response_type}, results={self.results})"
+
+    def __iter__(self):
+        if self.response_type in {"shots", "deepsearch"}:
+            return iter(self.results)
+        if isinstance(self.results, list):
+            return iter(self.results)
+        return iter([self.results])
+
+    def __len__(self):
+        if self.response_type in {"shots", "deepsearch"}:
+            return len(self.results)
+        if isinstance(self.results, list):
+            return len(self.results)
+        return 1 if self.results is not None else 0
+
+    def __getitem__(self, index):
+        if self.response_type in {"shots", "deepsearch"}:
+            return self.results[index]
+        return self.results[index]
+
+    def get_shot_results(self) -> SearchResult:
+        """Return the underlying shot results for media helper methods.
+
+        ``search()`` now returns a SearchResponse envelope, but older SDK code often
+        chained ``.compile()``, ``.play()``, or ``.get_embed_code()`` directly from
+        ``search()``. Keep that flow working for response types backed by shots.
+        """
+        if self.response_type in {"shots", "deepsearch"} and isinstance(self.results, SearchResult):
+            return self.results
+        raise SearchError(
+            "This SearchResponse does not contain shot results. "
+            "compile(), play(), and get_embed_code() are only available when response_type is 'shots' or 'deepsearch'."
+        )
+
+    def compile(self) -> str:
+        """Compile shot results into a stream URL.
+
+        Available for ``response_type='shots'`` and ``response_type='deepsearch'``.
+        """
+        return self.get_shot_results().compile()
+
+    def play(self) -> str:
+        """Compile if needed, then play shot results.
+
+        Available for ``response_type='shots'`` and ``response_type='deepsearch'``.
+        """
+        return self.get_shot_results().play()
+
+    def get_embed_code(
+        self,
+        width: str = "100%",
+        height: int = 405,
+        title: str = "VideoDB Player",
+        allow_fullscreen: bool = True,
+        auto_generate: bool = True,
+    ) -> str:
+        """Generate an iframe embed code for shot results.
+
+        Available for ``response_type='shots'`` and ``response_type='deepsearch'``.
+        """
+        return self.get_shot_results().get_embed_code(
+            width=width,
+            height=height,
+            title=title,
+            allow_fullscreen=allow_fullscreen,
+            auto_generate=auto_generate,
+        )
+
+    def get_shots(self) -> List[Shot]:
+        return self.shots
 
 
 class Search(ABC):

@@ -36,6 +36,23 @@ class IndexType:
     scene = "scene"
 
 
+class IndexCapability:
+    """Retrieval capabilities an index can be built for (``use_for``)."""
+
+    semantic = "semantic"
+    query = "query"
+    aggregate = "aggregate"
+
+
+class FieldGroup:
+    """Field groups that map artifact fields to retrieval capabilities."""
+
+    semantic = "semantic"
+    filter = "filter"
+    aggregate = "aggregate"
+    sort = "sort"
+
+
 class SceneExtractionType:
     shot_based = "shot"
     time_based = "time"
@@ -80,7 +97,14 @@ class ApiPath:
     upload_url = "upload_url"
     transcription = "transcription"
     index = "index"
+    indexes = "indexes"
+    records = "records"
+    understand = "understand"
     search = "search"
+    ask = "ask"
+    semantic_search = "semantic-search"
+    query = "query"
+    aggregate = "aggregate"
     compile = "compile"
     workflow = "workflow"
     timeline = "timeline"
@@ -116,11 +140,36 @@ class ApiPath:
     token = "token"
     websocket = "websocket"
     export = "export"
+    job = "job"
+    sandbox = "sandbox"
+    voice_clone = "voice_clone"
+    understand = "understand"
+    indexes = "indexes"
+    identities = "identities"
+    merge = "merge"
+    split = "split"
+    async_response = "async-response"
+
 
 
 class Status:
     processing = "processing"
     in_progress = "in progress"
+    complete = "complete"
+
+
+class SandboxTier:
+    small = "small"
+    medium = "medium"
+
+
+class SandboxStatus:
+    provisioning = "provisioning"
+    active = "active"
+    stopping = "stopping"
+    stopped = "stopped"
+    failed = "failed"
+    alert = "alert"
 
 
 class MeetingStatus:
@@ -135,6 +184,8 @@ class HttpClientDefaultValues:
     timeout = 30
     backoff_factor = 0.1
     status_forcelist = [502, 503, 504]
+    max_poll_time = 500
+    poll_interval = 5
 
 
 class MaxSupported:

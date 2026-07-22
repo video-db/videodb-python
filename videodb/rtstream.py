@@ -235,6 +235,7 @@ class RTStreamSceneIndex:
     :ivar str prompt: Prompt for scene extraction
     :ivar str name: Name of the scene index
     :ivar str status: Status of the scene index
+    :ivar str sandbox_id: Sandbox ID used for self-hosted inference
     """
 
     def __init__(
@@ -248,6 +249,7 @@ class RTStreamSceneIndex:
         self.prompt = kwargs.get("prompt", None)
         self.name = kwargs.get("name", None)
         self.status = kwargs.get("status", None)
+        self.sandbox_id = kwargs.get("sandbox_id", None)
 
     def __repr__(self) -> str:
         return (
@@ -258,7 +260,8 @@ class RTStreamSceneIndex:
             f"extraction_config={self.extraction_config}, "
             f"prompt={self.prompt}, "
             f"name={self.name}, "
-            f"status={self.status})"
+            f"status={self.status}, "
+            f"sandbox_id={self.sandbox_id})"
         )
 
     def get_scenes(self, start: int = None, end: int = None, page=1, page_size=100):
@@ -364,6 +367,246 @@ class RTStreamSceneIndex:
         """
         self._connection.patch(
             f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.index}/{self.rtstream_index_id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"action": "disable"},
+        )
+
+
+class RTStreamUnderstanding:
+    """RTStreamUnderstanding class to interact with a continuous understanding job.
+
+    Produced by :meth:`RTStream.understand`. It runs VLM analysis over stream
+    windows and, when ``store=True``, persists the output so it can be indexed
+    later. Understanding is independent of scene indexing.
+
+    :ivar str id: Understanding id (``und-...``)
+    :ivar str rtstream_id: ID of the parent RTStream
+    :ivar str status: Job status (``running`` | ``stopped`` | ``failed``)
+    :ivar bool store: Whether output is persisted for later indexing
+    :ivar dict segmentation: Time segmentation, e.g. ``{"type": "time", "window": "10s"}``
+    :ivar list analyzers: Analyzer specs for this understanding
+    :ivar dict outputs: Named output source descriptors, e.g. ``outputs["scene"]``
+    """
+
+    def __init__(
+        self,
+        _connection,
+        understanding_id: str = None,
+        rtstream_id: str = None,
+        id: str = None,
+        **kwargs,
+    ) -> None:
+        self._connection = _connection
+        self.id = understanding_id or id
+        self.rtstream_id = rtstream_id
+        self.status = kwargs.get("status", None)
+        self.store = kwargs.get("store", True)
+        self.segmentation = kwargs.get("segmentation", {})
+        self.analyzers = kwargs.get("analyzers", [])
+        self.outputs = kwargs.get("outputs", {})
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamUnderstanding("
+            f"id={self.id}, "
+            f"rtstream_id={self.rtstream_id}, "
+            f"status={self.status}, "
+            f"store={self.store}, "
+            f"analyzers={len(self.analyzers)})"
+        )
+
+    def refresh(self) -> "RTStreamUnderstanding":
+        """Reload this understanding from the server.
+
+        :return: This understanding, updated
+        :rtype: :class:`RTStreamUnderstanding <RTStreamUnderstanding>`
+        """
+        data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}"
+        )
+        if data:
+            data.setdefault("understanding_id", self.id)
+            data.setdefault("rtstream_id", self.rtstream_id)
+            self.__init__(self._connection, **data)
+        return self
+
+    def start(self):
+        """Resume processing new stream windows.
+
+        :return: None
+        :rtype: None
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.status}",
+            data={"action": "start"},
+        )
+        self.status = "running"
+
+    def stop(self):
+        """Pause processing new stream windows. Existing records remain available.
+
+        :return: None
+        :rtype: None
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.status}",
+            data={"action": "stop"},
+        )
+        self.status = "stopped"
+
+    def get_records(
+        self,
+        start: float,
+        end: float,
+        output: str = "scene",
+        page: int = 1,
+        page_size: int = 100,
+    ):
+        """Get understanding output records for a time range.
+
+        :param float start: Start Unix timestamp
+        :param float end: End Unix timestamp
+        :param str output: Analyzer output name (default: ``"scene"``)
+        :param int page: Page number (default: 1)
+        :param int page_size: Records per page (default: 100)
+        :return: Records payload with ``records`` and ``next_page``
+        :rtype: dict
+        """
+        params = {
+            "start": start,
+            "end": end,
+            "output": output,
+            "page": page,
+            "page_size": page_size,
+        }
+        return self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.records}",
+            params={k: v for k, v in params.items() if v is not None},
+        )
+
+
+class RTStreamIndex:
+    """RTStreamIndex — a continuous index over an understanding output.
+
+    Produced by :meth:`RTStream.index`. Materializes an understanding's stored
+    output into a searchable index; has its own lifecycle, separate from the
+    understanding.
+
+    :ivar str id: Index id (``idx-...``)
+    :ivar str rtstream_id: ID of the parent RTStream
+    :ivar str name: Index name
+    :ivar str status: ``running`` | ``stopped`` | ``failed``
+    :ivar list use_for: Index capabilities, e.g. ``["semantic"]``
+    :ivar str source_understanding_id: Understanding this index consumes
+    :ivar str output: Analyzer output name being indexed (e.g. ``"scene"``)
+    """
+
+    def __init__(self, _connection, index_id=None, rtstream_id=None, id=None, **kwargs):
+        self._connection = _connection
+        self.id = index_id or id
+        self.rtstream_id = rtstream_id
+        self.name = kwargs.get("name")
+        self.status = kwargs.get("status")
+        self.use_for = kwargs.get("use_for") or ["semantic"]
+        self.source_understanding_id = kwargs.get("source_understanding_id")
+        self.output = kwargs.get("output", "scene")
+
+    def __repr__(self) -> str:
+        return (
+            f"RTStreamIndex("
+            f"id={self.id}, "
+            f"rtstream_id={self.rtstream_id}, "
+            f"status={self.status}, "
+            f"use_for={self.use_for}, "
+            f"source_understanding_id={self.source_understanding_id})"
+        )
+
+    def refresh(self) -> "RTStreamIndex":
+        """Reload this index from the server."""
+        data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}"
+        )
+        if data:
+            data.setdefault("index_id", self.id)
+            data.setdefault("rtstream_id", self.rtstream_id)
+            self.__init__(self._connection, **data)
+        return self
+
+    def start(self):
+        """Resume materializing new understanding output into the index."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.status}",
+            data={"action": "start"},
+        )
+        self.status = "running"
+
+    def stop(self):
+        """Pause materializing. Existing indexed records remain searchable."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.status}",
+            data={"action": "stop"},
+        )
+        self.status = "stopped"
+
+    def get_records(self, start=None, end=None, page: int = 1, page_size: int = 100):
+        """Get materialized index records.
+
+        :param int start: Start Unix timestamp (optional)
+        :param int end: End Unix timestamp (optional)
+        :param int page: Page number
+        :param int page_size: Records per page
+        :return: Records payload
+        :rtype: dict
+        """
+        params = {"page": page, "page_size": page_size}
+        if start is not None:
+            params["start"] = start
+        if end is not None:
+            params["end"] = end
+        return self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.records}",
+            params=params,
+        )
+
+    def create_alert(self, event_id, callback_url, ws_connection_id=None) -> str:
+        """Attach an event alert to this index.
+
+        :param str event_id: ID of the event
+        :param str callback_url: URL to receive the alert callback
+        :param str ws_connection_id: WebSocket connection ID for real-time alerts (optional)
+        :return: Alert ID
+        :rtype: str
+        """
+        data = {"event_id": event_id, "callback_url": callback_url}
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        alert_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}",
+            data=data,
+        )
+        return (alert_data or {}).get("alert_id")
+
+    def list_alerts(self):
+        """List all alerts on this index.
+
+        :return: List of alerts
+        :rtype: List[dict]
+        """
+        alert_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}"
+        )
+        return (alert_data or {}).get("alerts", [])
+
+    def enable_alert(self, alert_id):
+        """Enable an alert on this index."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"action": "enable"},
+        )
+
+    def disable_alert(self, alert_id):
+        """Disable an alert on this index."""
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.indexes}/{self.id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
             data={"action": "disable"},
         )
 
@@ -571,6 +814,7 @@ class RTStream:
         model_config={},
         name=None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index scenes from the rtstream.
 
@@ -581,6 +825,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the scene index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -594,6 +839,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -610,6 +857,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def index_spoken_words(
@@ -621,6 +869,7 @@ class RTStream:
         model_config: dict = {},
         name: str = None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index spoken words from the rtstream transcript.
 
@@ -632,6 +881,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the spoken words index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -650,6 +900,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -666,6 +918,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def index_audio(
@@ -676,6 +929,7 @@ class RTStream:
         model_config: dict = {},
         name: str = None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index audio from the rtstream transcript.
 
@@ -687,6 +941,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the audio index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -708,6 +963,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -724,6 +981,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def index_visuals(
@@ -734,6 +992,7 @@ class RTStream:
         model_config: dict = {},
         name: str = None,
         ws_connection_id: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
     ):
         """Index visuals (scenes) from the rtstream.
 
@@ -746,6 +1005,7 @@ class RTStream:
         :param dict model_config: Configuration for the model
         :param str name: Name of the visual index
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str sandbox_id: ID of the sandbox to route self-hosted inference to (optional)
         :return: Scene index, :class:`RTStreamSceneIndex <RTStreamSceneIndex>` object
         :rtype: :class:`videodb.rtstream.RTStreamSceneIndex`
         """
@@ -767,6 +1027,8 @@ class RTStream:
         }
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
 
         index_data = self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.index}/{ApiPath.scene}",
@@ -783,6 +1045,7 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
 
     def list_scene_indexes(self):
@@ -804,6 +1067,7 @@ class RTStream:
                 prompt=index.get("prompt"),
                 name=index.get("name"),
                 status=index.get("status"),
+                sandbox_id=index.get("sandbox_id"),
             )
             for index in index_data.get("scene_indexes", [])
         ]
@@ -827,7 +1091,135 @@ class RTStream:
             prompt=index_data.get("prompt"),
             name=index_data.get("name"),
             status=index_data.get("status"),
+            sandbox_id=index_data.get("sandbox_id"),
         )
+
+    def understand(
+        self,
+        segmentation: Dict = None,
+        analyzers: List[Dict] = None,
+        store: bool = True,
+        ws_connection_id: str = None,
+    ) -> "RTStreamUnderstanding":
+        """Start a continuous VLM understanding job on the stream.
+
+        Understanding is independent of indexing: it produces VLM output per
+        stream window and (when ``store=True``) persists it so it can be indexed
+        later. Initial support is one ``vlm`` analyzer with time segmentation.
+
+        :param dict segmentation: Time segmentation, e.g. ``{"type": "time", "window": "10s"}``
+        :param list analyzers: Exactly one VLM analyzer spec, e.g.
+            ``[{"type": "vlm", "name": "scene", "sampling": {"frame_count": 5}, "config": {"prompt": "...", "model": "basic"}}]``
+        :param bool store: Persist output for later indexing (default: True)
+        :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :return: The understanding job, :class:`RTStreamUnderstanding <RTStreamUnderstanding>` object
+        :rtype: :class:`videodb.rtstream.RTStreamUnderstanding`
+        """
+        data = {
+            "segmentation": segmentation or {},
+            "analyzers": analyzers or [],
+            "store": store,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        understanding_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.understand}",
+            data=data,
+        )
+        if not understanding_data:
+            return None
+        understanding_data.setdefault("rtstream_id", self.id)
+        return RTStreamUnderstanding(
+            _connection=self._connection, **understanding_data
+        )
+
+    def get_understanding(self, understanding_id: str) -> "RTStreamUnderstanding":
+        """Get an understanding job by id.
+
+        :param str understanding_id: ID of the understanding job
+        :return: The understanding job, :class:`RTStreamUnderstanding <RTStreamUnderstanding>` object
+        :rtype: :class:`videodb.rtstream.RTStreamUnderstanding`
+        """
+        if not understanding_id:
+            raise ValueError("understanding_id is required")
+        understanding_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.understand}/{understanding_id}"
+        )
+        if not understanding_data:
+            return None
+        understanding_data.setdefault("rtstream_id", self.id)
+        return RTStreamUnderstanding(
+            _connection=self._connection, **understanding_data
+        )
+
+    def list_understanding(self) -> List["RTStreamUnderstanding"]:
+        """List all understanding jobs on the stream.
+
+        :return: List of understanding jobs
+        :rtype: List[:class:`RTStreamUnderstanding <RTStreamUnderstanding>`]
+        """
+        data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.understand}"
+        )
+        results = (data or {}).get("understandings") or []
+        for item in results:
+            item.setdefault("rtstream_id", self.id)
+        return [
+            RTStreamUnderstanding(_connection=self._connection, **item)
+            for item in results
+        ]
+
+    def index(self, source, name=None, use_for=None) -> "RTStreamIndex":
+        """Materialize an understanding output into a searchable index.
+
+        :param dict source: understanding output descriptor, e.g.
+            ``understanding.outputs["scene"]``
+        :param str name: index name (optional)
+        :param list use_for: capabilities; defaults to ``["semantic"]``
+        :return: The index, :class:`RTStreamIndex <RTStreamIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamIndex`
+        """
+        data = {"source": source}
+        if name is not None:
+            data["name"] = name
+        if use_for is not None:
+            data["use_for"] = use_for
+        index_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.indexes}", data=data
+        )
+        if not index_data:
+            return None
+        index_data.setdefault("rtstream_id", self.id)
+        return RTStreamIndex(_connection=self._connection, **index_data)
+
+    def get_index(self, index_id: str) -> "RTStreamIndex":
+        """Get an index by id.
+
+        :param str index_id: ID of the index
+        :return: :class:`RTStreamIndex <RTStreamIndex>` object
+        :rtype: :class:`videodb.rtstream.RTStreamIndex`
+        """
+        if not index_id:
+            raise ValueError("index_id is required")
+        index_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.indexes}/{index_id}"
+        )
+        if not index_data:
+            return None
+        index_data.setdefault("rtstream_id", self.id)
+        return RTStreamIndex(_connection=self._connection, **index_data)
+
+    def list_indexes(self) -> List["RTStreamIndex"]:
+        """List all indexes on the stream.
+
+        :return: List of indexes
+        :rtype: List[:class:`RTStreamIndex <RTStreamIndex>`]
+        """
+        data = self._connection.get(f"{ApiPath.rtstream}/{self.id}/{ApiPath.indexes}")
+        results = (data or {}).get("indexes") or []
+        for item in results:
+            item.setdefault("rtstream_id", self.id)
+        return [RTStreamIndex(_connection=self._connection, **item) for item in results]
 
     def get_transcript(
         self,

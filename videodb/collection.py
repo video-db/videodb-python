@@ -1,8 +1,11 @@
+import json
 import logging
+import uuid
 
-from typing import Optional, Union, List, Dict, Any, Literal
+from typing import Optional, Union, List, Dict, Any, Literal, Tuple
 from videodb._upload import (
     upload,
+    upload_bytes,
 )
 from videodb._constants import (
     ApiPath,
@@ -14,12 +17,24 @@ from videodb._constants import (
 from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
+from videodb.job import GenerationJob
+from videodb.voice_clone import VoiceClone
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
 from videodb.rtstream import RTStream, RTStreamSearchResult, RTStreamShot
-from videodb.search import SearchFactory, SearchResult
+from videodb.search import (
+    AskResponse,
+    SearchFactory,
+    SearchResponse,
+    SearchResult,
+    warn_explicit_legacy_search_once,
+    warn_legacy_search_once,
+    warn_response_warnings_once,
+)
 
 logger = logging.getLogger(__name__)
+
+MAX_GENERATE_TEXT_PAYLOAD_SIZE = 250 * 1024
 
 
 class Collection:
@@ -132,6 +147,54 @@ class Collection:
         return self._connection.delete(
             path=f"{ApiPath.audio}/{audio_id}", params={"collection_id": self.id}
         )
+
+    def create_voice_clone(
+        self,
+        ref_audio_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        ref_text: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> VoiceClone:
+        """Create a reusable voice clone from an audio in this collection.
+
+        :param str ref_audio_id: Source audio ID to use as the voice reference.
+        :param str name: Human-readable name (optional).
+        :param str description: Description (optional).
+        :param str ref_text: Text spoken in the reference audio (optional).
+        :param str language: Language code, e.g. ``"en"`` (optional).
+        :return: :class:`VoiceClone <VoiceClone>` object.
+        :rtype: :class:`videodb.voice_clone.VoiceClone`
+        """
+        return self._connection.create_voice_clone(
+            ref_audio_id=ref_audio_id,
+            name=name,
+            description=description,
+            ref_text=ref_text,
+            language=language,
+            collection_id=self.id,
+        )
+
+    def get_voice_clone(self, voice_clone_id: str) -> VoiceClone:
+        """Get a voice clone by ID."""
+        return self._connection.get_voice_clone(voice_clone_id)
+
+    def list_voice_clones(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        language: Optional[str] = None,
+    ) -> List[VoiceClone]:
+        """List user voice clones, optionally filtered by language."""
+        return self._connection.list_voice_clones(
+            page=page,
+            page_size=page_size,
+            language=language,
+        )
+
+    def delete_voice_clone(self, voice_clone_id: str) -> None:
+        """Delete a voice clone by ID."""
+        return self._connection.delete_voice_clone(voice_clone_id)
 
     def get_images(self) -> List[Image]:
         """Get all the images in the collection.
@@ -274,25 +337,51 @@ class Collection:
         prompt: str,
         aspect_ratio: Optional[Literal["1:1", "9:16", "16:9", "4:3", "3:4"]] = "1:1",
         callback_url: Optional[str] = None,
-    ) -> Image:
+        model_name: Optional[str] = None,
+        config: Optional[dict] = None,
+        sandbox_id: Optional[str] = None,
+        wait: bool = False,
+        poll_interval: int = 5,
+        timeout: int = 600,
+    ) -> Union[Image, GenerationJob]:
         """Generate an image from a prompt.
 
         :param str prompt: Prompt for the image generation
-        :param str aspect_ratio: Aspect ratio of the image (optional)
+        :param str aspect_ratio: Aspect ratio of the image (optional, hosted models)
         :param str callback_url: URL to receive the callback (optional)
-        :return: :class:`Image <Image>` object
-        :rtype: :class:`videodb.image.Image`
+        :param str model_name: Model name. Use ``"black-forest-labs/FLUX.1-dev"`` for FLUX self-inference.
+        :param dict config: Model configuration. Used by FLUX.
+        :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
+        :param bool wait: If True, wait for self-inference jobs and return Image.
+        :param int poll_interval: Seconds between job polls when wait=True.
+        :param int timeout: Maximum seconds to wait when wait=True.
+        :return: :class:`Image <Image>` or :class:`GenerationJob <GenerationJob>`
+        :rtype: Union[:class:`videodb.image.Image`, :class:`videodb.job.GenerationJob`]
         """
+        payload = {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "callback_url": callback_url,
+        }
+        if model_name:
+            payload["model_name"] = model_name
+        if config is not None:
+            payload["config"] = config
+        if sandbox_id:
+            payload["sandbox_id"] = sandbox_id
+
         image_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.image}",
-            data={
-                "prompt": prompt,
-                "aspect_ratio": aspect_ratio,
-                "callback_url": callback_url,
-            },
+            data=payload,
         )
-        if image_data:
-            return Image(self._connection, **image_data)
+        if not image_data:
+            return None
+        if image_data.get("job_id"):
+            job = GenerationJob.from_data(
+                self._connection, image_data, result_type="image"
+            )
+            return job.wait(timeout=timeout, interval=poll_interval) if wait else job
+        return Image(self._connection, **image_data)
 
     def generate_music(
         self, prompt: str, duration: int = 5, callback_url: Optional[str] = None
@@ -352,28 +441,55 @@ class Collection:
         voice_name: str = "Default",
         config: dict = {},
         callback_url: Optional[str] = None,
-    ) -> Audio:
+        model_name: str = "elevenlabs",
+        sandbox_id: Optional[str] = None,
+        voice_clone_id: Optional[str] = None,
+        clone_voice_id: Optional[str] = None,
+        wait: bool = False,
+        poll_interval: int = 5,
+        timeout: int = 600,
+    ) -> Union[Audio, GenerationJob]:
         """Generate voice from text.
 
         :param str text: Text to convert to voice
         :param str voice_name: Name of the voice to use
         :param dict config: Configuration for the voice generation
         :param str callback_url: URL to receive the callback (optional)
-        :return: :class:`Audio <Audio>` object
-        :rtype: :class:`videodb.audio.Audio`
+        :param str model_name: Model name. Use ``"k2-fsa/OmniVoice"`` for OmniVoice.
+        :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
+        :param str voice_clone_id: ID of a reusable voice clone to use for OmniVoice (optional).
+        :param str clone_voice_id: Alias for ``voice_clone_id`` (optional).
+        :param bool wait: If True, wait for self-inference jobs and return Audio.
+        :param int poll_interval: Seconds between job polls when wait=True.
+        :param int timeout: Maximum seconds to wait when wait=True.
+        :return: :class:`Audio <Audio>` or :class:`GenerationJob <GenerationJob>`
+        :rtype: Union[:class:`videodb.audio.Audio`, :class:`videodb.job.GenerationJob`]
         """
+        if voice_clone_id and clone_voice_id and voice_clone_id != clone_voice_id:
+            raise ValueError("voice_clone_id and clone_voice_id cannot both be different")
+        resolved_voice_clone_id = voice_clone_id or clone_voice_id
+
         audio_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
             data={
                 "text": text,
                 "audio_type": "voice",
                 "voice_name": voice_name,
+                "model_name": model_name,
                 "config": config,
                 "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
+                "voice_clone_id": resolved_voice_clone_id,
             },
         )
-        if audio_data:
-            return Audio(self._connection, **audio_data)
+        if not audio_data:
+            return None
+        if audio_data.get("job_id"):
+            job = GenerationJob.from_data(
+                self._connection, audio_data, result_type="audio"
+            )
+            return job.wait(timeout=timeout, interval=poll_interval) if wait else job
+        return Audio(self._connection, **audio_data)
 
     def generate_video(
         self,
@@ -417,25 +533,68 @@ class Collection:
     def generate_text(
         self,
         prompt: str,
-        model_name: Literal["basic", "pro", "ultra"] = "basic",
+        model_name: str = "basic",
         response_type: Literal["text", "json"] = "text",
+        wait: bool = True,
+        callback_url: Optional[str] = None,
+        sandbox_id: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        model_config: Optional[Dict[str, Any]] = None,
     ) -> Union[str, dict]:
         """Generate text from a prompt using genai offering.
 
+        Small prompts are sent inline as JSON. When the serialized request body
+        approaches the observed gateway limit (~256 KB), the prompt is uploaded
+        via the collection presigned upload URL and referenced as ``prompt_url``
+        to avoid API Gateway/Lambda payload size limits.
+
         :param str prompt: Prompt for the text generation
-        :param str model_name: Model name to use ("basic", "pro" or "ultra")
+        :param str model_name: Model name to use ("basic", "pro", "ultra", or a self-hosted model)
         :param str response_type: Desired response type ("text" or "json")
-        :return: Generated text response
+        :param bool wait: Wait for the text generation to complete (default: True)
+        :param str callback_url: URL to receive the callback (optional)
+        :param str sandbox_id: Sandbox ID to use for self-hosted models (optional)
+        :param int max_tokens: Maximum tokens to generate (optional)
+        :param float temperature: Sampling temperature (optional)
+        :param dict model_config: Additional self-hosted model configuration (optional)
+        :return: Generated text response if wait is False, otherwise job id of the text generation
         :rtype: Union[str, dict]
         """
+        payload = {
+            "prompt": prompt,
+            "model_name": model_name,
+            "response_type": response_type,
+            "callback_url": callback_url,
+            "sandbox_id": sandbox_id,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "model_config": model_config,
+        }
+
+        payload_size = len(json.dumps(payload).encode("utf-8"))
+        if payload_size > MAX_GENERATE_TEXT_PAYLOAD_SIZE:
+            payload = {
+                "prompt_url": upload_bytes(
+                    _connection=self._connection,
+                    content=prompt,
+                    name=f"generate_text_prompt_{uuid.uuid4().hex}.txt",
+                    content_type="text/plain; charset=utf-8",
+                    collection_id=self.id,
+                ),
+                "model_name": model_name,
+                "response_type": response_type,
+                "callback_url": callback_url,
+                "sandbox_id": sandbox_id,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "model_config": model_config,
+            }
 
         return self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.text}",
-            data={
-                "prompt": prompt,
-                "model_name": model_name,
-                "response_type": response_type,
-            },
+            data=payload,
+            wait=wait,
         )
 
     def dub_video(
@@ -465,6 +624,180 @@ class Collection:
     def search(
         self,
         query: str,
+        *args,
+        config: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Union[SearchResponse, SearchResult, RTStreamSearchResult]:
+        """Search the collection.
+
+        New search is used by default. Calls that use legacy-shaped parameters are
+        routed to :meth:`legacy_search` with a warning.
+        """
+        old_params = {
+            "search_type",
+            "index_type",
+            "result_threshold",
+            "dynamic_score_percentage",
+            "scene_index_id",
+            "index_id",
+            "algorithm",
+            "sort_docs_on",
+            "namespace",
+        }
+        new_params = {
+            "top_k",
+            "mode",
+            "return_fields",
+            "include_clip",
+            "session_id",
+            "config",
+        }
+        unsupported_params = {"index_name", "index_names", "index_ids"}
+
+        if config is not None:
+            kwargs["config"] = config
+
+        if args:
+            legacy_arg_names = [
+                "search_type",
+                "index_type",
+                "result_threshold",
+                "score_threshold",
+                "dynamic_score_percentage",
+                "filter",
+                "sort_docs_on",
+                "namespace",
+                "scene_index_id",
+            ]
+            for name, value in zip(legacy_arg_names, args):
+                kwargs.setdefault(name, value)
+
+        has_old = bool(args) or any(k in kwargs and kwargs[k] is not None for k in old_params)
+        has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
+        has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
+
+        if kwargs.get("deepsearch_config") is not None:
+            raise ValueError(
+                "deepsearch_config is not a public search() option. Use mode='deepsearch', top_k, session_id, and return_fields for DeepSearch requests."
+            )
+        if has_old and (has_new or has_unsupported):
+            raise ValueError(
+                "Cannot mix legacy search parameters with Search V2 parameters. "
+                "Use legacy_search(...) for older indexes, or remove legacy parameters and use Search V2 search(...)."
+            )
+        if has_unsupported:
+            raise ValueError(
+                "search() chooses indexes automatically and does not accept index selectors. "
+                "Use semantic_search() for semantic index selection, query() for structured filtering, or aggregate() for counts and facets."
+            )
+
+        if has_old:
+            warn_legacy_search_once()
+            return self.legacy_search(query=query, _skip_warning=True, **kwargs)
+
+        return self._new_search(query=query, **kwargs)
+
+    def _new_search(self, query: str, **kwargs) -> SearchResponse:
+        payload = {"query": query, **{k: v for k, v in kwargs.items() if v is not None}}
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.search}/v2",
+            data=payload,
+        )
+        return SearchResponse(self._connection, **search_data)
+
+    def ask(
+        self,
+        question: str,
+        top_k: int = 15,
+        mode: str = "default",
+        include_sources: bool = False,
+    ) -> AskResponse:
+        ask_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.ask}",
+            data={
+                "question": question,
+                "top_k": top_k,
+                "mode": mode,
+                "include_sources": include_sources,
+            },
+        )
+        return AskResponse(self._connection, **ask_data)
+
+    def semantic_search(
+        self,
+        query: str,
+        index_names: Optional[Union[List[str], str]] = None,
+        top_k: int = 10,
+        score_threshold: Optional[float] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        index_ids: Optional[Union[List[str], str]] = None,
+    ) -> SearchResult:
+        search_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.semantic_search}",
+            data={
+                "query": query,
+                "index_names": index_names,
+                "index_ids": index_ids,
+                "top_k": top_k,
+                "score_threshold": score_threshold,
+                "filter": filter,
+                "return_fields": return_fields,
+            },
+        )
+        return SearchResult(self._connection, **search_data)
+
+    def query(
+        self,
+        index_name: Optional[str] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        limit: int = 100,
+        return_fields: Optional[Union[List, Dict, str]] = None,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
+    ) -> SearchResult:
+        query_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.query}",
+            data={
+                "index_name": index_name,
+                "index_id": index_id,
+                "filter": filter,
+                "limit": limit,
+                "return_fields": return_fields,
+                "sort": sort,
+            },
+        )
+        return SearchResult(self._connection, **query_data)
+
+    def aggregate(
+        self,
+        index_name: Optional[str] = None,
+        filter: Optional[Union[List, Dict]] = None,
+        group_by: Optional[str] = None,
+        metric: str = "count",
+        limit: int = 100,
+        sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
+        index_id: Optional[str] = None,
+    ) -> Union[Dict, List[Dict]]:
+        aggregate_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.aggregate}",
+            data={
+                "index_name": index_name,
+                "index_id": index_id,
+                "filter": filter,
+                "group_by": group_by,
+                "metric": metric,
+                "limit": limit,
+                "sort": sort,
+            },
+        )
+        if isinstance(aggregate_data, dict):
+            warn_response_warnings_once(aggregate_data.get("warnings") or [])
+        return aggregate_data
+
+    def legacy_search(
+        self,
+        query: str,
         search_type: Optional[str] = SearchType.semantic,
         index_type: Optional[str] = IndexType.spoken_word,
         result_threshold: Optional[int] = None,
@@ -474,6 +807,9 @@ class Collection:
         sort_docs_on: Optional[str] = None,
         namespace: Optional[str] = None,
         scene_index_id: Optional[str] = None,
+        index_id: Optional[str] = None,
+        algorithm: Optional[str] = None,
+        _skip_warning: bool = False,
     ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
 
@@ -493,6 +829,11 @@ class Collection:
         :rtype: Union[:class:`videodb.search.SearchResult`,
             :class:`videodb.rtstream.RTStreamSearchResult`]
         """
+        if not _skip_warning:
+            warn_explicit_legacy_search_once()
+        if scene_index_id is None and index_id is not None:
+            scene_index_id = index_id
+
         if namespace == "rtstream":
             data = {"query": query}
             if scene_index_id is not None:
@@ -539,6 +880,8 @@ class Collection:
             dynamic_score_percentage=dynamic_score_percentage,
             sort_docs_on=sort_docs_on,
             filter=filter,
+            scene_index_id=scene_index_id,
+            algorithm=algorithm,
         )
 
     def search_title(self, query) -> List[Video]:

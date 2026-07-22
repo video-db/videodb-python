@@ -8,6 +8,8 @@ from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     VIDEO_DB_API,
     IndexType,
+    IndexCapability,
+    FieldGroup,
     SceneExtractionType,
     MediaType,
     SearchType,
@@ -23,8 +25,16 @@ from videodb._constants import (
     ReframeMode,
     SegmentationType,
     RTStreamChannelType,
+    SandboxTier,
+    SandboxStatus,
 )
 from videodb.client import Connection
+from videodb.search import AskResponse, SearchResponse, SearchResult
+from videodb.understanding import Understanding, UnderstandingAnalyzer
+from videodb.job import GenerationJob
+from videodb.sandbox import Sandbox
+from videodb.sandbox_models import SandboxModel
+from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
 from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
@@ -42,6 +52,10 @@ logger: logging.Logger = logging.getLogger("videodb")
 __all__ = [
     "connect",
     "CaptureSession",
+    "GenerationJob",
+    "Sandbox",
+    "SandboxModel",
+    "VoiceClone",
     "WebSocketConnection",
     "CaptureClient",
     "Channel",
@@ -53,7 +67,14 @@ __all__ = [
     "AuthenticationError",
     "InvalidRequestError",
     "IndexType",
+    "IndexCapability",
+    "FieldGroup",
     "SearchError",
+    "SearchResult",
+    "SearchResponse",
+    "AskResponse",
+    "Understanding",
+    "UnderstandingAnalyzer",
     "play_stream",
     "build_iframe_embed_code",
     "MediaType",
@@ -71,6 +92,8 @@ __all__ = [
     "ReframeMode",
     "SegmentationType",
     "RTStreamChannelType",
+    "SandboxTier",
+    "SandboxStatus",
 ]
 
 
