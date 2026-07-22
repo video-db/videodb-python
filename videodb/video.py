@@ -1077,7 +1077,7 @@ class Video:
             :attr:`IndexCapability.aggregate <videodb.IndexCapability.aggregate>`.
             Defaults to the artifact's defaults on the server.
         :param dict fields: (optional) Field-level indexing configuration mapping
-            field groups (``semantic``, ``fts``, ``filter``, ``aggregate``,
+            field groups (``semantic``, ``filter``, ``aggregate``,
             ``sort``) to lists of field names
         :param str callback_url: (optional) URL called when indexing completes
         :raises ValueError: If ``source`` is missing or of an unsupported type

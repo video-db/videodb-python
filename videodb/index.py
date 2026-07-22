@@ -132,7 +132,7 @@ class Index:
         (subset of ``"semantic"``, ``"query"``, ``"aggregate"``)
     :ivar source: Source artifact reference or records the index was built from
     :ivar int record_count: Number of records in the index
-    :ivar dict fields: Field groups mapping (``semantic``, ``fts``, ``filter``,
+    :ivar dict fields: Field groups mapping (``semantic``, ``filter``,
         ``aggregate``, ``sort``) to lists of field names
     :ivar dict field_schema: Mapping of field name to :class:`FieldSchema <FieldSchema>`
     """
