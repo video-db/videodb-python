@@ -112,6 +112,9 @@ class Video:
             "algorithm",
             "sort_docs_on",
             "namespace",
+            "stitch",
+            "rerank",
+            "rerank_params",
         }
         new_params = {
             "top_k",

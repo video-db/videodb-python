@@ -490,6 +490,9 @@ class Collection:
             "algorithm",
             "sort_docs_on",
             "namespace",
+            "stitch",
+            "rerank",
+            "rerank_params",
         }
         new_params = {
             "top_k",
@@ -651,6 +654,9 @@ class Collection:
         scene_index_id: Optional[str] = None,
         index_id: Optional[str] = None,
         algorithm: Optional[str] = None,
+        stitch: Optional[bool] = None,
+        rerank: Optional[bool] = None,
+        rerank_params: Optional[Dict[str, Any]] = None,
         _skip_warning: bool = False,
     ) -> Union[SearchResult, RTStreamSearchResult]:
         """Search for a query in the collection.
@@ -709,6 +715,14 @@ class Collection:
             ]
             return RTStreamSearchResult(collection_id=self.id, shots=shots)
 
+        legacy_options = {}
+        if stitch is not None:
+            legacy_options["stitch"] = stitch
+        if rerank is not None:
+            legacy_options["rerank"] = rerank
+        if rerank_params is not None:
+            legacy_options["rerank_params"] = rerank_params
+
         search = SearchFactory(self._connection).get_search(search_type)
         return search.search_inside_collection(
             collection_id=self.id,
@@ -722,6 +736,7 @@ class Collection:
             filter=filter,
             scene_index_id=scene_index_id,
             algorithm=algorithm,
+            **legacy_options,
         )
 
     def search_title(self, query) -> List[Video]:
