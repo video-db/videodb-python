@@ -7,22 +7,6 @@ from videodb._constants import (
     UNDERSTANDING_TERMINAL_STATUSES,
 )
 
-
-ANALYZER_TYPE_ALIASES = {
-    "spoken_words": "speech_transcription",
-}
-
-DEFAULT_ANALYZER_NAMES = {
-    "speech_transcription": "transcript",
-    "object_detection": "objects",
-    "vlm": "scene",
-    "ocr": "text",
-    "brand_detection": "brands",
-    "activity_recognition": "activity",
-    "location_detection": "location",
-}
-
-
 class UnderstandingAnalyzer:
     """Analyzer status and output handle for one analyzer in an understanding run."""
 
@@ -235,7 +219,7 @@ class Understanding:
     def get_analyzer(self, name_or_id: str, refresh: bool = False) -> UnderstandingAnalyzer:
         """Return an analyzer by user-facing name or internal analyzer id.
 
-        :param str name_or_id: Analyzer name, e.g. ``"transcript"``, or id, e.g. ``"an_..."``
+        :param str name_or_id: Analyzer name returned by the API, or an internal id such as ``"an_..."``
         :param bool refresh: When True, fetch the latest analyzer status first
         :raises ValueError: If no analyzer matches
         :return: :class:`UnderstandingAnalyzer <UnderstandingAnalyzer>` object
@@ -277,26 +261,18 @@ class Understanding:
         )
 
 
-def normalize_analyzer_type(analyzer_type: str) -> str:
-    return ANALYZER_TYPE_ALIASES.get(analyzer_type, analyzer_type)
-
-
-def default_analyzer_name(analyzer_type: str) -> Optional[str]:
-    return DEFAULT_ANALYZER_NAMES.get(normalize_analyzer_type(analyzer_type))
-
-
 def normalize_understanding_analyzers(analyzers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Normalize analyzer payloads to the server contract.
 
-    The public SDK accepts friendly analyzer names like ``spoken_words`` and
-    automatically fills stable output names for built-ins when omitted.
+    The public SDK accepts friendly analyzer types like ``spoken_words``. Names
+    remain optional; the server assigns a unique name and id when omitted. Use
+    explicit names when another analyzer references one through ``inputs``.
     """
     if not isinstance(analyzers, list) or not analyzers:
         raise ValueError("analyzers must be a non-empty list")
 
     normalized = []
     names = set()
-    generated_names = set()
 
     for index, analyzer in enumerate(analyzers):
         if not isinstance(analyzer, dict):
@@ -305,24 +281,11 @@ def normalize_understanding_analyzers(analyzers: List[Dict[str, Any]]) -> List[D
             raise ValueError(f"analyzers[{index}].type is required")
 
         item = dict(analyzer)
-        original_type = item["type"]
-        item["type"] = normalize_analyzer_type(original_type)
-
-        if not item.get("name"):
-            generated_name = default_analyzer_name(original_type)
-            if generated_name:
-                if generated_name in generated_names:
-                    raise ValueError(
-                        f"Multiple analyzers would use default name {generated_name!r}. "
-                        "Provide explicit analyzer names."
-                    )
-                item["name"] = generated_name
-                generated_names.add(generated_name)
-
-        if item.get("name"):
-            if item["name"] in names:
-                raise ValueError(f"Duplicate analyzer name: {item['name']}")
-            names.add(item["name"])
+        name = item.get("name")
+        if name:
+            if name in names:
+                raise ValueError(f"Duplicate analyzer name: {name}")
+            names.add(name)
 
         normalized.append(item)
 

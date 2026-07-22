@@ -997,8 +997,8 @@ class Video:
     ) -> Understanding:
         """Create an understanding run for this video.
 
-        :param list analyzers: Analyzer definitions. The SDK accepts friendly
-            analyzer type ``spoken_words`` and maps it to the server analyzer.
+        :param list analyzers: Analyzer definitions, such as analyzer type
+            ``spoken_words``.
         :param dict segmentation: Optional run-level segmentation config
         :param dict sampling: Optional run-level sampling config
         :param dict transform: Optional run-level transform config
