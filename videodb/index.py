@@ -11,7 +11,7 @@ INDEX_TERMINAL_STATUSES = {"ready", "failed"}
 class FieldSchema:
     """Schema details for a single indexed field.
 
-    :ivar str type: Data type of the field (e.g. ``"string"``, ``"string[]"``, ``"number"``)
+    :ivar str type: Data type of the field (e.g. ``"string"``, ``"string_array"``, ``"number"``, ``"text"``, ``"boolean"``)
     :ivar list groups: Field groups this field belongs to (e.g. ``["semantic", "filter"]``)
     :ivar list operators: Filter operators supported by the field (for filterable fields)
     """
@@ -66,12 +66,10 @@ class IndexRecord:
     ) -> None:
         self.video_id = video_id
         self.understanding_id = understanding_id
-        # Prefer the V2 contract names; fall back to legacy aliases for older payloads.
         self.scene_id = scene_id if scene_id is not None else segment_id
         self.start = start if start is not None else start_sec
         self.end = end if end is not None else end_sec
         self.data = data or {}
-        # Backward-compatible aliases.
         self.segment_id = self.scene_id
         self.start_sec = self.start
         self.end_sec = self.end
@@ -134,7 +132,7 @@ class Index:
         (subset of ``"semantic"``, ``"query"``, ``"aggregate"``)
     :ivar source: Source artifact reference or records the index was built from
     :ivar int record_count: Number of records in the index
-    :ivar dict fields: Field groups mapping (``semantic``, ``text``, ``filter``,
+    :ivar dict fields: Field groups mapping (``semantic``, ``fts``, ``filter``,
         ``aggregate``, ``sort``) to lists of field names
     :ivar dict field_schema: Mapping of field name to :class:`FieldSchema <FieldSchema>`
     """
@@ -152,7 +150,7 @@ class Index:
         self.index_id = data.get("index_id") or getattr(self, "index_id", None)
         self.name = data.get("name")
         self.status = data.get("status")
-        self.error = data.get("error")  # failure reason when status == "failed"
+        self.error = data.get("error")
         self.use_for = data.get("use_for", [])
         self.source = data.get("source")
         self.record_count = data.get("record_count")

@@ -1021,11 +1021,9 @@ class Video:
         if source is None:
             raise ValueError("source is required")
 
-        # Analyzer (or any object that knows how to reference itself).
         if hasattr(source, "to_index_source"):
             return source.to_index_source()
 
-        # A bare list can only mean temporal records — canonicalize to the dict form.
         if isinstance(source, list):
             return {"scenes": source}
 
@@ -1079,7 +1077,7 @@ class Video:
             :attr:`IndexCapability.aggregate <videodb.IndexCapability.aggregate>`.
             Defaults to the artifact's defaults on the server.
         :param dict fields: (optional) Field-level indexing configuration mapping
-            field groups (``semantic``, ``text``, ``filter``, ``aggregate``,
+            field groups (``semantic``, ``fts``, ``filter``, ``aggregate``,
             ``sort``) to lists of field names
         :param str callback_url: (optional) URL called when indexing completes
         :raises ValueError: If ``source`` is missing or of an unsupported type
