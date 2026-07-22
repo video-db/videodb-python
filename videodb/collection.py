@@ -22,8 +22,6 @@ from videodb.search import (
     SearchFactory,
     SearchResponse,
     SearchResult,
-    warn_explicit_legacy_search_once,
-    warn_legacy_search_once,
     warn_response_warnings_once,
 )
 
@@ -525,10 +523,6 @@ class Collection:
         has_new = any(k in kwargs and kwargs[k] is not None for k in new_params)
         has_unsupported = any(k in kwargs and kwargs[k] is not None for k in unsupported_params)
 
-        if kwargs.get("deepsearch_config") is not None:
-            raise ValueError(
-                "Unsupported search option. Use mode='deepsearch', top_k, session_id, and return_fields for DeepSearch requests."
-            )
         if has_old and (has_new or has_unsupported):
             raise ValueError(
                 "Cannot mix legacy search parameters with Search V2 parameters. "
@@ -541,7 +535,6 @@ class Collection:
             )
 
         if has_old:
-            warn_legacy_search_once()
             return self.legacy_search(query=query, _skip_warning=True, **kwargs)
 
         return self._new_search(query=query, **kwargs)
@@ -678,8 +671,6 @@ class Collection:
         :rtype: Union[:class:`videodb.search.SearchResult`,
             :class:`videodb.rtstream.RTStreamSearchResult`]
         """
-        if not _skip_warning:
-            warn_explicit_legacy_search_once()
         if scene_index_id is None and index_id is not None:
             scene_index_id = index_id
 
