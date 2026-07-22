@@ -18,13 +18,11 @@ from videodb.shot import Shot
 
 _LEGACY_SEARCH_WARNING = (
     "This search used legacy search because legacy parameters were provided. "
-    "Use legacy_search(...) to keep searching older indexes, or remove legacy parameters and create Search V2 indexes. "
-    "Docs: https://videodb-docs-indexing-search-v2.mintlify.app/api-reference/search-v2/legacy-search"
+    "Use legacy_search(...) to keep searching older indexes, or remove legacy parameters to use Search V2."
 )
 _EXPLICIT_LEGACY_SEARCH_WARNING = (
     "legacy_search() searches older spoken-word and scene indexes only. "
-    "Create Search V2 indexes to use search(), semantic_search(), query(), aggregate(), and ask(). "
-    "Docs: https://videodb-docs-indexing-search-v2.mintlify.app/pages/understand/indexing-pipelines/create-an-index"
+    "Create Search V2 indexes to use search(), semantic_search(), query(), aggregate(), and ask()."
 )
 _LEGACY_SEARCH_WARNING_EMITTED = set()
 
