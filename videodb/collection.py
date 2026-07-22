@@ -527,7 +527,7 @@ class Collection:
 
         if kwargs.get("deepsearch_config") is not None:
             raise ValueError(
-                "deepsearch_config is not a public search() option. Use mode='deepsearch', top_k, session_id, and return_fields for DeepSearch requests."
+                "Unsupported search option. Use mode='deepsearch', top_k, session_id, and return_fields for DeepSearch requests."
             )
         if has_old and (has_new or has_unsupported):
             raise ValueError(
