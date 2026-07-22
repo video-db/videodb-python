@@ -97,10 +97,21 @@ class Video:
         config: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Union[SearchResponse, SearchResult]:
-        """Search this video.
+        """Search this video using Search V2 by default.
 
-        New search is used by default. Calls that use legacy-shaped parameters are
-        routed to :meth:`legacy_search` with a warning.
+        Pass Search V2 options such as ``top_k``, ``mode``, ``return_fields``,
+        ``include_clip``, ``session_id``, or ``config`` for the new search API.
+        Calls with legacy options such as ``search_type``, ``index_type``,
+        ``result_threshold``, ``scene_index_id``, ``index_id``, ``stitch``,
+        ``rerank``, or ``rerank_params`` are routed to :meth:`legacy_search`.
+        Do not mix Search V2 and legacy options in one call.
+
+        Server-provided warnings are exposed on ``response.warnings`` and are
+        emitted as Python ``UserWarning`` messages.
+
+        :param str query: Natural-language search query.
+        :param dict config: Optional Search V2 request configuration.
+        :return: ``SearchResponse`` for Search V2, or ``SearchResult`` for legacy-routed calls.
         """
         old_params = {
             "search_type",
@@ -176,6 +187,18 @@ class Video:
         mode: str = "default",
         include_sources: bool = False,
     ) -> AskResponse:
+        """Ask a question over this video's Search V2 indexes.
+
+        ``ask()`` is Search V2 only; it does not search legacy indexes. If the
+        server cannot answer from indexed content, warnings are available on
+        ``response.warnings``.
+
+        :param str question: Question to answer from the video.
+        :param int top_k: Maximum number of source shots to retrieve.
+        :param str mode: Search mode to use.
+        :param bool include_sources: Include source shots in the response.
+        :return: ``AskResponse`` with ``answer``, ``sources``, and ``warnings``.
+        """
         ask_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.ask}",
             data={
@@ -197,6 +220,21 @@ class Video:
         return_fields: Optional[Union[List, Dict, str]] = None,
         index_ids: Optional[Union[List[str], str]] = None,
     ) -> SearchResult:
+        """Run direct Search V2 semantic retrieval for this video.
+
+        Use ``index_names`` or ``index_ids`` to target semantic indexes. Singular
+        legacy selectors such as ``index_name``/``index_id`` are not accepted by
+        this method.
+
+        :param str query: Natural-language query.
+        :param index_names: Optional Search V2 semantic index name or names.
+        :param int top_k: Maximum number of shots to return.
+        :param float score_threshold: Optional minimum similarity score.
+        :param filter: Optional Search V2 filter.
+        :param return_fields: Optional metadata fields to include.
+        :param index_ids: Optional Search V2 index ID or IDs.
+        :return: ``SearchResult`` with shots and server-provided ``warnings``.
+        """
         search_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.semantic_search}",
             data={
@@ -220,6 +258,19 @@ class Video:
         sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
         index_id: Optional[str] = None,
     ) -> SearchResult:
+        """Run a structured Search V2 query for this video.
+
+        ``query()`` is V2-only and is intended for filtering, sorting, and
+        retrieving indexed records without natural-language planning.
+
+        :param str index_name: Optional Search V2 index name.
+        :param filter: Optional Search V2 filter.
+        :param int limit: Maximum number of records to return.
+        :param return_fields: Optional fields to include in each result.
+        :param sort: Optional sort field or ``[(field, direction)]`` list.
+        :param str index_id: Optional Search V2 index ID.
+        :return: ``SearchResult`` with shots and server-provided ``warnings``.
+        """
         query_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.query}",
             data={
@@ -243,6 +294,20 @@ class Video:
         sort: Optional[Union[str, List[Tuple[str, str]]]] = None,
         index_id: Optional[str] = None,
     ) -> Union[Dict, List[Dict]]:
+        """Run a Search V2 aggregate over this video's indexed records.
+
+        Use this for counts, facets, and grouped metrics. ``aggregate()`` is
+        V2-only and returns the server aggregate payload directly.
+
+        :param str index_name: Optional Search V2 index name.
+        :param filter: Optional Search V2 filter.
+        :param str group_by: Optional field to group by.
+        :param str metric: Aggregate metric, default ``"count"``.
+        :param int limit: Maximum number of aggregate rows.
+        :param sort: Optional sort field or ``[(field, direction)]`` list.
+        :param str index_id: Optional Search V2 index ID.
+        :return: Aggregate dict/list; dict responses may include ``warnings``.
+        """
         aggregate_data = self._connection.post(
             path=f"{ApiPath.video}/{self.id}/{ApiPath.aggregate}",
             data={
@@ -270,17 +335,23 @@ class Video:
         filter: List[Dict[str, Any]] = [],
         **kwargs,
     ) -> SearchResult:
-        """Search for a query in the video.
+        """Search this video using legacy spoken-word or scene indexes.
+
+        Use this when you intentionally want older indexes. New applications
+        should prefer :meth:`search`, :meth:`semantic_search`, :meth:`query`,
+        :meth:`aggregate`, or :meth:`ask` for Search V2 indexes. The ``index_id``
+        keyword is accepted as an alias for ``scene_index_id``.
+
+        Server-provided migration warnings are available on ``result.warnings``.
 
         :param str query: Query to search for.
-        :param SearchType search_type: (optional) Type of search to perform :class:`SearchType <SearchType>` object
-        :param IndexType index_type: (optional) Type of index to search :class:`IndexType <IndexType>` object
-        :param int result_threshold: (optional) Number of results to return
-        :param float score_threshold: (optional) Threshold score for the search
-        :param float dynamic_score_percentage: (optional) Percentage of dynamic score to consider
-        :raise SearchError: If the search fails
-        :return: :class:`SearchResult <SearchResult>` object
-        :rtype: :class:`videodb.search.SearchResult`
+        :param SearchType search_type: Legacy search type.
+        :param IndexType index_type: Legacy index type.
+        :param int result_threshold: Number of results to return.
+        :param float score_threshold: Minimum score threshold.
+        :param float dynamic_score_percentage: Dynamic score percentage.
+        :param list filter: Legacy metadata filters.
+        :return: ``SearchResult`` with shots and server-provided ``warnings``.
         """
         kwargs.pop("_skip_warning", False)
         if kwargs.get("scene_index_id") is None and kwargs.get("index_id") is not None:
