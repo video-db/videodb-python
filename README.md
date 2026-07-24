@@ -59,6 +59,7 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
     - [Capture Sessions (Desktop Recording)](#capture-sessions-desktop-recording)
     - [WebSocket Events](#websocket-events)
     - [Meeting Recording](#meeting-recording)
+    - [Sandbox Compute](#sandbox-compute)
     - [Generative Media](#generative-media)
     - [Video Dubbing and Translation](#video-dubbing-and-translation)
     - [Transcoding](#transcoding)
@@ -569,6 +570,29 @@ if meeting.is_completed:
 meeting_info = video.get_meeting()
 ```
 
+### Sandbox Compute
+
+Create dedicated compute for supported open-weight models:
+
+```python
+from videodb import SandboxModel, SandboxTier
+
+sandbox = conn.create_sandbox(
+    tier=SandboxTier.small,
+    name="my-sandbox",
+    models=[SandboxModel.RTDETR_V2_R50VD.value],
+)
+sandbox.wait_for_ready(timeout=1200, interval=5)
+
+# Retrieve or list existing sandboxes.
+same_sandbox = conn.get_sandbox(sandbox.id)
+active_sandboxes = conn.list_sandboxes(status="active")
+
+# Keep the sandbox active while submitting inference work, then stop it.
+sandbox.stop(grace=True)
+sandbox.wait_for_stop(timeout=300, interval=5)
+```
+
 ### Generative Media
 
 Generate images, audio, and videos using AI:
@@ -610,6 +634,9 @@ response = coll.generate_text(
     model_name="pro",  # basic, pro, or ultra
     response_type="text"  # text or json
 )
+
+# Large prompts are uploaded automatically with a unique filename and
+# sent as prompt_url instead of inline JSON to avoid request payload limits.
 ```
 
 ### Video Dubbing and Translation
@@ -767,6 +794,9 @@ except SearchError as e:
 - **CaptureSession**: Desktop capture session with export
 - **CaptureClient**: Native binary client for screen/audio recording
 - **WebSocketConnection**: Real-time event streaming
+- **Sandbox**: Dedicated compute for supported open-weight models
+- **GenerationJob**: Asynchronous image or audio generation job
+- **VoiceClone**: Reusable cloned-voice reference
 
 ### Constants and Enums
 
@@ -776,6 +806,9 @@ except SearchError as e:
 - `Segmenter`: `word`, `sentence`, `time`
 - `TranscodeMode`: `lightning`, `economy`
 - `MediaType`: `video`, `audio`, `image`
+- `SandboxTier`: `small`, `medium`
+- `SandboxStatus`: `provisioning`, `active`, `alert`, `stopping`, `stopped`, `failed`
+- `SandboxModel`: Supported Sandbox Compute model identifiers
 
 For detailed API documentation, visit [docs.videodb.io](https://docs.videodb.io).
 

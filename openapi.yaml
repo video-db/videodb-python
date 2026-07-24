@@ -73,6 +73,81 @@ components:
               type: string
               example: "https://api.videodb.io/async-response/job-123"
 
+    Sandbox:
+      type: object
+      properties:
+        sandbox_id:
+          type: string
+          example: "bx-123abc"
+        name:
+          type: string
+          example: "my-sandbox"
+        tier:
+          type: string
+          enum: [small, medium]
+          example: "small"
+        status:
+          type: string
+          enum: [provisioning, active, alert, stopping, stopped, failed]
+          example: "active"
+        models:
+          type: array
+          items:
+            type: string
+          example: ["rtdetr-v2-r50vd"]
+        model_categories:
+          type: array
+          items:
+            type: string
+          example: ["object_detection"]
+        region:
+          type: string
+          example: "aws-us-east-1"
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+        stopped_at:
+          type: string
+          format: date-time
+
+    SandboxResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Sandbox'
+
+    SandboxListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            sandboxes:
+              type: array
+              items:
+                $ref: '#/components/schemas/Sandbox'
+            page:
+              type: integer
+              example: 1
+            page_size:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 1
+
     User:
       type: object
       properties:
@@ -1915,6 +1990,18 @@ paths:
                 aspect_ratio:
                   type: string
                   example: "16:9"
+                model_name:
+                  type: string
+                  description: Model used for image generation.
+                  example: "black-forest-labs/FLUX.1-dev"
+                config:
+                  type: object
+                  description: Model configuration. For FLUX supports size, num_inference_steps, guidance_scale, negative_prompt, and seed.
+                  additionalProperties: true
+                sandbox_id:
+                  type: string
+                  description: Sandbox ID used for self-hosted image generation.
+                  example: "bx-123abc"
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
@@ -1983,16 +2070,40 @@ paths:
             schema:
               type: object
               required:
-                - prompt
                 - audio_type
               properties:
                 prompt:
                   type: string
+                  description: Prompt for music or sound effect generation.
                   example: "Generate upbeat background music"
+                text:
+                  type: string
+                  description: Text to convert to speech when `audio_type` is `voice`.
+                  example: "Hello, welcome to VideoDB."
                 audio_type:
                   type: string
-                  enum: [speech, sound_effect, music]
-                  example: "music"
+                  enum: [voice, sound_effect, music]
+                  example: "voice"
+                voice_name:
+                  type: string
+                  description: Voice name for hosted text-to-speech.
+                  example: "Default"
+                model_name:
+                  type: string
+                  description: Model used for text-to-speech.
+                  example: "k2-fsa/OmniVoice"
+                config:
+                  type: object
+                  description: Voice configuration. For OmniVoice supports instructions, ref_audio, ref_text, response_format, speed, language, and max_new_tokens.
+                  additionalProperties: true
+                sandbox_id:
+                  type: string
+                  description: Sandbox ID used for self-hosted text-to-speech.
+                  example: "bx-123abc"
+                voice_clone_id:
+                  type: string
+                  description: Reusable VideoDB voice clone ID.
+                  example: "vc-123abc"
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
@@ -2003,6 +2114,167 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AsyncResponse'
+
+  /sandbox:
+    post:
+      summary: Create a Sandbox Compute pool
+      tags:
+        - Sandbox
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tier:
+                  type: string
+                  enum: [small, medium]
+                  example: "small"
+                name:
+                  type: string
+                  example: "my-sandbox"
+                callback_url:
+                  type: string
+                  format: uri
+                models:
+                  type: array
+                  items:
+                    type: string
+                  example: ["rtdetr-v2-r50vd"]
+                model_categories:
+                  type: array
+                  items:
+                    type: string
+                  example: ["object_detection"]
+              anyOf:
+                - required: [models]
+                - required: [model_categories]
+      responses:
+        '200':
+          description: Sandbox accepted for provisioning
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxResponse'
+    get:
+      summary: List Sandbox Compute pools
+      tags:
+        - Sandbox
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [provisioning, active, alert, stopping, stopped, failed]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Sandbox list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxListResponse'
+
+  /sandbox/{sandbox_id}:
+    get:
+      summary: Get a Sandbox Compute pool
+      tags:
+        - Sandbox
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: sandbox_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "bx-123abc"
+      responses:
+        '200':
+          description: Current Sandbox state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxResponse'
+
+  /sandbox/{sandbox_id}/stop:
+    post:
+      summary: Stop a Sandbox Compute pool
+      tags:
+        - Sandbox
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: sandbox_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "bx-123abc"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grace:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Sandbox stopping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxResponse'
+
+  /job/{job_id}:
+    get:
+      summary: Get self-inference generation job status
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Generation job status or final generated asset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [processing, done, failed]
+                  data:
+                    type: object
+                    additionalProperties: true
+                  message:
+                    type: string
+        '404':
+          description: Job not found
 
   /collection/{collection_id}/generate/text/:
     post:
@@ -2022,27 +2294,45 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - prompt
+              description: Provide either `prompt` for inline text or `prompt_url` for a previously uploaded prompt file.
               properties:
                 prompt:
                   type: string
+                  description: Inline prompt text. Use for smaller prompts.
                   example: "Summarize the content of this video"
+                prompt_url:
+                  type: string
+                  description: URL to a previously uploaded plain-text prompt file. Use for larger prompts.
+                  example: "https://storage.googleapis.com/.../generate_text_prompt_123abc.txt"
                 video_id:
                   type: string
                   example: "m-12345"
                 model_name:
                   type: string
-                  example: "gpt-4"
+                  description: Hosted tier (`mini`, `basic`, `pro`, `ultra`) or self-hosted sandbox model name.
+                  example: "Qwen/Qwen3.5-27B"
+                sandbox_id:
+                  type: string
+                  description: Sandbox ID to use when `model_name` is a self-hosted model.
+                  example: "bx-123abc"
                 max_tokens:
                   type: integer
                   example: 500
                 temperature:
                   type: number
                   example: 0.7
+                model_config:
+                  type: object
+                  description: Additional self-hosted model configuration.
+                  additionalProperties: true
                 callback_url:
                   type: string
                   example: "https://webhook.example.com/callback"
+              oneOf:
+                - required:
+                    - prompt
+                - required:
+                    - prompt_url
       responses:
         '200':
           description: Text generation started or completed
@@ -5587,6 +5877,8 @@ tags:
     description: Content search and indexing
   - name: AI Generation
     description: AI-powered content generation
+  - name: Sandbox
+    description: Dedicated compute lifecycle for supported open-weight models
   - name: Billing
     description: Billing and usage management
   - name: RTStream

@@ -140,11 +140,36 @@ class ApiPath:
     token = "token"
     websocket = "websocket"
     export = "export"
+    job = "job"
+    sandbox = "sandbox"
+    voice_clone = "voice_clone"
+    understand = "understand"
+    indexes = "indexes"
+    identities = "identities"
+    merge = "merge"
+    split = "split"
+    async_response = "async-response"
+
 
 
 class Status:
     processing = "processing"
     in_progress = "in progress"
+    complete = "complete"
+
+
+class SandboxTier:
+    small = "small"
+    medium = "medium"
+
+
+class SandboxStatus:
+    provisioning = "provisioning"
+    active = "active"
+    stopping = "stopping"
+    stopped = "stopped"
+    failed = "failed"
+    alert = "alert"
 
 
 INDEX_TERMINAL_STATUSES = {"ready", "failed"}
@@ -164,6 +189,8 @@ class HttpClientDefaultValues:
     timeout = 30
     backoff_factor = 0.1
     status_forcelist = [502, 503, 504]
+    max_poll_time = 500
+    poll_interval = 5
 
 
 class MaxSupported:
