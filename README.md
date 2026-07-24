@@ -674,12 +674,12 @@ meeting_info = video.get_meeting()
 Create dedicated compute for supported open-weight models:
 
 ```python
-from videodb import SandboxModel, SandboxTier
+from videodb import SandboxTier
 
 sandbox = conn.create_sandbox(
     tier=SandboxTier.small,
     name="my-sandbox",
-    models=[SandboxModel.RTDETR_V2_R50VD.value],
+    models=["rtdetr-v2-r50vd"],
 )
 sandbox.wait_for_ready(timeout=1200, interval=5)
 
@@ -913,7 +913,6 @@ except SearchError as e:
 - `MediaType`: `video`, `audio`, `image`
 - `SandboxTier`: `small`, `medium`
 - `SandboxStatus`: `provisioning`, `active`, `alert`, `stopping`, `stopped`, `failed`
-- `SandboxModel`: Supported Sandbox Compute model identifiers
 
 For detailed API documentation, visit [docs.videodb.io](https://docs.videodb.io).
 

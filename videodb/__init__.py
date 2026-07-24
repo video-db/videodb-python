@@ -33,7 +33,6 @@ from videodb.search import AskResponse, SearchResponse, SearchResult
 from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.job import GenerationJob
 from videodb.sandbox import Sandbox
-from videodb.sandbox_models import SandboxModel
 from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
@@ -54,7 +53,6 @@ __all__ = [
     "CaptureSession",
     "GenerationJob",
     "Sandbox",
-    "SandboxModel",
     "VoiceClone",
     "WebSocketConnection",
     "CaptureClient",
