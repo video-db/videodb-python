@@ -138,6 +138,7 @@ class Audio:
         self,
         force: bool = None,
         language_code: str = None,
+        sandbox_id: str = None,
     ) -> dict:
         """Generate transcript for the audio.
 
@@ -146,15 +147,21 @@ class Audio:
             Use ISO 639-1 codes (e.g., "en", "hi", "fr") or regional
             variants with underscores (e.g., "en_us", "en_uk", "en_au").
             Defaults to "en_us" if not specified.
+        :param str sandbox_id: Optional sandbox ID to run transcription on a
+            Whisper-backed sandbox. When omitted, the default hosted
+            transcription path is used.
         :return: Success dict if transcript generated or already exists
         :rtype: dict
         """
+        data = {
+            "force": True if force else False,
+            "language_code": language_code,
+        }
+        if sandbox_id:
+            data["sandbox_id"] = sandbox_id
         transcript_data = self._connection.post(
             path=f"{ApiPath.audio}/{self.id}/{ApiPath.transcription}",
-            data={
-                "force": True if force else False,
-                "language_code": language_code,
-            },
+            data=data,
         )
         transcript = transcript_data.get("word_timestamps", [])
         if transcript:
