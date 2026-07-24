@@ -10,6 +10,7 @@ class SandboxModel(str, Enum):
 
     # Small tier
     GEMMA_4_E2B = "google/gemma-4-E2B-it"
+    QWEN_4B = "Qwen/Qwen3-4B"
     QWEN_9B = "Qwen/Qwen3.5-9B"
     WHISPER_LARGE_V3_TURBO = "openai/whisper-large-v3-turbo"
     OMNIVOICE_CANONICAL = "k2-fsa/OmniVoice"
