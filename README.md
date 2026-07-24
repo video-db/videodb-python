@@ -46,9 +46,11 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
     - [Uploading Media](#uploading-media)
     - [Updating Video Metadata](#updating-video-metadata)
     - [Viewing and Streaming Videos](#viewing-and-streaming-videos)
-    - [Searching Inside Videos](#searching-inside-videos)
+    - [Understanding Videos](#understanding-videos)
+    - [Creating Indexes](#creating-indexes)
+    - [Retrieving Indexed Content](#retrieving-indexed-content)
     - [Working with Transcripts](#working-with-transcripts)
-    - [Scene Extraction and Indexing](#scene-extraction-and-indexing)
+    - [Legacy Scene Extraction and Indexing](#legacy-scene-extraction-and-indexing)
     - [Adding Subtitles](#adding-subtitles)
     - [Generating Thumbnails](#generating-thumbnails)
 - [Working with Collections](#working-with-collections)
@@ -59,6 +61,7 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
     - [Capture Sessions (Desktop Recording)](#capture-sessions-desktop-recording)
     - [WebSocket Events](#websocket-events)
     - [Meeting Recording](#meeting-recording)
+    - [Sandbox Compute](#sandbox-compute)
     - [Generative Media](#generative-media)
     - [Video Dubbing and Translation](#video-dubbing-and-translation)
     - [Transcoding](#transcoding)
@@ -145,35 +148,132 @@ videodb.play_stream(stream_url)
 video.play()
 ```
 
-### Searching Inside Videos
+### Understanding Videos
 
-Index and search video content semantically:
+VideoDB 0.5 separates the retrieval pipeline into three primitives: **Understand → Index → Retrieve**. Understanding runs analyzers once and stores reusable, timestamped artifacts; indexing then decides how those artifacts can be retrieved.
 
 ```python
-from videodb import SearchType, IndexType
+understanding = video.understand(
+    analyzers=[
+        {"type": "spoken_words", "name": "transcript"},
+        {"type": "vlm", "name": "scene"},
+    ]
+)
+understanding.wait_until_complete()
 
-# Index spoken words for semantic search
-video.index_spoken_words()
+# Inspect analyzer status or output
+for analyzer in understanding.list_analyzers():
+    print(analyzer.name, analyzer.type, analyzer.status)
 
-# Search for content
-results = video.search("morning sunlight")
-
-# Access search results
-shots = results.get_shots()
-for shot in shots:
-    print(f"Found at {shot.start}s - {shot.end}s: {shot.text}")
-
-# Sort results by timestamp instead of relevance score
-results = coll.search(query="morning sunlight", sort_docs_on="start")
-
-# Play compiled results
-results.play()
+scene = understanding.get_analyzer("scene")
+scene_output = scene.get_output()
 ```
 
-**Search Types:**
-- `SearchType.semantic` - Semantic search (default)
-- `SearchType.keyword` - Keyword-based search  
-- `SearchType.scene` - Visual scene search
+Built-in analyzer types include `spoken_words`, `vlm`, `object_detection`, `ocr`, `brand_detection`, `activity_recognition`, and `location_detection`. An understanding run can be reopened with `video.get_understanding(id)`, listed with `video.list_understandings()`, or deleted independently of the video.
+
+### Creating Indexes
+
+Create one or more retrieval-ready indexes from the stored analyzer artifacts without analyzing the video again:
+
+```python
+from videodb import IndexCapability
+
+transcript = understanding.get_analyzer("transcript")
+scene = understanding.get_analyzer("scene")
+
+transcript_index = video.index(
+    source=transcript,
+    name="transcript",
+    use_for=[IndexCapability.semantic, IndexCapability.query],
+)
+scene_index = video.index(
+    source=scene,
+    name="scene",
+    use_for=[
+        IndexCapability.semantic,
+        IndexCapability.query,
+        IndexCapability.aggregate,
+    ],
+)
+
+scene_index.wait_until_complete()
+print(scene_index.status, scene_index.fields, scene_index.field_schema)
+```
+
+`use_for` declares whether an index supports semantic search, structured queries, and aggregation. The optional `fields` argument maps artifact fields into `semantic`, `filter`, `aggregate`, and `sort` groups; when omitted, VideoDB derives sensible groups from the artifact.
+
+You can also index your own timestamped records:
+
+```python
+from videodb import FieldGroup
+
+chapters = video.index(
+    name="chapters",
+    source=[
+        {"start": 0.0, "end": 12.4, "summary": "Opening city skyline", "kind": "intro"},
+        {"start": 12.4, "end": 45.0, "summary": "CEO discusses Q4 results", "kind": "presentation"},
+    ],
+    use_for=[IndexCapability.semantic, IndexCapability.query, IndexCapability.aggregate],
+    fields={
+        FieldGroup.semantic: ["summary"],
+        FieldGroup.filter: ["kind"],
+        FieldGroup.aggregate: ["kind"],
+    },
+)
+```
+
+Manage and inspect indexes through their manifests:
+
+```python
+indexes = video.list_indexes()
+same_index = video.get_index(index_id=chapters.index_id)
+page = same_index.records(limit=20)
+
+same_index.delete()  # Deletes the index, not its video or understanding artifact
+```
+
+### Retrieving Indexed Content
+
+Use high-level `search()` when VideoDB should plan across the available indexes, or choose a direct retrieval primitive when your application knows the operation:
+
+```python
+# Natural-language retrieval; VideoDB selects and combines indexes
+response = video.search(
+    query="someone discussing a product while holding a phone",
+    top_k=10,
+)
+for shot in response:
+    print(shot.start, shot.end, shot.generate_stream())
+
+# Direct vector retrieval over selected semantic indexes
+results = video.semantic_search(
+    query="a presentation about financial results",
+    index_names=["scene", "transcript"],
+    top_k=10,
+)
+
+# Exact structured filtering over one index
+results = video.query(
+    index_name="chapters",
+    filter=[{"field": "kind", "op": "==", "value": "presentation"}],
+    limit=20,
+)
+
+# Counts and facets over one index
+counts = video.aggregate(
+    index_name="chapters",
+    group_by="kind",
+    metric="count",
+)
+
+# A grounded answer with optional timestamped sources
+answer = video.ask(
+    question="What financial results were discussed?",
+    include_sources=True,
+)
+```
+
+The same `search()`, `semantic_search()`, `query()`, `aggregate()`, and `ask()` methods are available on collections for retrieval across multiple videos. Existing applications can continue using `index_spoken_words()`, `index_scenes()`, and `legacy_search()` for legacy indexes.
 
 ### Working with Transcripts
 
@@ -205,9 +305,9 @@ translated = video.translate_transcript(
 - `videodb.Segmenter.sentence` - Sentence-level timestamps
 - `videodb.Segmenter.time` - Time-based segments
 
-### Scene Extraction and Indexing
+### Legacy Scene Extraction and Indexing
 
-Extract and analyze scenes from videos:
+Extract and analyze scenes with the legacy indexing API. New applications should prefer `video.understand(...)` followed by `video.index(...)` as shown above:
 
 ```python
 from videodb import SceneExtractionType
@@ -569,6 +669,29 @@ if meeting.is_completed:
 meeting_info = video.get_meeting()
 ```
 
+### Sandbox Compute
+
+Create dedicated compute for supported open-weight models:
+
+```python
+from videodb import SandboxTier
+
+sandbox = conn.create_sandbox(
+    tier=SandboxTier.small,
+    name="my-sandbox",
+    models=["rtdetr-v2-r50vd"],
+)
+sandbox.wait_for_ready(timeout=1200, interval=5)
+
+# Retrieve or list existing sandboxes.
+same_sandbox = conn.get_sandbox(sandbox.id)
+active_sandboxes = conn.list_sandboxes(status="active")
+
+# Keep the sandbox active while submitting inference work, then stop it.
+sandbox.stop(grace=True)
+sandbox.wait_for_stop(timeout=300, interval=5)
+```
+
 ### Generative Media
 
 Generate images, audio, and videos using AI:
@@ -610,6 +733,9 @@ response = coll.generate_text(
     model_name="pro",  # basic, pro, or ultra
     response_type="text"  # text or json
 )
+
+# Large prompts are uploaded automatically with a unique filename and
+# sent as prompt_url instead of inline JSON to avoid request payload limits.
 ```
 
 ### Video Dubbing and Translation
@@ -760,6 +886,10 @@ except SearchError as e:
 - **Timeline**: Multi-track video editor
 - **SearchResult**: Search results with shots
 - **Shot**: Time-segmented video clip
+- **Understanding**: A reusable video analysis run containing analyzer artifacts
+- **UnderstandingAnalyzer**: Status, output, and index-source handle for one analyzer
+- **Index**: Retrieval-ready index manifest with status, capabilities, and schema
+- **IndexRecord**: One timestamped record stored in an index
 - **Scene**: Visual scene with frames
 - **SceneCollection**: Collection of extracted scenes
 - **Meeting**: Meeting recording session
@@ -767,15 +897,22 @@ except SearchError as e:
 - **CaptureSession**: Desktop capture session with export
 - **CaptureClient**: Native binary client for screen/audio recording
 - **WebSocketConnection**: Real-time event streaming
+- **Sandbox**: Dedicated compute for supported open-weight models
+- **GenerationJob**: Asynchronous image or audio generation job
+- **VoiceClone**: Reusable cloned-voice reference
 
 ### Constants and Enums
 
-- `IndexType`: `spoken_word`, `scene`
-- `SearchType`: `semantic`, `keyword`, `scene`
-- `SceneExtractionType`: `shot_based`, `time_based`
+- `IndexCapability`: `semantic`, `query`, `aggregate`
+- `FieldGroup`: `semantic`, `filter`, `aggregate`, `sort`
+- `IndexType`: `spoken_word`, `scene` (legacy)
+- `SearchType`: `semantic`, `keyword` (legacy)
+- `SceneExtractionType`: `shot_based`, `time_based` (legacy)
 - `Segmenter`: `word`, `sentence`, `time`
 - `TranscodeMode`: `lightning`, `economy`
 - `MediaType`: `video`, `audio`, `image`
+- `SandboxTier`: `small`, `medium`
+- `SandboxStatus`: `provisioning`, `active`, `alert`, `stopping`, `stopped`, `failed`
 
 For detailed API documentation, visit [docs.videodb.io](https://docs.videodb.io).
 

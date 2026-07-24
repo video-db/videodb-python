@@ -1,8 +1,8 @@
 """Http client Module."""
 
 import logging
+import time
 import requests
-import backoff
 
 from tqdm import tqdm
 from typing import (
@@ -65,6 +65,8 @@ class HttpClient:
         self.base_url = base_url
         self.show_progress = False
         self.progress_bar = None
+        self.max_poll_time = HttpClientDefaultValues.max_poll_time
+        self.poll_interval = HttpClientDefaultValues.poll_interval
         logger.debug(f"Initialized http client with base url: {self.base_url}")
 
     def _make_request(
@@ -73,6 +75,7 @@ class HttpClient:
         path: str,
         base_url: Optional[str] = None,
         headers: Optional[dict] = None,
+        wait: bool = True,
         **kwargs,
     ):
         """Make a request to the api
@@ -81,6 +84,7 @@ class HttpClient:
         :param str path: The path to make the request to
         :param str base_url: (optional) The base url to use for the request
         :param dict headers: (optional) The headers to use for the request
+        :param bool wait: If False, return raw data without polling (default True)
         :param kwargs: The keyword arguments to pass to the request method
         :return: json response from the request
         """
@@ -90,6 +94,11 @@ class HttpClient:
             request_headers = {**self.session.headers, **(headers or {})}
             response = method(url, headers=request_headers, timeout=timeout, **kwargs)
             response.raise_for_status()
+            if not wait:
+                data = response.json().get("data")
+                if data is not None:
+                    return data
+                return response.json()
             return self._parse_response(response)
 
         except requests.exceptions.RequestException as e:
@@ -133,23 +142,33 @@ class HttpClient:
                 f"Invalid request: {str(e)}", e.response
             ) from None
 
-    @backoff.on_exception(
-        backoff.constant, Exception, max_time=500, interval=5, logger=None, jitter=None
-    )
     def _get_output(self, url: str):
-        """Get the output from an async request"""
-        response_json = self.session.get(url).json()
-        if (
-            response_json.get("status") == Status.in_progress
-            or response_json.get("status") == Status.processing
-        ):
+        """Poll an output URL until the job completes or times out."""
+        start = time.monotonic()
+        while True:
+            response_json = self.session.get(
+                url, timeout=HttpClientDefaultValues.timeout
+            ).json()
+            status = response_json.get("status")
+            if status not in (Status.in_progress, Status.processing):
+                break
+
             percentage = response_json.get("data", {}).get("percentage")
             if percentage and self.show_progress and self.progress_bar:
                 self.progress_bar.n = int(percentage)
                 self.progress_bar.update(0)
 
-            logger.debug("Waiting for processing to complete")
-            raise Exception("Stuck on processing status") from None
+            elapsed = time.monotonic() - start
+            if elapsed >= self.max_poll_time:
+                raise RequestTimeoutError(
+                    f"Polling timed out after {int(elapsed)}s "
+                    f"(max_poll_time={self.max_poll_time})",
+                    None,
+                )
+
+            logger.debug("Waiting for processing to complete (%.0fs elapsed)", elapsed)
+            time.sleep(self.poll_interval)
+
         if self.show_progress and self.progress_bar:
             self.progress_bar.n = 100
             self.progress_bar.update(0)
@@ -209,19 +228,31 @@ class HttpClient:
             formatted_headers[f"x-{key}"] = value
         return formatted_headers
 
+    def _apply_poll_overrides(self, kwargs):
+        """Extract and apply per-call poll overrides from kwargs."""
+        self.max_poll_time = kwargs.pop(
+            "max_poll_time", HttpClientDefaultValues.max_poll_time
+        )
+        self.poll_interval = kwargs.pop(
+            "poll_interval", HttpClientDefaultValues.poll_interval
+        )
+
     def get(
-        self, path: str, show_progress: Optional[bool] = False, **kwargs
+        self, path: str, show_progress: Optional[bool] = False, wait: bool = True, **kwargs
     ) -> requests.Response:
         """Make a get request"""
         self.show_progress = show_progress
-        return self._make_request(method=self.session.get, path=path, **kwargs)
+        self._apply_poll_overrides(kwargs)
+        return self._make_request(method=self.session.get, path=path, wait=wait, **kwargs)
 
     def post(
-        self, path: str, data=None, show_progress: Optional[bool] = False, **kwargs
+        self, path: str, data=None, show_progress: Optional[bool] = False,
+        wait: bool = True, **kwargs,
     ) -> requests.Response:
         """Make a post request"""
         self.show_progress = show_progress
-        return self._make_request(self.session.post, path, json=data, **kwargs)
+        self._apply_poll_overrides(kwargs)
+        return self._make_request(self.session.post, path, json=data, wait=wait, **kwargs)
 
     def put(self, path: str, data=None, **kwargs) -> requests.Response:
         """Make a put request"""
