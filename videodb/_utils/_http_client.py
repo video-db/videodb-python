@@ -146,7 +146,9 @@ class HttpClient:
         """Poll an output URL until the job completes or times out."""
         start = time.monotonic()
         while True:
-            response_json = self.session.get(url).json()
+            response_json = self.session.get(
+                url, timeout=HttpClientDefaultValues.timeout
+            ).json()
             status = response_json.get("status")
             if status not in (Status.in_progress, Status.processing):
                 break

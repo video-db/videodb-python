@@ -10,6 +10,7 @@ from videodb._upload import (
 from videodb._constants import (
     ApiPath,
     IndexType,
+    MaxSupported,
     MediaType,
     SearchType,
     _InternalSearchType,
@@ -31,8 +32,6 @@ from videodb.search import (
 )
 
 logger = logging.getLogger(__name__)
-
-MAX_GENERATE_TEXT_PAYLOAD_SIZE = 250 * 1024
 
 
 class Collection:
@@ -572,7 +571,7 @@ class Collection:
         }
 
         payload_size = len(json.dumps(payload).encode("utf-8"))
-        if payload_size > MAX_GENERATE_TEXT_PAYLOAD_SIZE:
+        if payload_size > MaxSupported.generate_text_payload_size:
             payload = {
                 "prompt_url": upload_bytes(
                     _connection=self._connection,

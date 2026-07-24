@@ -195,6 +195,8 @@ class HttpClientDefaultValues:
 
 class MaxSupported:
     fade_duration = 5
+    # Prompts larger than this are uploaded as files instead of sent inline
+    generate_text_payload_size = 250 * 1024
 
 
 class SubtitleBorderStyle:
