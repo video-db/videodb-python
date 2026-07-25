@@ -339,11 +339,19 @@ class Connection(HttpClient):
         :param str tier: Sandbox tier — "small" or "medium" (default: server decides)
         :param str name: Human-readable name (auto-generated if not provided)
         :param str callback_url: URL to receive sandbox lifecycle webhooks
-        :param list[str] model_categories: Model categories to prepare for this sandbox, e.g. ``["vlm", "image_generation"]`` (optional)
-        :param list[str] models: Specific model names to prepare for this sandbox (optional)
+        :param list[str] model_categories: Model categories to prepare for this sandbox, e.g. ``["vlm", "image_generation"]``
+        :param list[str] models: Specific model names to prepare for this sandbox
         :return: :class:`Sandbox <Sandbox>` object in provisioning state
         :rtype: :class:`videodb.sandbox.Sandbox`
+        :raises ValueError: If neither ``models`` nor ``model_categories`` is provided
+
+        .. note:: At least one of ``models`` or ``model_categories`` is required.
         """
+        if not models and not model_categories:
+            raise ValueError(
+                "At least one of 'models' or 'model_categories' is required "
+                "to create a sandbox."
+            )
         data = self.post(
             path=ApiPath.sandbox,
             data={
