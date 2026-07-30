@@ -1067,6 +1067,8 @@ class Timeline:
     :ivar connection: API connection instance for making requests
     :ivar str background: Background color in hex format (e.g., "#000000")
     :ivar str resolution: Video resolution (e.g., "1280x720")
+    :ivar int quality: x264 CRF used to encode the video, between 18 and 51.
+        Lower is higher quality/larger output (default 23)
     :ivar List[Track] tracks: List of tracks in the timeline
     :ivar str stream_url: URL of the generated stream (populated after generate_stream)
     :ivar str player_url: URL of the video player (populated after generate_stream)
@@ -1080,6 +1082,7 @@ class Timeline:
         self.connection = connection
         self.background: str = "#000000"
         self.resolution: str = "1280x720"
+        self.quality: int = 23
         self.tracks: List[Track] = []
         self.stream_url = None
         self.player_url = None
@@ -1103,6 +1106,7 @@ class Timeline:
             "timeline": {
                 "background": self.background,
                 "resolution": self.resolution,
+                "quality": self.quality,
                 "tracks": [track.to_json() for track in self.tracks],
             }
         }

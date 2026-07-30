@@ -476,6 +476,7 @@ audio = conn.upload(file_path="./music.mp3")
 
 # Create timeline
 timeline = Timeline(conn)
+timeline.quality = 23  # optional: x264 CRF (18-51), lower = higher quality, default 23
 
 # Video track
 video_track = Track()
