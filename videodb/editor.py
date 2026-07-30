@@ -1140,6 +1140,65 @@ class Timeline:
         self.player_url = stream_data.get("player_url")
         return stream_data.get("stream_url", None)
 
+    def export(
+        self,
+        format: str = "nle",
+        name: str = None,
+        client_ref: str = None,
+        timeline_id: str = None,
+    ) -> "ExportJob":
+        """Export this timeline as an editable NLE project bundle.
+
+        Produces a zip containing FCP7 XML, OTIO, EDL, captions and the media the
+        sequence references — a project a human opens in Premiere, rather than a
+        rendered video.
+
+        The work is minutes of downloads and encoding, so this submits and returns
+        immediately. Poll the returned job, or call its ``wait()``.
+
+        The payload is the same shape :meth:`generate_stream` sends, including the
+        fallback that uploads the timeline JSON when it exceeds
+        ``MAX_PAYLOAD_SIZE`` — these requests cross a gateway with a hard body cap,
+        and a long timeline posted inline fails at the edge with nothing useful in
+        the response.
+
+        :param str format: Bundle format. Named rather than assumed so a second
+            format is additive (default ``"nle"``)
+        :param str name: Sequence name in the NLE's project panel. Falls back to the
+            timeline id — an unnamed sequence is a worse import than an ugly one
+        :param str client_ref: Your own identifier, echoed back on the job, so you
+            never have to hold ours to correlate
+        :param str timeline_id: Your identifier for this timeline. The platform
+            assigns one when omitted
+        :return: The submitted job
+        :rtype: :class:`videodb.export.ExportJob`
+        """
+        from videodb.export import job_from_response
+
+        timeline_data = self.to_json()
+        json_str = json.dumps(timeline_data)
+
+        if len(json_str.encode("utf-8")) > MAX_PAYLOAD_SIZE:
+            data = {"timeline_url": self._upload_timeline_data(json_str)}
+        else:
+            data = dict(timeline_data)
+
+        data["format"] = format
+        # Omitted rather than sent as null: absent means "fall back to the
+        # timeline id", null means "there is no name", and those differ.
+        for key, value in (
+            ("name", name),
+            ("client_ref", client_ref),
+            ("timeline_id", timeline_id),
+        ):
+            if value is not None:
+                data[key] = value
+
+        return job_from_response(
+            self.connection,
+            self.connection.post(path=f"{ApiPath.editor}/export", data=data),
+        )
+
     def _upload_timeline_data(self, json_str: str) -> str:
         """Upload timeline JSON data as a file and return the URL.
 
