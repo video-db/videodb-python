@@ -41,6 +41,7 @@ class ExportJob:
     """A submitted export.
 
     :ivar str id: The platform's job id
+    :ivar str timeline_id: The timeline this export was made from
     :ivar str status: ``queued``, ``rendering``, ``converting``, ``packaging``,
         ``done`` or ``error``
     :ivar int progress: 0-100
@@ -53,6 +54,7 @@ class ExportJob:
         self,
         connection,
         job_id: str,
+        timeline_id: Optional[str] = None,
         status: Optional[str] = None,
         progress: Optional[int] = None,
         stage: Optional[str] = None,
@@ -62,6 +64,10 @@ class ExportJob:
     ) -> None:
         self.connection = connection
         self.id = job_id
+        # Part of the address, not decoration. An export is read back under the
+        # timeline that produced it, which is what scopes the read to its owner —
+        # a job id alone would have to be trusted on its own.
+        self.timeline_id = timeline_id
         self.status = status
         self.progress = progress
         self.stage = stage
@@ -70,6 +76,15 @@ class ExportJob:
 
     def __repr__(self) -> str:
         return f"ExportJob(id={self.id!r}, status={self.status!r}, progress={self.progress!r})"
+
+    def _path(self) -> str:
+        """Where this job lives. The timeline scopes the read to its owner."""
+        if not self.timeline_id:
+            raise ValueError(
+                f"export {self.id} has no timeline_id, so it cannot be read back; "
+                "it was built from a response that did not carry one"
+            )
+        return f"{ApiPath.editor}/export/{self.timeline_id}/{self.id}"
 
     @property
     def done(self) -> bool:
@@ -92,7 +107,7 @@ class ExportJob:
         :return: self, so it can be chained
         :rtype: :class:`ExportJob`
         """
-        data = self.connection.get(path=f"{ApiPath.editor}/export/{self.id}") or {}
+        data = self.connection.get(path=self._path()) or {}
         self.status = data.get("status", self.status)
         self.progress = data.get("progress", self.progress)
         self.stage = data.get("stage", self.stage)
@@ -144,7 +159,7 @@ class ExportJob:
                 f"export {self.id} is not finished (status {self.status!r}); "
                 "there is no bundle to download yet"
             )
-        data = self.connection.get(path=f"{ApiPath.editor}/export/{self.id}/download") or {}
+        data = self.connection.get(path=f"{self._path()}/download") or {}
         return data.get("download_url")
 
 

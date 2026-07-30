@@ -48,7 +48,7 @@ def _timeline(conn):
     return Timeline(conn)
 
 
-SUBMITTED = {"job_id": "exp_abc123def456", "status": "queued", "progress": 0}
+SUBMITTED = {"job_id": "exp_abc123def456", "timeline_id": "tl-9", "status": "queued", "progress": 0}
 
 
 # ------------------------------------------------------------------- submit
@@ -138,25 +138,25 @@ def test_a_response_without_a_job_id_is_an_error_not_a_broken_job():
 
 def test_refresh_reads_the_job_and_updates_in_place():
     conn = StubConnection({"job_id": "exp_a", "status": "rendering", "progress": 40})
-    job = ExportJob(conn, job_id="exp_a", status="queued", progress=0)
+    job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="queued", progress=0)
     job.refresh()
-    assert conn.gets[0]["path"] == "editor/export/exp_a"
+    assert conn.gets[0]["path"] == "editor/export/tl-9/exp_a"
     assert job.status == "rendering"
     assert job.progress == 40
 
 
 def test_done_and_failed_describe_the_two_terminal_states():
     conn = StubConnection()
-    assert ExportJob(conn, job_id="a", status="done").done is True
-    assert ExportJob(conn, job_id="a", status="error").failed is True
-    assert ExportJob(conn, job_id="a", status="rendering").done is False
-    assert ExportJob(conn, job_id="a", status="rendering").failed is False
+    assert ExportJob(conn, job_id="a", timeline_id="tl-9", status="done").done is True
+    assert ExportJob(conn, job_id="a", timeline_id="tl-9", status="error").failed is True
+    assert ExportJob(conn, job_id="a", timeline_id="tl-9", status="rendering").done is False
+    assert ExportJob(conn, job_id="a", timeline_id="tl-9", status="rendering").failed is False
 
 
 def test_an_unknown_status_is_neither_done_nor_failed():
     """The platform's status vocabulary can grow. Reporting an unrecognised
     status as done would have a caller download an artifact that is not there."""
-    job = ExportJob(StubConnection(), job_id="a", status="transmogrifying")
+    job = ExportJob(StubConnection(), job_id="a", timeline_id="tl-9", status="transmogrifying")
     assert job.done is False
     assert job.failed is False
 
@@ -167,7 +167,7 @@ def test_wait_polls_until_terminal():
         {"job_id": "exp_a", "status": "packaging", "progress": 80},
         {"job_id": "exp_a", "status": "done", "progress": 100},
     )
-    job = ExportJob(conn, job_id="exp_a", status="queued")
+    job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="queued")
     job.wait(poll_interval=0)
     assert job.status == "done"
     assert len(conn.gets) == 3
@@ -175,7 +175,7 @@ def test_wait_polls_until_terminal():
 
 def test_wait_returns_on_a_failed_job_rather_than_polling_forever():
     conn = StubConnection({"job_id": "exp_a", "status": "error"})
-    job = ExportJob(conn, job_id="exp_a", status="queued")
+    job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="queued")
     assert job.wait(poll_interval=0).failed is True
 
 
@@ -183,7 +183,7 @@ def test_wait_gives_up_and_says_so():
     """Silently returning a still-running job would have the caller treat an
     unfinished export as finished."""
     conn = StubConnection(*[{"job_id": "exp_a", "status": "rendering"}] * 50)
-    job = ExportJob(conn, job_id="exp_a", status="queued")
+    job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="queued")
     with pytest.raises(TimeoutError):
         job.wait(timeout=0, poll_interval=0)
 
@@ -192,7 +192,7 @@ def test_download_url_is_a_method_because_the_link_expires():
     """A property invites caching, and what would be cached is a signed URL with
     a short life. Minted per call, never stored on the job."""
     conn = StubConnection({"download_url": "https://storage/bundle.zip?sig=1"})
-    job = ExportJob(conn, job_id="exp_a", status="done")
+    job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="done")
     assert job.download_url() == "https://storage/bundle.zip?sig=1"
     assert not hasattr(job, "_download_url")
 
@@ -215,6 +215,27 @@ def test_the_fidelity_summary_reaches_the_caller():
             "fidelity": {"counts": {"carried": 11, "dropped": 1}, "missing_media": []},
         }
     )
-    job = ExportJob(conn, job_id="exp_a", status="queued")
+    job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="queued")
     job.refresh()
     assert job.fidelity["counts"]["dropped"] == 1
+
+
+def test_a_job_read_back_is_addressed_under_its_timeline():
+    """The read is scoped by timeline, which is what makes another user's job id
+    a 404 rather than a leak on the platform side."""
+    conn = StubConnection({"job_id": "exp_a", "status": "done"})
+    ExportJob(conn, job_id="exp_a", timeline_id="tl-9").refresh()
+    assert conn.gets[0]["path"] == "editor/export/tl-9/exp_a"
+
+
+def test_a_job_without_a_timeline_says_so_rather_than_guessing():
+    """A submit response that carried no timeline_id yields a job that cannot be
+    read back. Failing with that sentence beats a 404 from a malformed path."""
+    job = ExportJob(StubConnection(), job_id="exp_a")
+    with pytest.raises(ValueError, match="timeline_id"):
+        job.refresh()
+
+
+def test_the_submitted_job_remembers_its_timeline():
+    conn = StubConnection(SUBMITTED)
+    assert _timeline(conn).export().timeline_id == "tl-9"
