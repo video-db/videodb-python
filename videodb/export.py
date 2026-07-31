@@ -160,7 +160,16 @@ class ExportJob:
                 "there is no bundle to download yet"
             )
         data = self.connection.get(path=f"{self._path()}/download") or {}
-        return data.get("download_url")
+        url = data.get("download_url")
+        if not url:
+            # Returning None from something annotated -> str pushes the failure
+            # into whatever the caller does with it — an opener, a request, a
+            # log line reading "None" — and by then nothing points back here.
+            raise ValueError(
+                f"export {self.id} finished but no download URL was returned; "
+                "the bundle may have expired"
+            )
+        return url
 
 
 def job_from_response(connection, data: dict) -> ExportJob:

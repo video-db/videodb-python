@@ -239,3 +239,17 @@ def test_a_job_without_a_timeline_says_so_rather_than_guessing():
 def test_the_submitted_job_remembers_its_timeline():
     conn = StubConnection(SUBMITTED)
     assert _timeline(conn).export().timeline_id == "tl-9"
+
+
+def test_download_url_raises_rather_than_returning_none():
+    """The method is annotated `-> str`, so a caller reasonably treats the
+    result as one. Returning None pushes the failure into whatever it is handed
+    to — an opener, an HTTP call, a log line reading "None" — by which point
+    nothing points back at the export that had no bundle.
+    """
+    conn = StubConnection({})  # a download response carrying no URL
+    job = ExportJob(conn, SUBMITTED["job_id"], timeline_id=SUBMITTED["timeline_id"],
+                    status="done")
+
+    with pytest.raises(ValueError, match="no download URL"):
+        job.download_url()
