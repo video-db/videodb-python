@@ -1158,9 +1158,8 @@ class Timeline:
 
         The payload is the same shape :meth:`generate_stream` sends, including the
         fallback that uploads the timeline JSON when it exceeds
-        ``MAX_PAYLOAD_SIZE`` — these requests cross a gateway with a hard body cap,
-        and a long timeline posted inline fails at the edge with nothing useful in
-        the response.
+        ``MAX_PAYLOAD_SIZE``. A long timeline posted inline can exceed the request
+        body limit, so it is uploaded and referenced by URL instead.
 
         :param str format: Bundle format. Named rather than assumed so a second
             format is additive (default ``"nle"``)

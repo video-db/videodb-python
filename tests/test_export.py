@@ -102,9 +102,9 @@ def test_supplied_fields_are_forwarded():
 def test_a_large_timeline_is_uploaded_rather_than_posted_inline(monkeypatch):
     """The reason to mirror generate_stream rather than invent a shape.
 
-    These requests cross an API gateway with a hard body cap, so a long timeline
-    posted inline fails at the edge with nothing useful in the response. The
-    render path already solved this; export inherits the solution.
+    A long timeline can exceed the request body limit, and posting it inline
+    then fails with nothing useful in the response. generate_stream already
+    solved this by uploading and referencing by URL; export inherits it.
     """
     conn = StubConnection(SUBMITTED)
     timeline = _timeline(conn)

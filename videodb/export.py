@@ -22,14 +22,14 @@ from typing import Optional
 
 from videodb._constants import ApiPath
 
-#: Statuses that mean the job is over. Mirrors the export service's vocabulary.
+#: Statuses that mean the job is over.
 DONE = "done"
 ERROR = "error"
 TERMINAL_STATUSES = (DONE, ERROR)
 
-#: Default ceiling for :meth:`ExportJob.wait`, in seconds. Matches the export
-#: service's own per-job budget — waiting longer than the job can possibly run
-#: only delays the disappointment.
+#: Default ceiling for :meth:`ExportJob.wait`, in seconds. Half an hour is
+#: longer than an export is expected to take, so a wait that reaches it means
+#: something is wrong rather than slow.
 DEFAULT_WAIT_TIMEOUT = 1800
 
 #: How often :meth:`ExportJob.wait` polls, in seconds. The job takes minutes;
