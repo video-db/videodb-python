@@ -29,12 +29,21 @@ class Image:
         )
 
     def generate_url(self) -> str:
-        """Generate the signed url of the image.
+        """Get a url for the image.
+
+        Returns the image's permanent url when the server provides one. That url
+        never expires, so it is safe to store; it redirects to storage, so fetch it
+        with a client that follows redirects.
+
+        Falls back to a signed storage url for images created before permanent urls
+        existed. Those expire after a few days -- do not persist them.
 
         :raises InvalidRequestError: If the get_url fails
-        :return: The signed url of the image
+        :return: The url of the image
         :rtype: str
         """
+        if self.url:
+            return self.url
         url_data = self._connection.post(
             path=f"{ApiPath.image}/{self.id}/{ApiPath.generate_url}",
             params={"collection_id": self.collection_id},

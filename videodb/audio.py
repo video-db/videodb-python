@@ -14,6 +14,7 @@ class Audio:
     :ivar str collection_id: ID of the collection this audio belongs to
     :ivar str name: Name of the audio file
     :ivar float length: Duration of the audio in seconds
+    :ivar str url: Permanent url of the audio, when the server provides one
     :ivar list transcript: Timestamped transcript segments
     :ivar str transcript_text: Full transcript text
     """
@@ -26,6 +27,7 @@ class Audio:
         self.collection_id = collection_id
         self.name = kwargs.get("name", None)
         self.length = float(kwargs.get("length", 0.0))
+        self.url = kwargs.get("url", None)
         self.transcript = kwargs.get("transcript", None)
         self.transcript_text = kwargs.get("transcript_text", None)
 
@@ -39,12 +41,21 @@ class Audio:
         )
 
     def generate_url(self) -> str:
-        """Generate the signed url of the audio.
+        """Get a url for the audio.
+
+        Returns the audio's permanent url when the server provides one. That url
+        never expires, so it is safe to store; it redirects to storage, so fetch it
+        with a client that follows redirects.
+
+        Falls back to a signed storage url for audio created before permanent urls
+        existed. Those expire after a few days -- do not persist them.
 
         :raises InvalidRequestError: If the get_url fails
-        :return: The signed url of the audio
+        :return: The url of the audio
         :rtype: str
         """
+        if self.url:
+            return self.url
         url_data = self._connection.post(
             path=f"{ApiPath.audio}/{self.id}/{ApiPath.generate_url}",
             params={"collection_id": self.collection_id},
