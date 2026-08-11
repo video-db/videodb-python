@@ -15,6 +15,11 @@ exports a long timeline.
 import pytest
 
 from videodb.editor import MAX_PAYLOAD_SIZE, Timeline
+from videodb.exceptions import (
+    InvalidRequestError,
+    RequestTimeoutError,
+    VideodbError,
+)
 from videodb.export import ExportJob
 
 
@@ -129,7 +134,7 @@ def test_a_response_without_a_job_id_is_an_error_not_a_broken_job():
     at the call site names the problem; returning one defers it to whichever
     attribute is touched first."""
     conn = StubConnection({"status": "queued"})
-    with pytest.raises(ValueError, match="job_id"):
+    with pytest.raises(InvalidRequestError, match="job_id"):
         _timeline(conn).export()
 
 
@@ -184,7 +189,7 @@ def test_wait_gives_up_and_says_so():
     unfinished export as finished."""
     conn = StubConnection(*[{"job_id": "exp_a", "status": "rendering"}] * 50)
     job = ExportJob(conn, job_id="exp_a", timeline_id="tl-9", status="queued")
-    with pytest.raises(TimeoutError):
+    with pytest.raises(RequestTimeoutError):
         job.wait(timeout=0, poll_interval=0)
 
 
@@ -201,7 +206,7 @@ def test_download_url_refuses_before_the_job_is_done():
     """There is nothing to sign yet, and a 410 from the platform is a worse
     explanation than the one available here."""
     job = ExportJob(StubConnection(), job_id="exp_a", status="rendering")
-    with pytest.raises(ValueError, match="not finished"):
+    with pytest.raises(InvalidRequestError, match="not finished"):
         job.download_url()
 
 
@@ -221,8 +226,8 @@ def test_the_fidelity_summary_reaches_the_caller():
 
 
 def test_a_job_read_back_is_addressed_under_its_timeline():
-    """The read is scoped by timeline, which is what makes another user's job id
-    a 404 rather than a leak on the platform side."""
+    """The read is addressed under the timeline that produced the job — the
+    path shape the API defines."""
     conn = StubConnection({"job_id": "exp_a", "status": "done"})
     ExportJob(conn, job_id="exp_a", timeline_id="tl-9").refresh()
     assert conn.gets[0]["path"] == "editor/export/tl-9/exp_a"
@@ -232,7 +237,7 @@ def test_a_job_without_a_timeline_says_so_rather_than_guessing():
     """A submit response that carried no timeline_id yields a job that cannot be
     read back. Failing with that sentence beats a 404 from a malformed path."""
     job = ExportJob(StubConnection(), job_id="exp_a")
-    with pytest.raises(ValueError, match="timeline_id"):
+    with pytest.raises(InvalidRequestError, match="timeline_id"):
         job.refresh()
 
 
@@ -251,5 +256,45 @@ def test_download_url_raises_rather_than_returning_none():
     job = ExportJob(conn, SUBMITTED["job_id"], timeline_id=SUBMITTED["timeline_id"],
                     status="done")
 
-    with pytest.raises(ValueError, match="no download URL"):
+    with pytest.raises(InvalidRequestError, match="no download URL"):
         job.download_url()
+
+
+def test_every_export_failure_is_a_videodb_error():
+    """The package promises `except VideodbError` catches SDK failures, and
+    GenerationJob keeps that promise — a sibling raising builtins alongside it
+    means the documented catch-all handles one job type and crashes on the
+    other. Public surface: the types must be right at first release."""
+    job = ExportJob(StubConnection(), job_id="exp_a")
+    with pytest.raises(VideodbError):
+        job.refresh()  # no timeline_id
+    slow = StubConnection(*[{"job_id": "exp_a", "status": "rendering"}] * 5)
+    running = ExportJob(slow, job_id="exp_a", timeline_id="tl-9")
+    with pytest.raises(VideodbError):
+        running.wait(timeout=0, poll_interval=0)
+
+
+def test_a_submit_answering_id_instead_of_job_id_still_makes_a_job():
+    """GenerationJob.from_data accepts either key, and endpoints have answered
+    with both shapes. A submit that hard-fails AFTER the job was created costs
+    the user a running export they cannot see."""
+    conn = StubConnection({"id": "exp_b", "timeline_id": "tl-9", "status": "queued"})
+    job = _timeline(conn).export()
+    assert job.id == "exp_b"
+
+
+def test_job_id_is_an_alias_for_id():
+    """GenerationJob exposes both spellings; a caller moving between the two
+    job types should not need to remember which one this is."""
+    job = ExportJob(StubConnection(), job_id="exp_a")
+    assert job.job_id == "exp_a"
+
+
+def test_the_export_annotation_resolves():
+    """`-> "ExportJob"` with no import in scope breaks every annotation
+    resolver (typeguard, sphinx, pydantic) that calls get_type_hints on a
+    public method."""
+    import typing
+
+    hints = typing.get_type_hints(Timeline.export)
+    assert hints["return"].__name__ == "ExportJob"

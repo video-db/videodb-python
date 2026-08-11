@@ -508,12 +508,13 @@ job = timeline.export(format="nle", name="My cut")
 job.wait()                  # or poll job.refresh() yourself
 if job.done:
     url = job.download_url()   # signed, minted per call — do not cache it
-    print(job.fidelity)        # what carried over, and what could not
+elif job.failed:
+    print(job.error)           # wait() returns on failure too; check which
 ```
 
-Not everything in a timeline has an equivalent in a project file. `job.fidelity`
-reports per-disposition counts so a successful export that dropped colour grades
-is not reported as a plain success.
+Not everything in a timeline has an equivalent in a project file — the bundle
+includes a fidelity report (`fidelity.md`) saying what carried over and what
+could not.
 
 **Asset Types:**
 - `VideoAsset` - Video clips with trim control (`start`, `volume`)

@@ -7,6 +7,7 @@ from enum import Enum
 
 from videodb._constants import ApiPath
 from videodb._upload import upload_bytes
+from videodb.export import ExportJob, job_from_response
 from videodb._utils._video import build_iframe_embed_code
 from videodb.exceptions import InvalidRequestError
 
@@ -1172,8 +1173,6 @@ class Timeline:
         :return: The submitted job
         :rtype: :class:`videodb.export.ExportJob`
         """
-        from videodb.export import job_from_response
-
         timeline_data = self.to_json()
         json_str = json.dumps(timeline_data)
 
@@ -1195,7 +1194,7 @@ class Timeline:
 
         return job_from_response(
             self.connection,
-            self.connection.post(path=f"{ApiPath.editor}/export", data=data),
+            self.connection.post(path=f"{ApiPath.editor}/{ApiPath.export}", data=data),
         )
 
     def _upload_timeline_data(self, json_str: str) -> str:
