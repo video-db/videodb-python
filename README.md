@@ -495,6 +495,27 @@ timeline.add_track(audio_track)
 stream_url = timeline.generate_stream()
 ```
 
+**Example: Export as an editable Premiere Pro project**
+
+A timeline can be exported as an NLE bundle instead of a rendered video — the
+cuts, text and captions as a Premiere project, plus the media the sequence
+references. The work takes minutes, so `export()` returns immediately and the job
+is polled.
+
+```python
+job = timeline.export(format="nle", name="My cut")
+
+job.wait()                  # or poll job.refresh() yourself
+if job.done:
+    url = job.download_url()   # signed, minted per call — do not cache it
+elif job.failed:
+    print(job.error)           # wait() returns on failure too; check which
+```
+
+Not everything in a timeline has an equivalent in a project file — the bundle
+includes a fidelity report (`fidelity.md`) saying what carried over and what
+could not.
+
 **Asset Types:**
 - `VideoAsset` - Video clips with trim control (`start`, `volume`)
 - `AudioAsset` - Background music, voiceovers, sound effects
