@@ -1100,18 +1100,24 @@ class RTStream:
         analyzers: List[Dict] = None,
         store: bool = True,
         ws_connection_id: str = None,
+        trigger: str = None,
     ) -> "RTStreamUnderstanding":
-        """Start a continuous VLM understanding job on the stream.
+        """Start a continuous understanding job on the stream.
 
         Understanding is independent of indexing: it produces VLM output per
         stream window and (when ``store=True``) persists it so it can be indexed
-        later. Initial support is one ``vlm`` analyzer with time segmentation.
+        later. Supports one ``vlm`` or ``cua`` (computer-use) analyzer with time
+        segmentation.
 
         :param dict segmentation: Time segmentation, e.g. ``{"type": "time", "window": "10s"}``
-        :param list analyzers: Exactly one VLM analyzer spec, e.g.
+        :param list analyzers: Exactly one analyzer spec, e.g.
             ``[{"type": "vlm", "name": "scene", "sampling": {"frame_count": 5}, "config": {"prompt": "...", "model": "basic"}}]``
+            For a computer-use agent, ``[{"type": "cua", "name": "action", "sampling": {"frame_count": 1}, "config": {"prompt": "<task>", "past_window": {"frames": 3, "actions": 5}}}]``
+            (a ``cua`` analyzer defaults its model to Holo)
         :param bool store: Persist output for later indexing (default: True)
         :param str ws_connection_id: WebSocket connection ID for real-time updates (optional)
+        :param str trigger: ``"interval"`` (default) samples on a fixed cadence;
+            ``"on_demand"`` produces one output per external trigger (CUA loop)
         :return: The understanding job, :class:`RTStreamUnderstanding <RTStreamUnderstanding>` object
         :rtype: :class:`videodb.rtstream.RTStreamUnderstanding`
         """
@@ -1120,6 +1126,8 @@ class RTStream:
             "analyzers": analyzers or [],
             "store": store,
         }
+        if trigger:
+            data["trigger"] = trigger
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
         understanding_data = self._connection.post(
