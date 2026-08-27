@@ -453,6 +453,28 @@ class RTStreamUnderstanding:
         )
         self.status = "stopped"
 
+    def next(self, step_id: int):
+        """Advance an on-demand (CUA) understanding by one step.
+
+        The per-action poke of the computer-use loop: after the client executes an
+        action and the screen settles, call ``next`` to have the model analyze the
+        freshest frame and emit the next action. Only meaningful for an understanding
+        created with ``trigger="on_demand"``; on an interval understanding the model
+        runs on its own clock and this is a no-op.
+
+        ``step_id`` is a monotonic counter the client increments per action — the worker
+        is idempotent on it, so a duplicate or late ``next`` is safely ignored. The
+        understanding id is supplied automatically.
+
+        :param int step_id: Monotonic step counter (increment once per executed action)
+        :return: Accepted acknowledgement ``{understanding_id, step_id}``
+        :rtype: dict
+        """
+        return self._connection.post(
+            f"{ApiPath.rtstream}/{self.rtstream_id}/{ApiPath.understand}/{self.id}/{ApiPath.next}",
+            data={"step_id": step_id},
+        )
+
     def get_records(
         self,
         start: float,

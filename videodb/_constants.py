@@ -100,6 +100,7 @@ class ApiPath:
     indexes = "indexes"
     records = "records"
     understand = "understand"
+    next = "next"
     search = "search"
     ask = "ask"
     semantic_search = "semantic-search"
