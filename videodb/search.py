@@ -59,6 +59,7 @@ class SearchResult:
     :ivar str stream_url: URL to stream the search result
     :ivar str player_url: URL to play the search result in a player
     :ivar list[Shot] shots: List of shots in the search result
+    :ivar Optional[dict] window_plan: Native server window plan, otherwise None
     """
 
     def __init__(self, _connection, **kwargs):
@@ -67,6 +68,7 @@ class SearchResult:
         self.stream_url = None
         self.player_url = None
         self.collection_id = "default"
+        self.window_plan = kwargs.get("window_plan")
         self.warnings = kwargs.get("warnings") or []
         if kwargs.get("_emit_warnings", True):
             warn_response_warnings_once(self.warnings, stacklevel=5)
@@ -92,6 +94,7 @@ class SearchResult:
                         metadata=doc.get("metadata"),
                         stream_url=doc.get("stream_link") or doc.get("stream_url"),
                         player_url=doc.get("player_url"),
+                        window=doc.get("window"),
                     )
                 )
 

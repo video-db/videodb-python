@@ -30,6 +30,7 @@ from videodb._constants import (
 )
 from videodb.client import Connection
 from videodb.search import AskResponse, SearchResponse, SearchResult
+from videodb.window import WindowInfo
 from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.job import GenerationJob
 from videodb.sandbox import Sandbox
@@ -50,6 +51,7 @@ logger: logging.Logger = logging.getLogger("videodb")
 
 __all__ = [
     "connect",
+    "WindowInfo",
     "CaptureSession",
     "GenerationJob",
     "Sandbox",

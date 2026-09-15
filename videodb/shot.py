@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import Any, Dict, Optional, Union
+
+from videodb.window import WindowInfo
 from videodb._utils._video import play_stream, build_iframe_embed_code
 from videodb._constants import (
     ApiPath,
@@ -20,6 +22,7 @@ class Shot:
     :ivar Optional[str] scene_index_id: ID of the scene index for scene search results
     :ivar Optional[str] scene_index_name: Name of the scene index for scene search results
     :ivar Optional[dict] metadata: Additional metadata for the shot
+    :ivar Optional[WindowInfo] window: Server-resolved interval metadata, otherwise None
     """
 
     def __init__(
@@ -37,6 +40,7 @@ class Shot:
         metadata: Optional[dict] = None,
         stream_url: Optional[str] = None,
         player_url: Optional[str] = None,
+        window: Optional[Union[WindowInfo, Dict[str, Any]]] = None,
     ) -> None:
         self._connection = _connection
         self.video_id = video_id
@@ -51,6 +55,7 @@ class Shot:
         self.metadata = metadata
         self.stream_url = stream_url
         self.player_url = player_url
+        self.window = window if isinstance(window, WindowInfo) else WindowInfo.from_dict(window)
 
     def __repr__(self) -> str:
         repr_str = (

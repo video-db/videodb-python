@@ -751,6 +751,8 @@ class Collection:
         filter: Optional[Union[List, Dict]] = None,
         return_fields: Optional[Union[List, Dict, str]] = None,
         index_ids: Optional[Union[List[str], str]] = None,
+        *,
+        window: Optional[Union[str, Dict[str, Any]]] = None,
     ) -> SearchResult:
         """Run direct Search V2 semantic retrieval for this collection.
 
@@ -765,6 +767,9 @@ class Collection:
         :param filter: Optional Search V2 filter.
         :param return_fields: Optional metadata fields to include.
         :param index_ids: Optional Search V2 index ID or IDs.
+        :param window: None: as indexed; 'auto', 'moment', 'span', 'session', or a bounds dict;
+            the server returns ``window_plan`` and ``shot.window``. Named levels guide
+            merging, not fixed clip lengths. Requires server support; no client fallback.
         :return: ``SearchResult`` with shots and server-provided ``warnings``.
         """
         search_data = self._connection.post(
@@ -777,6 +782,7 @@ class Collection:
                 "score_threshold": score_threshold,
                 "filter": filter,
                 "return_fields": return_fields,
+                **({"window": window} if window is not None else {}),
             },
         )
         return SearchResult(self._connection, **search_data)

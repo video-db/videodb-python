@@ -275,6 +275,45 @@ answer = video.ask(
 
 The same `search()`, `semantic_search()`, `query()`, `aggregate()`, and `ask()` methods are available on collections for retrieval across multiple videos. Existing applications can continue using `index_spoken_words()`, `index_scenes()`, and `legacy_search()` for legacy indexes.
 
+### Windowed Semantic Search
+
+On a server with native window support, direct `semantic_search()` can merge nearby
+hits into longer intervals. This works on both collections and videos with Search
+V2 indexes; `ask()` remains a separate method.
+
+```python
+result = collection.semantic_search(
+    "turn off tap", index_names=["episodes"], top_k=10, window="moment"
+)
+print(result.window_plan)  # None if the server did not resolve windows
+for shot in result.shots:
+    print(shot.start, shot.end, shot.window.merged_from, shot.window.coverage)
+
+# Explicit durations and context. All values are seconds.
+result = video.semantic_search(
+    "opening the fridge",
+    window={"level": "moment", "min_seconds": 10, "max_seconds": 30},
+)
+```
+
+- `None` (default): unchanged retrieval of indexed intervals.
+- `moment` / `span`: merge nearby hits using the server's configured gap (currently
+  5 / 30 seconds by default). These are not fixed output lengths.
+- `session`: return a whole-video interval per matching video; requires video length metadata.
+- `auto`: keyword-based selection of moment/span/session, defaulting to moment.
+- A dict accepts `level`, `level_seconds`, `merge_gap_seconds`, `min_seconds`,
+  `max_seconds`, `pad_before_seconds`, `pad_after_seconds`, and `whole_video`.
+
+`shot.window` is a `WindowInfo` with level, duration, supporting hit count/IDs,
+coverage, and `to_dict()`. Coverage is the fraction of the returned interval covered
+by retrieved hits, not ground-truth recall. Text/metadata represent the best
+supporting hit, not a generated summary. Requests without windows have
+`window_plan=None` and `shot.window=None`.
+
+There is no SDK fallback or extra retrieval call. Verify `result.window_plan` before
+claiming server window support. Evidence, answers, time-lapse, and multi-scale
+indexing are not part of this addition.
+
 ### Working with Transcripts
 
 ```python
