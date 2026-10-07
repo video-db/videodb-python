@@ -692,6 +692,12 @@ sandbox.stop(grace=True)
 sandbox.wait_for_stop(timeout=300, interval=5)
 ```
 
+If `wait_for_ready()` raises `RequestTimeoutError`, startup may still be in
+progress. Call `refresh()` or `wait_for_ready()` again on the same sandbox;
+there is no need to create another one. A terminal failure raises
+`InvalidRequestError` with the server's error detail when available. That detail
+is also available as `sandbox.error` after retrieving or refreshing the sandbox.
+
 ### Generative Media
 
 Generate images, audio, and videos using AI:
