@@ -1221,6 +1221,103 @@ class RTStream:
             item.setdefault("rtstream_id", self.id)
         return [RTStreamIndex(_connection=self._connection, **item) for item in results]
 
+    def create_alert(
+        self,
+        event_id: str,
+        callback_url: str,
+        ws_connection_id: str = None,
+        segmentation: Dict = None,
+        sampling: Dict = None,
+        threshold: float = 50,
+        cooldown_seconds: int = 30,
+        profile: str = "standard",
+    ) -> str:
+        """Create a direct alert on the stream.
+
+        A direct alert checks one event on the stream's frames every window. It needs no
+        understanding and no index. Write the event prompt as a condition that is true or
+        false, for example "A person is visible in the doorway".
+
+        :param str event_id: ID of the event, from :meth:`Connection.create_event`
+        :param str callback_url: HTTPS URL that receives the alert
+        :param str ws_connection_id: WebSocket connection ID for real-time alerts (optional)
+        :param dict segmentation: Time window, e.g. ``{"type": "time", "window": "5s"}``.
+            2 to 60 seconds (default: 5 seconds)
+        :param dict sampling: Frames checked per window, e.g. ``{"frame_count": 5}``.
+            1 to 5 (default: 5)
+        :param float threshold: Score from 0 to 100 at or above which the alert fires (default: 50)
+        :param int cooldown_seconds: Minimum gap between two notifications (default: 30)
+        :param str profile: Evaluation profile. Only ``"standard"`` is supported
+        :return: Alert ID
+        :rtype: str
+        """
+        data = {
+            "event_id": event_id,
+            "callback_url": callback_url,
+            "threshold": threshold,
+            "cooldown_seconds": cooldown_seconds,
+            "profile": profile,
+        }
+        if ws_connection_id:
+            data["ws_connection_id"] = ws_connection_id
+        if segmentation:
+            data["segmentation"] = segmentation
+        if sampling:
+            data["sampling"] = sampling
+        alert_data = self._connection.post(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.alert}", data=data
+        )
+        return (alert_data or {}).get("alert_id")
+
+    def list_alerts(self) -> List[dict]:
+        """List the direct alerts on the stream.
+
+        :return: List of alerts
+        :rtype: List[dict]
+        """
+        alert_data = self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.alert}"
+        )
+        return (alert_data or {}).get("alerts", [])
+
+    def get_alert(self, alert_id: str) -> dict:
+        """Get one direct alert with its health.
+
+        ``status`` is what was asked for (``enabled`` or ``disabled``). ``runtime_status``
+        is what is happening (``running``, ``pending``, ``degraded``,
+        ``waiting_for_stream`` or ``disabled``). ``health`` carries ``last_evaluated_at``,
+        ``last_error`` and ``coverage``, and is ``None`` when it cannot be read.
+
+        :param str alert_id: ID of the alert
+        :return: The alert
+        :rtype: dict
+        """
+        if not alert_id:
+            raise ValueError("alert_id is required")
+        return self._connection.get(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.alert}/{alert_id}"
+        )
+
+    def enable_alert(self, alert_id: str) -> None:
+        """Enable a direct alert on the stream.
+
+        :param str alert_id: ID of the alert
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"action": "enable"},
+        )
+
+    def disable_alert(self, alert_id: str) -> None:
+        """Disable a direct alert on the stream.
+
+        :param str alert_id: ID of the alert
+        """
+        self._connection.patch(
+            f"{ApiPath.rtstream}/{self.id}/{ApiPath.alert}/{alert_id}/{ApiPath.status}",
+            data={"action": "disable"},
+        )
+
     def get_transcript(
         self,
         page=1,

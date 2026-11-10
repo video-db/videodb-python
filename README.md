@@ -554,6 +554,22 @@ alert_id = scene_index.create_alert(
 scene_index.disable_alert(alert_id)
 scene_index.enable_alert(alert_id)
 
+# Direct alert: watch the stream for one event, with no index.
+# Write the event prompt as a condition that is true or false.
+event_id = conn.create_event(
+    event_prompt="A person is visible in the doorway.", label="doorway_occupied"
+)
+alert_id = rtstream.create_alert(
+    event_id=event_id,
+    callback_url="https://example.com/callback",
+    segmentation={"type": "time", "window": "5s"},  # 2 to 60 seconds
+    threshold=50,          # score 0-100 at or above which it fires
+    cooldown_seconds=30,   # minimum gap between notifications
+)
+alert = rtstream.get_alert(alert_id)  # status, runtime_status and health
+rtstream.disable_alert(alert_id)
+rtstream.enable_alert(alert_id)
+
 # Generate stream with player metadata
 stream_url = rtstream.generate_stream(
     start=1711000000,
