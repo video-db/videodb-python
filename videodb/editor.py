@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import warnings
 
 from typing import List, Optional, Union
@@ -223,6 +224,64 @@ class Transition:
             "out": self.out,
             "duration": self.duration,
         }
+
+
+class Lut:
+    """A 3D ``.cube`` lookup table used as a colour grade.
+
+    Set ``Clip.lut`` to grade one clip (applied before its ``filter``) or
+    ``Timeline.lut`` to grade the whole composited frame under any captions.
+    Only 3D ``.cube`` files with the default 0-1 domain and a ``LUT_3D_SIZE``
+    between 2 and 65 are accepted.
+
+    :ivar str src: URL of the ``.cube`` file; use :meth:`from_file` to upload a local one
+    :ivar float intensity: 0 leaves the picture untouched, 1 applies the full grade,
+        values in between blend the two linearly (default: 1)
+    """
+
+    def __init__(self, src: str, intensity: float = 1.0):
+        """Initialize a Lut instance.
+
+        :param str src: URL of the ``.cube`` file
+        :param float intensity: Grade strength between 0 and 1 (default: 1)
+        :raises ValueError: If intensity not in [0, 1]
+        """
+        if not (0 <= intensity <= 1):
+            raise ValueError("intensity must be between 0 and 1")
+        self.src = src
+        self.intensity = intensity
+
+    @classmethod
+    def from_file(cls, connection, path: str, intensity: float = 1.0) -> "Lut":
+        """Upload a local ``.cube`` file and return a Lut pointing at it.
+
+        :param connection: API connection instance used for the upload
+        :param str path: Path to the ``.cube`` file
+        :param float intensity: Grade strength between 0 and 1 (default: 1)
+        :return: A Lut referencing the uploaded file
+        :rtype: Lut
+        :raises InvalidRequestError: If the upload fails
+        """
+        with open(path, "rb") as fh:
+            content = fh.read()
+        try:
+            src = upload_bytes(
+                _connection=connection,
+                content=content,
+                name=os.path.basename(path),
+                content_type="text/plain",
+            )
+        except Exception as e:
+            raise InvalidRequestError(f"Failed to upload LUT: {e}") from e
+        return cls(src=src, intensity=intensity)
+
+    def to_json(self) -> dict:
+        """Convert the LUT settings to a JSON-serializable dictionary.
+
+        :return: Dictionary containing LUT properties
+        :rtype: dict
+        """
+        return {"src": self.src, "intensity": self.intensity}
 
 
 class BaseAsset:
@@ -908,6 +967,7 @@ class Clip:
     :ivar Transition transition: (optional) Transition effects for the clip
     :ivar str effect: (optional) Effect to apply to the clip
     :ivar Filter filter: (optional) Filter to apply to the clip
+    :ivar Lut lut: (optional) 3D LUT colour grade for the clip, applied before the filter
     :ivar float scale: Scale factor (0 to 10)
     :ivar float opacity: Opacity level (0 to 1)
     :ivar Fit fit: How the asset should be scaled to fit the viewport
@@ -929,6 +989,7 @@ class Clip:
         position: Position = Position.center,
         offset: Optional[Offset] = None,
         z_index: int = 0,
+        lut: Optional[Lut] = None,
     ):
         """Initialize a Clip instance.
 
@@ -943,6 +1004,8 @@ class Clip:
         :param Position position: Asset position in viewport (default: Position.center)
         :param Offset offset: (optional) Fine-tune position offset
         :param int z_index: Layering order (default: 0)
+        :param Lut lut: (optional) 3D LUT colour grade, applied before the filter.
+            Not valid on audio or caption clips.
         :raises ValueError: If scale not in [0, 10] or opacity not in [0, 1]
         """
         if not (0 <= scale <= 10):
@@ -961,6 +1024,7 @@ class Clip:
         self.position = position
         self.offset = offset if offset is not None else Offset()
         self.z_index = z_index
+        self.lut = lut
 
     def to_json(self) -> dict:
         """Convert the clip to a JSON-serializable dictionary.
@@ -984,6 +1048,8 @@ class Clip:
             json["transition"] = self.transition.to_json()
         if self.filter:
             json["filter"] = self.filter.value
+        if self.lut:
+            json["lut"] = self.lut.to_json()
 
         return json
 
@@ -1067,6 +1133,7 @@ class Timeline:
     :ivar connection: API connection instance for making requests
     :ivar str background: Background color in hex format (e.g., "#000000")
     :ivar str resolution: Video resolution (e.g., "1280x720")
+    :ivar Lut lut: (optional) 3D LUT colour grade applied to the whole frame, under captions
     :ivar List[Track] tracks: List of tracks in the timeline
     :ivar str stream_url: URL of the generated stream (populated after generate_stream)
     :ivar str player_url: URL of the video player (populated after generate_stream)
@@ -1080,6 +1147,7 @@ class Timeline:
         self.connection = connection
         self.background: str = "#000000"
         self.resolution: str = "1280x720"
+        self.lut: Optional[Lut] = None
         self.tracks: List[Track] = []
         self.stream_url = None
         self.player_url = None
@@ -1099,13 +1167,14 @@ class Timeline:
         :return: Dictionary containing timeline properties and tracks
         :rtype: dict
         """
-        return {
-            "timeline": {
-                "background": self.background,
-                "resolution": self.resolution,
-                "tracks": [track.to_json() for track in self.tracks],
-            }
+        timeline = {
+            "background": self.background,
+            "resolution": self.resolution,
+            "tracks": [track.to_json() for track in self.tracks],
         }
+        if self.lut:
+            timeline["lut"] = self.lut.to_json()
+        return {"timeline": timeline}
 
     def generate_stream(self) -> str:
         """Generate a stream from the timeline.

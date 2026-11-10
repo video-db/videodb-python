@@ -506,6 +506,7 @@ stream_url = timeline.generate_stream()
 - **Position & Scale**: `position=Position.topRight`, `scale=0.5`, `offset=Offset(x=0.1, y=-0.2)`
 - **Visual Effects**: `opacity=0.8`, `fit=Fit.cover`, `filter=Filter.greyscale`
 - **Transitions**: `transition=Transition(in_="fade", out="fade", duration=1)`
+- **Colour Grading**: `lut=Lut.from_file(conn, "teal-orange.cube", intensity=0.8)` on a clip, or `timeline.lut = Lut(src=...)` for the whole frame
 
 **Track Layering:**
 - Clips on the same track play sequentially
