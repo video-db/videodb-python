@@ -18,7 +18,7 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest moved to 26.04, which has no Python 3.9 build
     permissions:
       contents: read
     timeout-minutes: 10
@@ -41,7 +41,7 @@ jobs:
         run: ruff check --output-format github ./
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest moved to 26.04, which has no Python 3.9 build
     permissions:
       contents: read
     timeout-minutes: 15
@@ -65,7 +65,7 @@ jobs:
         run: python -m pytest tests/
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest moved to 26.04, which has no Python 3.9 build
     permissions:
       contents: read
     timeout-minutes: 10

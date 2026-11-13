@@ -1,8 +1,9 @@
 import json
 import logging
+import os
 import warnings
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 from enum import Enum
 
 from videodb._constants import ApiPath
@@ -223,6 +224,245 @@ class Transition:
             "out": self.out,
             "duration": self.duration,
         }
+
+
+class Effect(str, Enum):
+    """A named effect to apply to a visual clip. Cannot be combined with ``Clip.motion``."""
+
+    zoom_in = "zoom_in"
+    shake = "shake"
+
+
+class Easing(str, Enum):
+    """Interpolation curve. On a keyframe it belongs to the destination keyframe."""
+
+    linear = "linear"
+    ease_in = "ease_in"
+    ease_out = "ease_out"
+    ease_in_out = "ease_in_out"
+    back_out = "back_out"
+
+
+class MotionPresetName(str, Enum):
+    """Entrance/exit animations. Slides and pop include a fade; wipes reveal the layer."""
+
+    fade = "fade"
+    slide_up = "slide_up"
+    slide_down = "slide_down"
+    slide_left = "slide_left"
+    slide_right = "slide_right"
+    pop = "pop"
+    wipe_left = "wipe_left"
+    wipe_right = "wipe_right"
+
+
+class KeyframeProperty(str, Enum):
+    """Clip properties that can be keyframed."""
+
+    offset_x = "offset.x"
+    offset_y = "offset.y"
+    scale = "scale"
+    rotation = "rotation"
+    opacity = "opacity"
+
+
+class Keyframe:
+    """A value at a clip-relative time.
+
+    :ivar float time: Seconds from the start of the clip
+    :ivar float value: Property value at that time; values hold before the first and
+        after the last keyframe
+    :ivar Easing easing: Curve from the previous keyframe to this one (default: linear)
+    """
+
+    def __init__(
+        self, time: float, value: float, easing: Union[Easing, str] = Easing.linear
+    ):
+        """Initialize a Keyframe instance.
+
+        :param float time: Seconds from the start of the clip
+        :param float value: Property value at that time
+        :param Easing easing: Curve into this keyframe (default: Easing.linear)
+        :raises ValueError: If time is negative
+        """
+        if time < 0:
+            raise ValueError("time must not be negative")
+        self.time = time
+        self.value = value
+        self.easing = Easing(easing)
+
+    def to_json(self) -> dict:
+        """Convert the keyframe to a JSON-serializable dictionary.
+
+        :return: Dictionary containing keyframe properties
+        :rtype: dict
+        """
+        return {"time": self.time, "value": self.value, "easing": self.easing.value}
+
+
+class MotionPreset:
+    """An entrance or exit animation for a clip.
+
+    :ivar MotionPresetName preset: The animation to run
+    :ivar float duration: Seconds the animation takes at the start (enter) or end (exit)
+    :ivar float amount: Slide distance as a fraction of the canvas (0 to 1)
+    :ivar Easing easing: Curve applied to the animation progress
+    """
+
+    def __init__(
+        self,
+        preset: Union[MotionPresetName, str],
+        duration: float = 0.4,
+        amount: float = 0.08,
+        easing: Union[Easing, str] = Easing.ease_out,
+    ):
+        """Initialize a MotionPreset instance.
+
+        :param MotionPresetName preset: fade, slide_up/down/left/right, pop, wipe_left/right
+        :param float duration: Animation length in seconds, 0 < duration <= 10 (default: 0.4)
+        :param float amount: Slide distance as a canvas fraction, 0 to 1 (default: 0.08)
+        :param Easing easing: Progress curve (default: Easing.ease_out)
+        :raises ValueError: If duration or amount is out of range
+        """
+        if not (0 < duration <= 10):
+            raise ValueError("duration must be between 0 and 10 seconds")
+        if not (0 <= amount <= 1):
+            raise ValueError("amount must be between 0 and 1")
+        self.preset = MotionPresetName(preset)
+        self.duration = duration
+        self.amount = amount
+        self.easing = Easing(easing)
+
+    def to_json(self) -> dict:
+        """Convert the preset to a JSON-serializable dictionary.
+
+        :return: Dictionary containing preset properties
+        :rtype: dict
+        """
+        return {
+            "preset": self.preset.value,
+            "duration": self.duration,
+            "amount": self.amount,
+            "easing": self.easing.value,
+        }
+
+
+class Motion:
+    """Entrance/exit presets and keyframed transforms for a visual clip.
+
+    Keyframe values replace the clip's base value (``offset``, ``scale``, ``opacity``)
+    and hold before the first and after the last keyframe. Presets compose on top:
+    slides add to the offset, pop multiplies scale, fade/slide/pop multiply opacity and
+    wipes mask the layer. An exit preset runs the entrance path backwards.
+
+    Text clips are drawn on a canvas-sized layer, so ``scale`` and ``rotation`` act
+    about the canvas centre unless ``TextAsset.width`` and ``height`` are set.
+
+    :ivar MotionPreset enter: (optional) Entrance animation
+    :ivar MotionPreset exit: (optional) Exit animation
+    :ivar dict keyframes: (optional) ``{KeyframeProperty: [Keyframe, ...]}``
+    """
+
+    def __init__(
+        self,
+        enter: Optional[MotionPreset] = None,
+        exit: Optional[MotionPreset] = None,
+        keyframes: Optional[Dict[Union[KeyframeProperty, str], List[Keyframe]]] = None,
+    ):
+        """Initialize a Motion instance.
+
+        :param MotionPreset enter: (optional) Entrance animation
+        :param MotionPreset exit: (optional) Exit animation
+        :param dict keyframes: (optional) Map of property to keyframes, e.g.
+            ``{KeyframeProperty.scale: [Keyframe(0, 0.8), Keyframe(0.5, 1, Easing.back_out)]}``
+        :raises ValueError: If a keyframe property is unknown or times do not strictly increase
+        """
+        self.enter = enter
+        self.exit = exit
+        self.keyframes: Dict[KeyframeProperty, List[Keyframe]] = {}
+        for prop, frames in (keyframes or {}).items():
+            prop = KeyframeProperty(prop)
+            if not frames:
+                raise ValueError(f"{prop.value}: expected at least one keyframe")
+            if any(b.time <= a.time for a, b in zip(frames, frames[1:])):
+                raise ValueError(f"{prop.value}: keyframe times must strictly increase")
+            self.keyframes[prop] = list(frames)
+
+    def to_json(self) -> dict:
+        """Convert the motion settings to a JSON-serializable dictionary.
+
+        :return: Dictionary containing motion properties
+        :rtype: dict
+        """
+        json = {}
+        if self.enter:
+            json["enter"] = self.enter.to_json()
+        if self.exit:
+            json["exit"] = self.exit.to_json()
+        if self.keyframes:
+            json["keyframes"] = {
+                prop.value: [frame.to_json() for frame in frames]
+                for prop, frames in self.keyframes.items()
+            }
+        return json
+
+
+class Lut:
+    """A 3D ``.cube`` lookup table used as a colour grade.
+
+    Set ``Clip.lut`` to grade one clip (applied before its ``filter``) or
+    ``Timeline.lut`` to grade the whole composited frame under any captions.
+    Only 3D ``.cube`` files with the default 0-1 domain and a ``LUT_3D_SIZE``
+    between 2 and 65 are accepted.
+
+    :ivar str src: URL of the ``.cube`` file; use :meth:`from_file` to upload a local one
+    :ivar float intensity: 0 leaves the picture untouched, 1 applies the full grade,
+        values in between blend the two linearly (default: 1)
+    """
+
+    def __init__(self, src: str, intensity: float = 1.0):
+        """Initialize a Lut instance.
+
+        :param str src: URL of the ``.cube`` file
+        :param float intensity: Grade strength between 0 and 1 (default: 1)
+        :raises ValueError: If intensity not in [0, 1]
+        """
+        if not (0 <= intensity <= 1):
+            raise ValueError("intensity must be between 0 and 1")
+        self.src = src
+        self.intensity = intensity
+
+    @classmethod
+    def from_file(cls, connection, path: str, intensity: float = 1.0) -> "Lut":
+        """Upload a local ``.cube`` file and return a Lut pointing at it.
+
+        :param connection: API connection instance used for the upload
+        :param str path: Path to the ``.cube`` file
+        :param float intensity: Grade strength between 0 and 1 (default: 1)
+        :return: A Lut referencing the uploaded file
+        :rtype: Lut
+        :raises InvalidRequestError: If the upload fails
+        """
+        with open(path, "rb") as fh:
+            content = fh.read()
+        try:
+            src = upload_bytes(
+                _connection=connection,
+                content=content,
+                name=os.path.basename(path),
+                content_type="text/plain",
+            )
+        except Exception as e:
+            raise InvalidRequestError(f"Failed to upload LUT: {e}") from e
+        return cls(src=src, intensity=intensity)
+
+    def to_json(self) -> dict:
+        """Convert the LUT settings to a JSON-serializable dictionary.
+
+        :return: Dictionary containing LUT properties
+        :rtype: dict
+        """
+        return {"src": self.src, "intensity": self.intensity}
 
 
 class BaseAsset:
@@ -906,8 +1146,10 @@ class Clip:
     :ivar AnyAsset asset: The asset contained in this clip
     :ivar Union[float, int] duration: Duration of the clip in seconds
     :ivar Transition transition: (optional) Transition effects for the clip
-    :ivar str effect: (optional) Effect to apply to the clip
+    :ivar Effect effect: (optional) Named effect to apply to the clip
     :ivar Filter filter: (optional) Filter to apply to the clip
+    :ivar Lut lut: (optional) 3D LUT colour grade for the clip, applied before the filter
+    :ivar Motion motion: (optional) Entrance/exit presets and keyframes; not combinable with effect
     :ivar float scale: Scale factor (0 to 10)
     :ivar float opacity: Opacity level (0 to 1)
     :ivar Fit fit: How the asset should be scaled to fit the viewport
@@ -921,7 +1163,7 @@ class Clip:
         asset: AnyAsset,
         duration: Union[float, int],
         transition: Optional[Transition] = None,
-        effect: Optional[str] = None,
+        effect: Optional[Union[Effect, str]] = None,
         filter: Optional[Filter] = None,
         scale: float = 1,
         opacity: float = 1,
@@ -929,13 +1171,15 @@ class Clip:
         position: Position = Position.center,
         offset: Optional[Offset] = None,
         z_index: int = 0,
+        lut: Optional[Lut] = None,
+        motion: Optional[Motion] = None,
     ):
         """Initialize a Clip instance.
 
         :param AnyAsset asset: The asset to display (VideoAsset, ImageAsset, AudioAsset, TextAsset, or CaptionAsset)
         :param Union[float, int] duration: Duration of the clip in seconds
         :param Transition transition: (optional) Transition effects for entry/exit
-        :param str effect: (optional) Effect name to apply
+        :param Effect effect: (optional) Named effect: zoom_in or shake
         :param Filter filter: (optional) Filter to apply to the clip
         :param float scale: Scale factor between 0 and 10 (default: 1)
         :param float opacity: Opacity level between 0 and 1 (default: 1)
@@ -943,6 +1187,11 @@ class Clip:
         :param Position position: Asset position in viewport (default: Position.center)
         :param Offset offset: (optional) Fine-tune position offset
         :param int z_index: Layering order (default: 0)
+        :param Lut lut: (optional) 3D LUT colour grade, applied before the filter.
+            Not valid on audio or caption clips.
+        :param Motion motion: (optional) Entrance/exit presets and keyframed transforms.
+            Not valid on audio or caption clips, with an effect, or together with a
+            transition that has an in/out side.
         :raises ValueError: If scale not in [0, 10] or opacity not in [0, 1]
         """
         if not (0 <= scale <= 10):
@@ -961,6 +1210,8 @@ class Clip:
         self.position = position
         self.offset = offset if offset is not None else Offset()
         self.z_index = z_index
+        self.lut = lut
+        self.motion = motion
 
     def to_json(self) -> dict:
         """Convert the clip to a JSON-serializable dictionary.
@@ -971,7 +1222,7 @@ class Clip:
         json = {
             "asset": self.asset.to_json(),
             "duration": self.duration,
-            "effect": self.effect,
+            "effect": self.effect.value if isinstance(self.effect, Effect) else self.effect,
             "scale": self.scale,
             "opacity": self.opacity,
             "fit": self.fit,
@@ -984,6 +1235,10 @@ class Clip:
             json["transition"] = self.transition.to_json()
         if self.filter:
             json["filter"] = self.filter.value
+        if self.lut:
+            json["lut"] = self.lut.to_json()
+        if self.motion:
+            json["motion"] = self.motion.to_json()
 
         return json
 
@@ -1067,6 +1322,7 @@ class Timeline:
     :ivar connection: API connection instance for making requests
     :ivar str background: Background color in hex format (e.g., "#000000")
     :ivar str resolution: Video resolution (e.g., "1280x720")
+    :ivar Lut lut: (optional) 3D LUT colour grade applied to the whole frame, under captions
     :ivar List[Track] tracks: List of tracks in the timeline
     :ivar str stream_url: URL of the generated stream (populated after generate_stream)
     :ivar str player_url: URL of the video player (populated after generate_stream)
@@ -1080,6 +1336,7 @@ class Timeline:
         self.connection = connection
         self.background: str = "#000000"
         self.resolution: str = "1280x720"
+        self.lut: Optional[Lut] = None
         self.tracks: List[Track] = []
         self.stream_url = None
         self.player_url = None
@@ -1099,13 +1356,14 @@ class Timeline:
         :return: Dictionary containing timeline properties and tracks
         :rtype: dict
         """
-        return {
-            "timeline": {
-                "background": self.background,
-                "resolution": self.resolution,
-                "tracks": [track.to_json() for track in self.tracks],
-            }
+        timeline = {
+            "background": self.background,
+            "resolution": self.resolution,
+            "tracks": [track.to_json() for track in self.tracks],
         }
+        if self.lut:
+            timeline["lut"] = self.lut.to_json()
+        return {"timeline": timeline}
 
     def generate_stream(self) -> str:
         """Generate a stream from the timeline.
