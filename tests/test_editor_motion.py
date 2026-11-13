@@ -63,5 +63,5 @@ def test_clip_emits_motion_and_effect_only_when_set():
     assert "motion" not in plain and plain["effect"] is None
     animated = Clip(asset=asset, duration=5, motion=Motion(exit=MotionPreset("wipe_left"))).to_json()
     assert animated["motion"] == {"exit": {"preset": "wipe_left", "duration": 0.4, "amount": 0.08, "easing": "ease_out"}}
-    assert Clip(asset=asset, duration=5, effect=Effect.ken_burns).to_json()["effect"] == "ken_burns"
+    assert Clip(asset=asset, duration=5, effect=Effect.shake).to_json()["effect"] == "shake"
     assert Clip(asset=asset, duration=5, effect="zoom_in").to_json()["effect"] == "zoom_in"

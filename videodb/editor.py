@@ -227,17 +227,10 @@ class Transition:
 
 
 class Effect(str, Enum):
-    """A named effect to apply to a visual clip.
-
-    ``zoom_in`` and ``shake`` are dedicated filters; ``zoom_out``, ``ken_burns`` and
-    ``pulse`` are motion recipes. An effect cannot be combined with ``Clip.motion``.
-    """
+    """A named effect to apply to a visual clip. Cannot be combined with ``Clip.motion``."""
 
     zoom_in = "zoom_in"
     shake = "shake"
-    zoom_out = "zoom_out"
-    ken_burns = "ken_burns"
-    pulse = "pulse"
 
 
 class Easing(str, Enum):
@@ -1186,7 +1179,7 @@ class Clip:
         :param AnyAsset asset: The asset to display (VideoAsset, ImageAsset, AudioAsset, TextAsset, or CaptionAsset)
         :param Union[float, int] duration: Duration of the clip in seconds
         :param Transition transition: (optional) Transition effects for entry/exit
-        :param Effect effect: (optional) Named effect: zoom_in, shake, zoom_out, ken_burns, pulse
+        :param Effect effect: (optional) Named effect: zoom_in or shake
         :param Filter filter: (optional) Filter to apply to the clip
         :param float scale: Scale factor between 0 and 10 (default: 1)
         :param float opacity: Opacity level between 0 and 1 (default: 1)
