@@ -43,6 +43,7 @@ VideoDB Python SDK provides programmatic access to VideoDB's serverless video in
 VideoDB lets an AI agent watch, search and clip video.
 
 - **Claude**: [Add VideoDB from the plugin directory](https://videodb.io/claude)
+- **ChatGPT**: [Add VideoDB from the plugin directory](https://chatgpt.com/plugins/videodb)
 - **Claude Code**: `claude mcp add --transport http videodb https://mcp.videodb.io/mcp`
 - **Cursor or any MCP client**: Add the remote MCP server and log in once: `https://mcp.videodb.io/mcp`
 
