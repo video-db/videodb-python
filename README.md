@@ -38,8 +38,21 @@
 
 VideoDB Python SDK provides programmatic access to VideoDB's serverless video infrastructure. Build AI applications that understand and process video as structured data with support for semantic search, scene extraction, transcript generation, and multimodal content generation.
 
+## Use VideoDB in your agent
+
+VideoDB lets an AI agent watch, search and clip video.
+
+- **Claude**: [Add VideoDB from the plugin directory](https://videodb.io/claude)
+- **Claude Code**: `claude mcp add --transport http videodb https://mcp.videodb.io/mcp`
+- **Cursor or any MCP client**: Add the remote MCP server and log in once: `https://mcp.videodb.io/mcp`
+
+Free to start: $20 of credits, no credit card. [Steps for every client](https://docs.videodb.io/pages/mcp/connect).
+
+The Python SDK below is for writing code against VideoDB yourself.
+
 ## 📑 Table of Contents
 
+- [Use VideoDB in your agent](#use-videodb-in-your-agent)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
     - [Establishing a Connection](#establishing-a-connection)
@@ -92,7 +105,7 @@ pip install videodb
 
 ### Establishing a Connection
 
-Get your API key from [VideoDB Console](https://console.videodb.io). Free for first 50 uploads (no credit card required).
+Get your API key from [VideoDB Console](https://console.videodb.io). Free to start: $20 of credits, no credit card.
 
 ```python
 import videodb
