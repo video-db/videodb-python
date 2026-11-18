@@ -1,9 +1,9 @@
-import time
 from typing import Optional
 
 from videodb.audio import Audio
 from videodb.image import Image
-from videodb.exceptions import InvalidRequestError, RequestTimeoutError
+from videodb.exceptions import InvalidRequestError
+from videodb._utils._poll import PollSchedule
 
 
 class GenerationJob:
@@ -76,25 +76,30 @@ class GenerationJob:
                 self.result_type = "image"
         return self
 
-    def wait(self, timeout: int = 600, interval: int = 5):
+    def wait(self, timeout: Optional[int] = None, interval: Optional[int] = None):
         """Poll this job until it completes and return the generated asset.
 
-        :param int timeout: Maximum seconds to wait
-        :param int interval: Seconds between polls
+        Cadence follows the server's ``retry_after`` hint when it sends one,
+        and local backoff otherwise.
+
+        :param int timeout: Maximum seconds to wait (default: SDK max_poll_time)
+        :param int interval: Force a fixed number of seconds between polls
         :return: :class:`Audio <videodb.audio.Audio>`,
             :class:`Image <videodb.image.Image>`, or final job data if the
             result type cannot be inferred
         """
-        deadline = time.time() + timeout
+        schedule = PollSchedule(interval=interval, max_poll_time=timeout)
         while True:
             self.refresh()
             if self.status != "processing":
                 break
-            if time.time() >= deadline:
-                raise RequestTimeoutError(
-                    f"Generation job {self.job_id} did not complete within {timeout} seconds"
-                )
-            time.sleep(interval)
+            schedule.raise_if_expired(
+                what=f"Generation job {self.job_id}",
+                output_url=self.output_url,
+                last_response=self.data,
+                job_id=self.job_id,
+            )
+            schedule.sleep(self.data)
 
         if self.status == "failed":
             raise InvalidRequestError(f"Generation job {self.job_id} failed")

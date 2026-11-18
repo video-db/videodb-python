@@ -1,8 +1,7 @@
-import time
-
 from typing import List, Optional
 
 from videodb._constants import ApiPath, INDEX_TERMINAL_STATUSES
+from videodb._utils._poll import PollSchedule
 
 
 class FieldSchema:
@@ -199,26 +198,25 @@ class Index:
 
     def wait_until_complete(
         self,
-        timeout: int = 1800,
-        poll_interval: int = 10,
+        timeout: Optional[int] = None,
+        poll_interval: Optional[int] = None,
     ) -> "Index":
         """Poll this index until it reaches a terminal status.
 
         Terminal statuses are ``ready`` and ``failed``.
 
-        :param int timeout: Maximum time to wait, in seconds
-        :param int poll_interval: Seconds between status checks
-        :raises TimeoutError: If the build does not complete before timeout
+        :param int timeout: Maximum time to wait, in seconds (default: SDK max_poll_time)
+        :param int poll_interval: Force a fixed number of seconds between checks
+        :raises JobTimeoutError: If the build does not complete before timeout
         :return: This index with refreshed status
         """
-        deadline = time.time() + timeout
+        schedule = PollSchedule(interval=poll_interval, max_poll_time=timeout)
         while True:
             self.refresh()
             if self.is_complete:
                 return self
-            if time.time() >= deadline:
-                raise TimeoutError(f"Index {self.index_id} did not complete within {timeout}s")
-            time.sleep(poll_interval)
+            schedule.raise_if_expired(what=f"Index {self.index_id}")
+            schedule.sleep()
 
     def records(self, limit: int = 20, cursor: Optional[str] = None) -> RecordPage:
         """Preview the records stored in the index.

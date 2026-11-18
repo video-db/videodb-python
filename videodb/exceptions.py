@@ -47,6 +47,20 @@ class RequestTimeoutError(VideodbError):
         self.response = response
 
 
+class JobTimeoutError(RequestTimeoutError):
+    """
+    Raised when a job outlives the SDK's polling deadline.
+
+    Carries the job handle so the caller can resume polling later instead of
+    losing work that the server went on to finish.
+    """
+
+    def __init__(self, message, response=None, output_url=None, job_id=None):
+        super(JobTimeoutError, self).__init__(message, response)
+        self.output_url = output_url
+        self.job_id = job_id
+
+
 class SearchError(VideodbError):
     """
     Raised when a search is invalid.

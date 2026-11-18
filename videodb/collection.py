@@ -338,7 +338,7 @@ class Collection:
         config: Optional[dict] = None,
         sandbox_id: Optional[str] = None,
         wait: bool = False,
-        poll_interval: int = 5,
+        poll_interval: Optional[int] = None,
         timeout: int = 600,
     ) -> Union[Image, GenerationJob]:
         """Generate an image from a prompt.
@@ -350,7 +350,7 @@ class Collection:
         :param dict config: Model configuration. Used by FLUX.
         :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
         :param bool wait: If True, wait for self-inference jobs and return Image.
-        :param int poll_interval: Seconds between job polls when wait=True.
+        :param int poll_interval: Force a fixed number of seconds between job polls when wait=True (default: follow the server's retry_after hint).
         :param int timeout: Maximum seconds to wait when wait=True.
         :return: :class:`Image <Image>` or :class:`GenerationJob <GenerationJob>`
         :rtype: Union[:class:`videodb.image.Image`, :class:`videodb.job.GenerationJob`]
@@ -443,7 +443,7 @@ class Collection:
         voice_clone_id: Optional[str] = None,
         clone_voice_id: Optional[str] = None,
         wait: bool = False,
-        poll_interval: int = 5,
+        poll_interval: Optional[int] = None,
         timeout: int = 600,
     ) -> Union[Audio, GenerationJob]:
         """Generate voice from text.
@@ -457,7 +457,7 @@ class Collection:
         :param str voice_clone_id: ID of a reusable voice clone to use for OmniVoice (optional).
         :param str clone_voice_id: Alias for ``voice_clone_id`` (optional).
         :param bool wait: If True, wait for self-inference jobs and return Audio.
-        :param int poll_interval: Seconds between job polls when wait=True.
+        :param int poll_interval: Force a fixed number of seconds between job polls when wait=True (default: follow the server's retry_after hint).
         :param int timeout: Maximum seconds to wait when wait=True.
         :return: :class:`Audio <Audio>` or :class:`GenerationJob <GenerationJob>`
         :rtype: Union[:class:`videodb.audio.Audio`, :class:`videodb.job.GenerationJob`]

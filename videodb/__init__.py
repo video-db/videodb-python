@@ -42,6 +42,7 @@ from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
     InvalidRequestError,
+    JobTimeoutError,
     SearchError,
 )
 
@@ -64,6 +65,7 @@ __all__ = [
     "VideodbError",
     "AuthenticationError",
     "InvalidRequestError",
+    "JobTimeoutError",
     "IndexType",
     "IndexCapability",
     "FieldGroup",
