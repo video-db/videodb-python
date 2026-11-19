@@ -156,6 +156,14 @@ class Connection(HttpClient):
         """
         return self.get(path=f"{ApiPath.billing}/{ApiPath.usage}")
 
+    def get_generation_models(self) -> dict:
+        """Get the generation models available to this account.
+
+        :return: ``{"image": [...], "video": [...]}``
+        :rtype: dict
+        """
+        return self.get(path=f"{ApiPath.generate}/{ApiPath.models}")
+
     def get_invoices(self) -> List[dict]:
         """Get a list of all invoices.
 

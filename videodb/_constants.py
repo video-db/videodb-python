@@ -125,6 +125,7 @@ class ApiPath:
     alert = "alert"
     generate_url = "generate_url"
     generate = "generate"
+    models = "models"
     text = "text"
     web = "web"
     translate = "translate"
