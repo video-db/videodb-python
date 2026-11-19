@@ -21,7 +21,7 @@ jobs:
   build:
     name: Build & Verify
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest moved to 26.04, which has no Python 3.9 build
     permissions:
       contents: read
     steps:
@@ -79,7 +79,7 @@ jobs:
   pypi:
     name: Publish to PyPI
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest moved to 26.04, which has no Python 3.9 build
     environment: pypi
     permissions:
       id-token: write
@@ -96,7 +96,7 @@ jobs:
   github-release:
     name: GitHub Release
     needs: pypi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # ubuntu-latest moved to 26.04, which has no Python 3.9 build
     permissions:
       contents: write
     steps:
