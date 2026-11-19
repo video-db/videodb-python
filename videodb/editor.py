@@ -266,18 +266,6 @@ class KeyframeProperty(str, Enum):
     opacity = "opacity"
 
 
-# Limits mirrored from the streaming service so bad input fails here, not at generate_stream().
-MIN_MOTION_STEP = 0.001  # seconds; shorter gaps round to a zero divisor in the renderer
-MAX_KEYFRAMES = 32
-KEYFRAME_BOUNDS = {
-    "offset.x": (-1.0, 1.0),
-    "offset.y": (-1.0, 1.0),
-    "scale": (0.0, 10.0),
-    "rotation": (-3600.0, 3600.0),
-    "opacity": (0.0, 1.0),
-}
-
-
 class Keyframe:
     """A value at a clip-relative time.
 
@@ -336,8 +324,8 @@ class MotionPreset:
         :param Easing easing: Progress curve (default: Easing.ease_out)
         :raises ValueError: If duration or amount is out of range
         """
-        if not (MIN_MOTION_STEP <= duration <= 10):
-            raise ValueError(f"duration must be between {MIN_MOTION_STEP} and 10 seconds")
+        if not (0 < duration <= 10):
+            raise ValueError("duration must be between 0 and 10 seconds")
         if not (0 <= amount <= 1):
             raise ValueError("amount must be between 0 and 1")
         self.preset = MotionPresetName(preset)
@@ -387,8 +375,7 @@ class Motion:
         :param MotionPreset exit: (optional) Exit animation
         :param dict keyframes: (optional) Map of property to keyframes, e.g.
             ``{KeyframeProperty.scale: [Keyframe(0, 0.8), Keyframe(0.5, 1, Easing.back_out)]}``
-        :raises ValueError: If a keyframe property is unknown, a value is out of range,
-            there are more than 32 keyframes, or times are closer than 1 ms
+        :raises ValueError: If a keyframe property is unknown or times do not strictly increase
         """
         self.enter = enter
         self.exit = exit
@@ -396,19 +383,14 @@ class Motion:
         for prop, frames in (keyframes or {}).items():
             prop = KeyframeProperty(prop)
             frames = list(frames)
-            if not 1 <= len(frames) <= MAX_KEYFRAMES:
-                raise ValueError(f"{prop.value}: expected 1-{MAX_KEYFRAMES} keyframes")
-            if any(b.time - a.time < MIN_MOTION_STEP for a, b in zip(frames, frames[1:])):
-                raise ValueError(
-                    f"{prop.value}: keyframe times must increase by at least {MIN_MOTION_STEP} s"
-                )
-            lo, hi = KEYFRAME_BOUNDS[prop.value]
-            if any(not lo <= frame.value <= hi for frame in frames):
-                raise ValueError(f"{prop.value}: values must be within [{lo:g}, {hi:g}]")
+            if not frames:
+                raise ValueError(f"{prop.value}: expected at least one keyframe")
+            if any(b.time <= a.time for a, b in zip(frames, frames[1:])):
+                raise ValueError(f"{prop.value}: keyframe times must strictly increase")
             self.keyframes[prop] = frames
 
     def __bool__(self) -> bool:
-        """True when the motion animates something; an empty Motion is not emitted."""
+        """True when an entrance, exit or keyframe is set."""
         return bool(self.enter or self.exit or self.keyframes)
 
     def to_json(self) -> dict:
@@ -448,12 +430,10 @@ class Lut:
 
         :param str src: URL of the ``.cube`` file
         :param float intensity: Grade strength between 0 and 1 (default: 1)
-        :raises ValueError: If intensity not in [0, 1] or src is not an HTTP(S) URL
+        :raises ValueError: If intensity not in [0, 1]
         """
         if not (0 <= intensity <= 1):
             raise ValueError("intensity must be between 0 and 1")
-        if not isinstance(src, str) or not src.startswith(("http://", "https://")):
-            raise ValueError("src must be an HTTP(S) URL; use Lut.from_file for a local file")
         self.src = src
         self.intensity = intensity
 
@@ -1222,37 +1202,17 @@ class Clip:
         :param Motion motion: (optional) Entrance/exit presets and keyframed transforms.
             Not valid on audio or caption clips, with an effect, or together with a
             transition that has an in/out side.
-        :raises ValueError: If scale not in [0, 10], opacity not in [0, 1], the effect
-            name is unknown, or lut/motion are combined with something they cannot be
+        :raises ValueError: If scale not in [0, 10], opacity not in [0, 1], or the effect name is unknown
         """
         if not (0 <= scale <= 10):
             raise ValueError("scale must be between 0 and 10")
         if not (0 <= opacity <= 1):
             raise ValueError("opacity must be between 0 and 1")
-        effect = Effect(effect) if effect else None
-        visual = asset.type not in (AssetType.audio, AssetType.caption)
-        if lut and not visual:
-            raise ValueError("lut applies to visual clips, not audio or caption")
-        if motion:
-            if not visual:
-                raise ValueError("motion applies to visual clips, not audio or caption")
-            if effect:
-                raise ValueError("effect and motion are mutually exclusive")
-            sided = transition and (transition.in_ or transition.out)
-            if sided and (motion.enter or motion.exit):
-                raise ValueError("use transition or motion enter/exit, not both")
-            enter = motion.enter.duration if motion.enter else 0
-            exit_ = motion.exit.duration if motion.exit else 0
-            if enter + exit_ > duration:
-                raise ValueError("motion entrance and exit must fit within the clip duration")
-            for prop, frames in motion.keyframes.items():
-                if frames[-1].time > duration:
-                    raise ValueError(f"{prop.value}: keyframes must lie within the clip duration")
 
         self.asset = asset
         self.duration = duration
         self.transition = transition
-        self.effect = effect
+        self.effect = Effect(effect) if effect else None
         self.filter = filter
         self.scale = scale
         self.opacity = opacity
