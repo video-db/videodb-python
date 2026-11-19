@@ -139,10 +139,12 @@ class Index:
         self._connection = _connection
         self.video_id = video_id
         self.collection_id = collection_id
+        self._last_response = None
         self.update_from_response(kwargs)
 
     def update_from_response(self, data: dict) -> "Index":
         data = data or {}
+        self._last_response = data
         self.index_id = data.get("index_id") or getattr(self, "index_id", None)
         self.name = data.get("name")
         self.status = data.get("status")
@@ -215,8 +217,10 @@ class Index:
             self.refresh()
             if self.is_complete:
                 return self
-            schedule.raise_if_expired(what=f"Index {self.index_id}")
-            schedule.sleep()
+            schedule.raise_if_expired(
+                what=f"Index {self.index_id}", last_response=self._last_response
+            )
+            schedule.sleep(self._last_response)
 
     def records(self, limit: int = 20, cursor: Optional[str] = None) -> RecordPage:
         """Preview the records stored in the index.

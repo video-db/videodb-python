@@ -30,6 +30,7 @@ class Sandbox:
         self.id = sandbox_id or id
         self.tier = tier
         self.status = status
+        self._last_response = None
         self.name = name
         self.created_at = created_at
         self.started_at = started_at
@@ -45,6 +46,7 @@ class Sandbox:
     def _update(self, data):
         if not data:
             return
+        self._last_response = data
         self.id = data.get("sandbox_id", data.get("id", self.id))
         self.tier = data.get("tier", self.tier)
         self.status = data.get("status", self.status)
@@ -81,8 +83,10 @@ class Sandbox:
                 raise InvalidRequestError(
                     f"Sandbox {self.id} entered terminal state: {self.status}"
                 )
-            schedule.raise_if_expired(what=f"Sandbox {self.id}")
-            schedule.sleep()
+            schedule.raise_if_expired(
+                what=f"Sandbox {self.id}", last_response=self._last_response
+            )
+            schedule.sleep(self._last_response)
 
     def stop(self, grace=True):
         """Stop this sandbox.
@@ -110,8 +114,10 @@ class Sandbox:
             self.refresh()
             if self.status in TERMINAL_STATUSES:
                 return self
-            schedule.raise_if_expired(what=f"Sandbox {self.id}")
-            schedule.sleep()
+            schedule.raise_if_expired(
+                what=f"Sandbox {self.id}", last_response=self._last_response
+            )
+            schedule.sleep(self._last_response)
 
     @property
     def is_active(self):

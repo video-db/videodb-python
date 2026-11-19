@@ -82,6 +82,8 @@ class HttpClient:
         :param str base_url: (optional) The base url to use for the request
         :param dict headers: (optional) The headers to use for the request
         :param bool wait: If False, return raw data without polling (default True)
+        :param bool show_progress: Show a progress bar while polling
+        :param dict poll_config: Per-call ``PollSchedule`` overrides
         :param kwargs: The keyword arguments to pass to the request method
         :return: json response from the request
         """
@@ -248,12 +250,8 @@ class HttpClient:
         not overwrite each other's cadence.
         """
         return {
-            "max_poll_time": kwargs.pop(
-                "max_poll_time", HttpClientDefaultValues.max_poll_time
-            ),
-            "interval": kwargs.pop(
-                "poll_interval", HttpClientDefaultValues.poll_interval
-            ),
+            "max_poll_time": kwargs.pop("max_poll_time", None),
+            "interval": kwargs.pop("poll_interval", None),
         }
 
     def get(

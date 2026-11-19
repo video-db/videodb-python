@@ -75,8 +75,11 @@ class UnderstandingAnalyzer:
             self.refresh()
             if self.is_complete:
                 return self
-            schedule.raise_if_expired(what=f"Analyzer {self.name or self.id}")
-            schedule.sleep()
+            schedule.raise_if_expired(
+                what=f"Analyzer {self.name or self.id}",
+                last_response=self.understanding._last_response,
+            )
+            schedule.sleep(self.understanding._last_response)
 
     def get_output(self) -> Any:
         """Return this analyzer's output.
@@ -137,6 +140,7 @@ class Understanding:
         self.status = status
         self.output_url = output_url
         self.extra = kwargs
+        self._last_response = None
         self.analyzers = [self.create_analyzer(item) for item in (analyzers or [])]
 
     def __repr__(self) -> str:
@@ -166,6 +170,7 @@ class Understanding:
 
     def update_from_response(self, data: Dict[str, Any]) -> "Understanding":
         data = data or {}
+        self._last_response = data
         self.status = data.get("status", self.status)
         if data.get("understanding_id") or data.get("id"):
             self.id = data.get("understanding_id") or data.get("id")
@@ -205,8 +210,10 @@ class Understanding:
             self.refresh()
             if self.is_complete:
                 return self
-            schedule.raise_if_expired(what=f"Understanding {self.id}")
-            schedule.sleep()
+            schedule.raise_if_expired(
+                what=f"Understanding {self.id}", last_response=self._last_response
+            )
+            schedule.sleep(self._last_response)
 
     def list_analyzers(self) -> List[UnderstandingAnalyzer]:
         """Return analyzers in this understanding run."""
@@ -225,6 +232,7 @@ class Understanding:
                 path=f"{ApiPath.video}/{self.video_id}/{ApiPath.understand}/{self.id}",
                 params={"analyzer": name_or_id},
             ) or {}
+            self._last_response = data
             self.status = data.get("status", self.status)
             analyzer_data = (data.get("analyzers") or [None])[0]
             if analyzer_data:

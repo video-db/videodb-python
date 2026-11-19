@@ -47,7 +47,7 @@ class RequestTimeoutError(VideodbError):
         self.response = response
 
 
-class JobTimeoutError(RequestTimeoutError):
+class JobTimeoutError(RequestTimeoutError, TimeoutError):
     """
     Raised when a job outlives the SDK's polling deadline.
 

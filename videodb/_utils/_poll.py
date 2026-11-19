@@ -76,7 +76,8 @@ class PollSchedule:
     :param float interval: Force a fixed cadence (what ``poll_interval=``
         used to mean). ``None`` means adaptive.
     :param float max_poll_time: Deadline in seconds. ``None`` uses the SDK
-        default, and a server ``max_wait`` hint can extend it.
+        default, which a server ``max_wait`` hint may extend; an explicit
+        value is never extended.
     """
 
     def __init__(
@@ -90,6 +91,7 @@ class PollSchedule:
         jitter: Optional[float] = None,
     ) -> None:
         self.interval = _coerce(interval)
+        self._deadline_explicit = max_poll_time is not None
         self.max_poll_time = (
             _coerce(max_poll_time)
             if max_poll_time is not None
@@ -124,7 +126,9 @@ class PollSchedule:
         return self.remaining <= 0
 
     def observe(self, source: Any = None) -> None:
-        """Adopt a server-advertised ceiling for this job kind."""
+        """Adopt a server-advertised ceiling unless the caller set a deadline."""
+        if self._deadline_explicit:
+            return
         advertised = max_wait_from(source)
         if advertised and advertised > self.max_poll_time:
             logger.debug(
@@ -148,9 +152,9 @@ class PollSchedule:
                 delay = self._next
                 self._next = min(self._next * self.factor, self.max_interval)
 
-        delay = max(self.min_interval, min(delay, self.max_interval))
         if self.jitter:
             delay *= 1 + random.uniform(-self.jitter, self.jitter)
+        delay = max(self.min_interval, min(delay, self.max_interval))
         if self.remaining > 0:
             delay = min(delay, max(self.remaining, self.min_interval))
         return round(delay, 3)

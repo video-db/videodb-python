@@ -189,8 +189,6 @@ class HttpClientDefaultValues:
     timeout = 30
     backoff_factor = 0.1
     status_forcelist = [502, 503, 504]
-    max_poll_time = 1800
-    poll_interval = None
 
 
 class PollDefaults:
