@@ -82,13 +82,16 @@ class GenerationJob:
         Cadence follows the server's ``retry_after`` hint when it sends one,
         and local backoff otherwise.
 
-        :param int timeout: Maximum seconds to wait (default: SDK max_poll_time)
-        :param int interval: Force a fixed number of seconds between polls
+        :param int timeout: Maximum seconds to wait (default 600, extended by the server's max_wait)
+        :param int interval: Force a fixed number of seconds between polls (default: server hint, else 5)
         :return: :class:`Audio <videodb.audio.Audio>`,
             :class:`Image <videodb.image.Image>`, or final job data if the
             result type cannot be inferred
         """
-        schedule = PollSchedule(interval=interval, max_poll_time=timeout)
+        schedule = PollSchedule(
+            interval=interval, max_poll_time=timeout,
+            first_interval=5.0, default_max_poll_time=600.0,
+        )
         while True:
             self.refresh()
             if self.status != "processing":

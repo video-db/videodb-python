@@ -65,12 +65,15 @@ class UnderstandingAnalyzer:
     ) -> "UnderstandingAnalyzer":
         """Poll this analyzer until it reaches a terminal status.
 
-        :param int timeout: Maximum time to wait, in seconds (default: SDK max_poll_time)
-        :param int poll_interval: Force a fixed number of seconds between checks (default: adaptive)
+        :param int timeout: Maximum time to wait, in seconds (default 1800, extended by the server's max_wait)
+        :param int poll_interval: Force a fixed number of seconds between checks (default: server hint, else 10)
         :raises JobTimeoutError: If the analyzer does not complete before timeout
         :return: This analyzer with refreshed status
         """
-        schedule = PollSchedule(interval=poll_interval, max_poll_time=timeout)
+        schedule = PollSchedule(
+            interval=poll_interval, max_poll_time=timeout,
+            first_interval=10.0, default_max_poll_time=1800.0,
+        )
         while True:
             self.refresh()
             if self.is_complete:
@@ -200,12 +203,15 @@ class Understanding:
 
         Terminal statuses are ``done`` and ``failed``.
 
-        :param int timeout: Maximum time to wait, in seconds (default: SDK max_poll_time)
-        :param int poll_interval: Force a fixed number of seconds between checks (default: adaptive)
+        :param int timeout: Maximum time to wait, in seconds (default 1800, extended by the server's max_wait)
+        :param int poll_interval: Force a fixed number of seconds between checks (default: server hint, else 10)
         :raises JobTimeoutError: If the run does not complete before timeout
         :return: This understanding with refreshed status
         """
-        schedule = PollSchedule(interval=poll_interval, max_poll_time=timeout)
+        schedule = PollSchedule(
+            interval=poll_interval, max_poll_time=timeout,
+            first_interval=10.0, default_max_poll_time=1800.0,
+        )
         while True:
             self.refresh()
             if self.is_complete:

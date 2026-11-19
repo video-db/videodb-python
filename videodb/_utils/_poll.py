@@ -74,10 +74,15 @@ class PollSchedule:
     """Decides how long to wait before the next status check.
 
     :param float interval: Force a fixed cadence (what ``poll_interval=``
-        used to mean). ``None`` means adaptive.
-    :param float max_poll_time: Deadline in seconds. ``None`` uses the SDK
-        default, which a server ``max_wait`` hint may extend; an explicit
-        value is never extended.
+        used to mean). ``None`` means follow the server hint, else
+        ``first_interval``.
+    :param float max_poll_time: Deadline in seconds. ``None`` uses
+        ``default_max_poll_time`` (else the SDK default), which a server
+        ``max_wait`` hint may extend; an explicit value is never extended.
+    :param float first_interval: The loop's own cadence when the server
+        sends no hint.
+    :param float default_max_poll_time: The loop's own deadline when the
+        caller passes none.
     """
 
     def __init__(
@@ -89,14 +94,16 @@ class PollSchedule:
         max_interval: Optional[float] = None,
         min_interval: Optional[float] = None,
         jitter: Optional[float] = None,
+        default_max_poll_time: Optional[float] = None,
     ) -> None:
         self.interval = _coerce(interval)
         self._deadline_explicit = max_poll_time is not None
-        self.max_poll_time = (
-            _coerce(max_poll_time)
-            if max_poll_time is not None
-            else PollDefaults.max_poll_time
-        )
+        if max_poll_time is not None:
+            self.max_poll_time = _coerce(max_poll_time)
+        elif default_max_poll_time is not None:
+            self.max_poll_time = float(default_max_poll_time)
+        else:
+            self.max_poll_time = PollDefaults.max_poll_time
         self.factor = factor if factor is not None else PollDefaults.factor
         self.max_interval = (
             max_interval if max_interval is not None else PollDefaults.max_interval
