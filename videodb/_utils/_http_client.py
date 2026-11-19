@@ -19,6 +19,7 @@ from videodb._utils._poll import PollSchedule, retry_after_from
 from videodb.exceptions import (
     AuthenticationError,
     InvalidRequestError,
+    RequestTimeoutError,
 )
 
 logger = logging.getLogger(__name__)
