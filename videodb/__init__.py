@@ -32,6 +32,7 @@ from videodb.client import Connection
 from videodb.search import AskResponse, SearchResponse, SearchResult
 from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.job import GenerationJob
+from videodb.generation import HeyGenConfig
 from videodb.sandbox import Sandbox
 from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
@@ -42,6 +43,7 @@ from videodb.exceptions import (
     VideodbError,
     AuthenticationError,
     InvalidRequestError,
+    JobTimeoutError,
     SearchError,
 )
 
@@ -64,6 +66,7 @@ __all__ = [
     "VideodbError",
     "AuthenticationError",
     "InvalidRequestError",
+    "JobTimeoutError",
     "IndexType",
     "IndexCapability",
     "FieldGroup",
@@ -92,6 +95,7 @@ __all__ = [
     "RTStreamChannelType",
     "SandboxTier",
     "SandboxStatus",
+    "HeyGenConfig",
 ]
 
 

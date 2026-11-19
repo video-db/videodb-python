@@ -1,15 +1,15 @@
-import time
 from typing import Optional
 
 from videodb.audio import Audio
 from videodb.image import Image
-from videodb.exceptions import InvalidRequestError, RequestTimeoutError
+from videodb.exceptions import InvalidRequestError
+from videodb._utils._poll import PollSchedule
 
 
 class GenerationJob:
     """A self-inference generation job.
 
-    OmniVoice text-to-speech and FLUX image generation return a VideoDB job
+    Sandbox generation such as OmniVoice text-to-speech returns a VideoDB job
     after the initial server-side async task has dispatched work to
     inference-core. Use :meth:`wait` to poll until the final asset is ready.
     """
@@ -76,25 +76,33 @@ class GenerationJob:
                 self.result_type = "image"
         return self
 
-    def wait(self, timeout: int = 600, interval: int = 5):
+    def wait(self, timeout: Optional[int] = None, interval: Optional[int] = None):
         """Poll this job until it completes and return the generated asset.
 
-        :param int timeout: Maximum seconds to wait
-        :param int interval: Seconds between polls
+        Cadence follows the server's ``retry_after`` hint when it sends one,
+        and local backoff otherwise.
+
+        :param int timeout: Maximum seconds to wait (default 600, extended by the server's max_wait)
+        :param int interval: Force a fixed number of seconds between polls (default: server hint, else 5)
         :return: :class:`Audio <videodb.audio.Audio>`,
             :class:`Image <videodb.image.Image>`, or final job data if the
             result type cannot be inferred
         """
-        deadline = time.time() + timeout
+        schedule = PollSchedule(
+            interval=interval, max_poll_time=timeout,
+            first_interval=5.0, default_max_poll_time=600.0,
+        )
         while True:
             self.refresh()
             if self.status != "processing":
                 break
-            if time.time() >= deadline:
-                raise RequestTimeoutError(
-                    f"Generation job {self.job_id} did not complete within {timeout} seconds"
-                )
-            time.sleep(interval)
+            schedule.raise_if_expired(
+                what=f"Generation job {self.job_id}",
+                output_url=self.output_url,
+                last_response=self.data,
+                job_id=self.job_id,
+            )
+            schedule.sleep(self.data)
 
         if self.status == "failed":
             raise InvalidRequestError(f"Generation job {self.job_id} failed")
