@@ -173,7 +173,7 @@ class SandboxStatus:
 
 
 INDEX_TERMINAL_STATUSES = {"ready", "failed"}
-UNDERSTANDING_TERMINAL_STATUSES = {"done", "failed"}
+UNDERSTANDING_TERMINAL_STATUSES = {"done", "partial", "failed", "cancelled"}
 ANALYZER_TERMINAL_STATUSES = {"done", "failed", "skipped", "cancelled"}
 
 

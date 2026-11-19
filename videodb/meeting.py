@@ -3,6 +3,7 @@ from videodb._constants import ApiPath, MeetingStatus
 from videodb.exceptions import (
     VideodbError,
 )
+from videodb._utils._poll import PollSchedule
 
 DEFAULT_MEETING_TIMEOUT = 14400  # 4 hours
 DEFAULT_POLLING_INTERVAL = 120  # 2 minutes
@@ -104,14 +105,11 @@ class Meeting:
         :return: True if status reached, False if timeout
         :rtype: bool
         """
-        import time
-
-        start_time = time.time()
-
-        while time.time() - start_time < timeout:
+        schedule = PollSchedule(interval=interval, max_poll_time=timeout)
+        while True:
             self.refresh()
             if self.status == target_status:
                 return True
-            time.sleep(interval)
-
-        return False
+            if schedule.expired:
+                return False
+            schedule.sleep()
