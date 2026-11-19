@@ -9,7 +9,7 @@ from videodb.exceptions import InvalidRequestError, RequestTimeoutError
 class GenerationJob:
     """A self-inference generation job.
 
-    OmniVoice text-to-speech and FLUX image generation return a VideoDB job
+    Sandbox generation such as OmniVoice text-to-speech returns a VideoDB job
     after the initial server-side async task has dispatched work to
     inference-core. Use :meth:`wait` to poll until the final asset is ready.
     """

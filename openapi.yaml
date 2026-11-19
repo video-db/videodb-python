@@ -1992,15 +1992,15 @@ paths:
                   example: "16:9"
                 model_name:
                   type: string
-                  description: Model used for image generation.
-                  example: "black-forest-labs/FLUX.1-dev"
+                  description: Image model, `default` or `nano-banana`.
+                  example: "default"
                 config:
                   type: object
-                  description: Model configuration. For FLUX supports size, num_inference_steps, guidance_scale, negative_prompt, and seed.
+                  description: Model-specific options.
                   additionalProperties: true
                 sandbox_id:
                   type: string
-                  description: Sandbox ID used for self-hosted image generation.
+                  description: Sandbox ID for a self-hosted image model. No sandbox image model is available right now.
                   example: "bx-123abc"
                 callback_url:
                   type: string
@@ -2149,9 +2149,6 @@ paths:
                   items:
                     type: string
                   example: ["object_detection"]
-              anyOf:
-                - required: [models]
-                - required: [model_categories]
       responses:
         '200':
           description: Sandbox accepted for provisioning
@@ -2310,7 +2307,7 @@ paths:
                 model_name:
                   type: string
                   description: Hosted tier (`mini`, `basic`, `pro`, `ultra`) or self-hosted sandbox model name.
-                  example: "Qwen/Qwen3.5-27B"
+                  example: "Qwen/Qwen3-4B"
                 sandbox_id:
                   type: string
                   description: Sandbox ID to use when `model_name` is a self-hosted model.

@@ -344,11 +344,11 @@ class Connection(HttpClient):
     ) -> "Sandbox":
         """Create a new sandbox (GPU compute pool).
 
-        :param str tier: Sandbox tier — "small" or "medium" (default: server decides)
+        :param str tier: Sandbox tier — "small" or "medium" (default: "medium")
         :param str name: Human-readable name (auto-generated if not provided)
         :param str callback_url: URL to receive sandbox lifecycle webhooks
-        :param list[str] model_categories: Model categories to prepare for this sandbox, e.g. ``["vlm", "image_generation"]`` (optional)
-        :param list[str] models: Specific model names to prepare for this sandbox (optional)
+        :param list[str] model_categories: Model categories to prepare for this sandbox, e.g. ``["vlm", "speech_to_text"]`` (optional)
+        :param list[str] models: Specific model names to prepare for this sandbox, e.g. ``["Qwen/Qwen3-4B"]`` (optional). With neither ``models`` nor ``model_categories``, the tier's default models are prepared.
         :return: :class:`Sandbox <Sandbox>` object in provisioning state
         :rtype: :class:`videodb.sandbox.Sandbox`
         """

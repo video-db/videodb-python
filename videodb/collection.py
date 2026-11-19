@@ -347,10 +347,10 @@ class Collection:
         :param str prompt: Prompt for the image generation
         :param str aspect_ratio: Aspect ratio of the image (optional, hosted models)
         :param str callback_url: URL to receive the callback (optional)
-        :param str model_name: Model name. Use ``"black-forest-labs/FLUX.1-dev"`` for FLUX self-inference.
-        :param dict config: Model configuration. Used by FLUX.
-        :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
-        :param bool wait: If True, wait for self-inference jobs and return Image.
+        :param str model_name: Image model, ``"default"`` or ``"nano-banana"`` (optional, defaults to ``"default"``).
+        :param dict config: Model-specific options (optional).
+        :param str sandbox_id: Sandbox for a self-hosted image model (optional). No sandbox image model is available right now.
+        :param bool wait: If True and the server returns a job, wait for it and return Image.
         :param int poll_interval: Seconds between job polls when wait=True.
         :param int timeout: Maximum seconds to wait when wait=True.
         :return: :class:`Image <Image>` or :class:`GenerationJob <GenerationJob>`
