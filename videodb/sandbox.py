@@ -1,6 +1,7 @@
+import time
+
 from videodb._constants import ApiPath, SandboxStatus
-from videodb.exceptions import InvalidRequestError
-from videodb._utils._poll import PollSchedule
+from videodb.exceptions import InvalidRequestError, RequestTimeoutError
 
 TERMINAL_STATUSES = (SandboxStatus.stopped, SandboxStatus.failed)
 READY_STATUSES = (SandboxStatus.active, SandboxStatus.alert)
@@ -30,7 +31,6 @@ class Sandbox:
         self.id = sandbox_id or id
         self.tier = tier
         self.status = status
-        self._last_response = None
         self.name = name
         self.created_at = created_at
         self.started_at = started_at
@@ -46,7 +46,6 @@ class Sandbox:
     def _update(self, data):
         if not data:
             return
-        self._last_response = data
         self.id = data.get("sandbox_id", data.get("id", self.id))
         self.tier = data.get("tier", self.tier)
         self.status = data.get("status", self.status)
@@ -65,16 +64,16 @@ class Sandbox:
         self._update(data or {})
         return self
 
-    def wait_for_ready(self, timeout=600, interval=None):
+    def wait_for_ready(self, timeout=300, interval=5):
         """Poll until the sandbox is active.
 
-        :param int timeout: Maximum seconds to wait (default 600)
-        :param int interval: Force a fixed number of seconds between polls (default: adaptive)
+        :param int timeout: Maximum seconds to wait (default 300)
+        :param int interval: Seconds between polls (default 5)
         :return: self
-        :raises JobTimeoutError: If timeout is exceeded
+        :raises RequestTimeoutError: If timeout is exceeded
         :raises InvalidRequestError: If sandbox enters a terminal state
         """
-        schedule = PollSchedule(interval=interval, max_poll_time=timeout)
+        deadline = time.time() + timeout
         while True:
             self.refresh()
             if self.status in READY_STATUSES:
@@ -83,10 +82,11 @@ class Sandbox:
                 raise InvalidRequestError(
                     f"Sandbox {self.id} entered terminal state: {self.status}"
                 )
-            schedule.raise_if_expired(
-                what=f"Sandbox {self.id}", last_response=self._last_response
-            )
-            schedule.sleep(self._last_response)
+            if time.time() >= deadline:
+                raise RequestTimeoutError(
+                    f"Sandbox {self.id} not ready within {timeout}s"
+                )
+            time.sleep(interval)
 
     def stop(self, grace=True):
         """Stop this sandbox.
@@ -103,23 +103,24 @@ class Sandbox:
         self._update(data or {})
         return self
 
-    def wait_for_stop(self, timeout=120, interval=None):
+    def wait_for_stop(self, timeout=120, interval=5):
         """Poll until the sandbox is stopped.
 
         :param int timeout: Maximum seconds to wait (default 120)
-        :param int interval: Force a fixed number of seconds between polls (default: adaptive)
+        :param int interval: Seconds between polls (default 5)
         :return: self
-        :raises JobTimeoutError: If timeout is exceeded
+        :raises RequestTimeoutError: If timeout is exceeded
         """
-        schedule = PollSchedule(interval=interval, max_poll_time=timeout)
+        deadline = time.time() + timeout
         while True:
             self.refresh()
             if self.status in TERMINAL_STATUSES:
                 return self
-            schedule.raise_if_expired(
-                what=f"Sandbox {self.id}", last_response=self._last_response
-            )
-            schedule.sleep(self._last_response)
+            if time.time() >= deadline:
+                raise RequestTimeoutError(
+                    f"Sandbox {self.id} did not stop within {timeout}s"
+                )
+            time.sleep(interval)
 
     @property
     def is_active(self):
