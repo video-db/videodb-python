@@ -19,6 +19,7 @@ from videodb.video import Video
 from videodb.audio import Audio
 from videodb.image import Image
 from videodb.job import GenerationJob
+from videodb.generation import HeyGenConfig
 from videodb.voice_clone import VoiceClone
 from videodb.meeting import Meeting
 from videodb.capture_session import CaptureSession
@@ -346,10 +347,10 @@ class Collection:
         :param str prompt: Prompt for the image generation
         :param str aspect_ratio: Aspect ratio of the image (optional, hosted models)
         :param str callback_url: URL to receive the callback (optional)
-        :param str model_name: Model name. Use ``"black-forest-labs/FLUX.1-dev"`` for FLUX self-inference.
-        :param dict config: Model configuration. Used by FLUX.
-        :param str sandbox_id: ID of the sandbox to route the self-inference job to (optional).
-        :param bool wait: If True, wait for self-inference jobs and return Image.
+        :param str model_name: Image model, ``"default"`` or ``"nano-banana"`` (optional, defaults to ``"default"``).
+        :param dict config: Model-specific options (optional).
+        :param str sandbox_id: Sandbox for a self-hosted image model (optional). No sandbox image model is available right now.
+        :param bool wait: If True and the server returns a job, wait for it and return Image.
         :param int poll_interval: Force a fixed number of seconds between job polls when wait=True (default: follow the server's retry_after hint).
         :param int timeout: Maximum seconds to wait when wait=True.
         :return: :class:`Image <Image>` or :class:`GenerationJob <GenerationJob>`
@@ -490,25 +491,36 @@ class Collection:
 
     def generate_video(
         self,
-        prompt: str,
+        prompt: Optional[str] = None,
         duration: float = 5,
         callback_url: Optional[str] = None,
+        model: Optional[str] = None,
+        image_url: Optional[str] = None,
+        reference_images: Optional[List[str]] = None,
+        aspect_ratio: Optional[str] = None,
+        resolution: Optional[str] = None,
+        config: Optional[Union["HeyGenConfig", Dict[str, Any]]] = None,
     ) -> Video:
         """
-        Generate a video from the given text prompt.
+        Generate a video with any video model.
 
-        This method sends a request to generate a video using the provided prompt,
-        duration. If a callback URL is provided, the generation result will be sent to that endpoint asynchronously.
+        Arguments shared by several models are parameters; options specific to one model go
+        in ``config``, e.g. :class:`videodb.HeyGenConfig`, which also lists the allowed values.
+        https://docs.videodb.io/api-reference/generation/models/heygen has every option.
+        If a callback URL is provided, the result is sent there asynchronously.
 
-        :param str prompt: Text prompt used as input for video generation.
-
-        :param float duration:
-            Duration of the generated video in seconds.
-            Must be an **integer value** (not a float) and must be **between 5 and 8 inclusive**.
-            A `ValueError` will be raised if the validation fails.
-
-        :param str callback_url:
-            Optional URL to receive a callback once video generation is complete.
+        :param str prompt: Text prompt. For ``heygen`` it is the exact script the avatar speaks.
+        :param float duration: Duration in seconds, where the model takes one (default model:
+            an integer from 5 to 8). ``heygen`` length follows the script or audio.
+        :param str callback_url: Optional URL to receive a callback once generation is complete.
+        :param str model: Model name, e.g. ``"default"``, ``"seedance"`` or ``"heygen"``.
+            :meth:`Connection.get_generation_models` lists the models your account can use.
+        :param str image_url: Start frame, or the face photo for ``heygen`` (public URL).
+        :param list[str] reference_images: Consistency images, where the model supports them.
+        :param str aspect_ratio: Aspect ratio, e.g. ``"16:9"`` or ``"9:16"``.
+        :param str resolution: Output resolution, e.g. ``"720p"``.
+        :param config: Model-specific options: a :class:`videodb.HeyGenConfig` for ``heygen``,
+            or a plain dict with the same keys.
 
         :return:
             A `Video` object containing the generated video metadata and access details.
@@ -516,13 +528,23 @@ class Collection:
         :rtype:
             :class:`videodb.video.Video`
         """
+        data = {
+            "prompt": prompt,
+            "duration": duration,
+            "callback_url": callback_url,
+        }
+        optional = {
+            "model": model,
+            "image_url": image_url,
+            "reference_images": reference_images,
+            "aspect_ratio": aspect_ratio,
+            "resolution": resolution,
+            "config": config.to_dict() if hasattr(config, "to_dict") else config,
+        }
+        data.update({k: v for k, v in optional.items() if v is not None})
         video_data = self._connection.post(
             path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.video}",
-            data={
-                "prompt": prompt,
-                "duration": duration,
-                "callback_url": callback_url,
-            },
+            data=data,
         )
         if video_data:
             return Video(self._connection, **video_data)
