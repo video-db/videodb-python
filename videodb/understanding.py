@@ -1,4 +1,3 @@
-import time
 from typing import Any, Dict, List, Optional
 
 from videodb._constants import (
@@ -6,6 +5,7 @@ from videodb._constants import (
     ANALYZER_TERMINAL_STATUSES,
     UNDERSTANDING_TERMINAL_STATUSES,
 )
+from videodb._utils._poll import PollSchedule
 
 class UnderstandingAnalyzer:
     """Analyzer status and output handle for one analyzer in an understanding run."""
@@ -60,26 +60,31 @@ class UnderstandingAnalyzer:
 
     def wait_until_complete(
         self,
-        timeout: int = 1800,
-        poll_interval: int = 10,
+        timeout: Optional[int] = None,
+        poll_interval: Optional[int] = None,
     ) -> "UnderstandingAnalyzer":
         """Poll this analyzer until it reaches a terminal status.
 
-        :param int timeout: Maximum time to wait, in seconds
-        :param int poll_interval: Seconds between status checks
-        :raises TimeoutError: If the analyzer does not complete before timeout
+        :param int timeout: Maximum time to wait, in seconds (default 1800, extended by the server's max_wait)
+        :param int poll_interval: Force a fixed number of seconds between checks (default: server hint, else 10)
+        :raises JobTimeoutError: If the analyzer does not complete before timeout
         :return: This analyzer with refreshed status
         """
-        deadline = time.time() + timeout
+        schedule = PollSchedule(
+            interval=poll_interval, max_poll_time=timeout,
+            first_interval=10.0, default_max_poll_time=1800.0,
+        )
         while True:
             self.refresh()
             if self.is_complete:
                 return self
-            if time.time() >= deadline:
-                raise TimeoutError(
-                    f"Analyzer {self.name or self.id} did not complete within {timeout}s"
-                )
-            time.sleep(poll_interval)
+            schedule.raise_if_expired(
+                what=f"Analyzer {self.name or self.id}",
+                last_response=self.understanding._last_response,
+                job_id=self.understanding.id,
+                output_url=self.understanding._poll_output_url(),
+            )
+            schedule.sleep(self.understanding._last_response)
 
     def get_output(self) -> Any:
         """Return this analyzer's output.
@@ -140,6 +145,7 @@ class Understanding:
         self.status = status
         self.output_url = output_url
         self.extra = kwargs
+        self._last_response = None
         self.analyzers = [self.create_analyzer(item) for item in (analyzers or [])]
 
     def __repr__(self) -> str:
@@ -169,6 +175,7 @@ class Understanding:
 
     def update_from_response(self, data: Dict[str, Any]) -> "Understanding":
         data = data or {}
+        self._last_response = data
         self.status = data.get("status", self.status)
         if data.get("understanding_id") or data.get("id"):
             self.id = data.get("understanding_id") or data.get("id")
@@ -182,6 +189,12 @@ class Understanding:
             self.analyzers = [self.create_analyzer(item) for item in data.get("analyzers") or []]
         return self
 
+    def _poll_output_url(self) -> str:
+        return self.output_url or (
+            f"{self._connection.base_url.rstrip('/')}/"
+            f"{ApiPath.video}/{self.video_id}/{ApiPath.understand}/{self.id}"
+        )
+
     def refresh(self) -> "Understanding":
         """Refresh understanding and analyzer statuses from the API."""
         data = self._connection.get(
@@ -191,26 +204,33 @@ class Understanding:
 
     def wait_until_complete(
         self,
-        timeout: int = 1800,
-        poll_interval: int = 10,
+        timeout: Optional[int] = None,
+        poll_interval: Optional[int] = None,
     ) -> "Understanding":
         """Poll this understanding until it reaches a terminal status.
 
         Terminal statuses are ``done`` and ``failed``.
 
-        :param int timeout: Maximum time to wait, in seconds
-        :param int poll_interval: Seconds between status checks
-        :raises TimeoutError: If the run does not complete before timeout
+        :param int timeout: Maximum time to wait, in seconds (default 1800, extended by the server's max_wait)
+        :param int poll_interval: Force a fixed number of seconds between checks (default: server hint, else 10)
+        :raises JobTimeoutError: If the run does not complete before timeout
         :return: This understanding with refreshed status
         """
-        deadline = time.time() + timeout
+        schedule = PollSchedule(
+            interval=poll_interval, max_poll_time=timeout,
+            first_interval=10.0, default_max_poll_time=1800.0,
+        )
         while True:
             self.refresh()
             if self.is_complete:
                 return self
-            if time.time() >= deadline:
-                raise TimeoutError(f"Understanding {self.id} did not complete within {timeout}s")
-            time.sleep(poll_interval)
+            schedule.raise_if_expired(
+                what=f"Understanding {self.id}",
+                last_response=self._last_response,
+                job_id=self.id,
+                output_url=self._poll_output_url(),
+            )
+            schedule.sleep(self._last_response)
 
     def list_analyzers(self) -> List[UnderstandingAnalyzer]:
         """Return analyzers in this understanding run."""
@@ -229,6 +249,7 @@ class Understanding:
                 path=f"{ApiPath.video}/{self.video_id}/{ApiPath.understand}/{self.id}",
                 params={"analyzer": name_or_id},
             ) or {}
+            self._last_response = data
             self.status = data.get("status", self.status)
             analyzer_data = (data.get("analyzers") or [None])[0]
             if analyzer_data:

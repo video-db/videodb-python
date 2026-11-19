@@ -1,7 +1,6 @@
 """Http client Module."""
 
 import logging
-import time
 import requests
 
 from tqdm import tqdm
@@ -16,10 +15,10 @@ from videodb._constants import (
     HttpClientDefaultValues,
     Status,
 )
+from videodb._utils._poll import PollSchedule, retry_after_from
 from videodb.exceptions import (
     AuthenticationError,
     InvalidRequestError,
-    RequestTimeoutError,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,10 +62,6 @@ class HttpClient:
             }
         )
         self.base_url = base_url
-        self.show_progress = False
-        self.progress_bar = None
-        self.max_poll_time = HttpClientDefaultValues.max_poll_time
-        self.poll_interval = HttpClientDefaultValues.poll_interval
         logger.debug(f"Initialized http client with base url: {self.base_url}")
 
     def _make_request(
@@ -76,6 +71,8 @@ class HttpClient:
         base_url: Optional[str] = None,
         headers: Optional[dict] = None,
         wait: bool = True,
+        show_progress: bool = False,
+        poll_config: Optional[dict] = None,
         **kwargs,
     ):
         """Make a request to the api
@@ -85,6 +82,8 @@ class HttpClient:
         :param str base_url: (optional) The base url to use for the request
         :param dict headers: (optional) The headers to use for the request
         :param bool wait: If False, return raw data without polling (default True)
+        :param bool show_progress: Show a progress bar while polling
+        :param dict poll_config: Per-call ``PollSchedule`` overrides
         :param kwargs: The keyword arguments to pass to the request method
         :return: json response from the request
         """
@@ -99,14 +98,15 @@ class HttpClient:
                 if data is not None:
                     return data
                 return response.json()
-            return self._parse_response(response)
+            return self._parse_response(
+                response, show_progress=show_progress, poll_config=poll_config
+            )
 
         except requests.exceptions.RequestException as e:
             self._handle_request_error(e)
 
     def _handle_request_error(self, e: requests.exceptions.RequestException) -> None:
         """Handle request errors"""
-        self.show_progress = False
         if isinstance(e, requests.exceptions.HTTPError):
             try:
                 error_message = e.response.json().get("message", "Unknown error")
@@ -142,42 +142,53 @@ class HttpClient:
                 f"Invalid request: {str(e)}", e.response
             ) from None
 
-    def _get_output(self, url: str):
-        """Poll an output URL until the job completes or times out."""
-        start = time.monotonic()
+    def _get_output(
+        self,
+        url: str,
+        show_progress: bool = False,
+        poll_config: Optional[dict] = None,
+        progress_bar=None,
+    ):
+        """Poll an output URL until the job completes or times out.
+
+        Follows the server's ``retry_after`` hint when present, otherwise
+        backs off locally.
+        """
+        schedule = PollSchedule(**(poll_config or {}))
         while True:
-            response_json = self.session.get(
-                url, timeout=HttpClientDefaultValues.timeout
-            ).json()
+            response = self.session.get(url, timeout=HttpClientDefaultValues.timeout)
+            response_json = response.json()
             status = response_json.get("status")
             if status not in (Status.in_progress, Status.processing):
                 break
 
             percentage = response_json.get("data", {}).get("percentage")
-            if percentage and self.show_progress and self.progress_bar:
-                self.progress_bar.n = int(percentage)
-                self.progress_bar.update(0)
+            if percentage and show_progress and progress_bar:
+                progress_bar.n = int(percentage)
+                progress_bar.update(0)
 
-            elapsed = time.monotonic() - start
-            if elapsed >= self.max_poll_time:
-                raise RequestTimeoutError(
-                    f"Polling timed out after {int(elapsed)}s "
-                    f"(max_poll_time={self.max_poll_time})",
-                    None,
-                )
+            schedule.raise_if_expired(
+                what="Job", output_url=url, last_response=response_json
+            )
+            hint = (
+                response_json
+                if retry_after_from(response_json) is not None
+                else response
+            )
+            schedule.sleep(hint)
 
-            logger.debug("Waiting for processing to complete (%.0fs elapsed)", elapsed)
-            time.sleep(self.poll_interval)
-
-        if self.show_progress and self.progress_bar:
-            self.progress_bar.n = 100
-            self.progress_bar.update(0)
-            self.progress_bar.close()
-            self.progress_bar = None
-            self.show_progress = False
+        if show_progress and progress_bar:
+            progress_bar.n = 100
+            progress_bar.update(0)
+            progress_bar.close()
         return response_json.get("response") or response_json
 
-    def _parse_response(self, response: requests.Response):
+    def _parse_response(
+        self,
+        response: requests.Response,
+        show_progress: bool = False,
+        poll_config: Optional[dict] = None,
+    ):
         """Parse the response from the api"""
         try:
             response_json = response.json()
@@ -190,15 +201,19 @@ class HttpClient:
                 response_json.get("status") == Status.processing
                 and response_json.get("request_type", "sync") == "sync"
             ):
-                if self.show_progress:
-                    self.progress_bar = tqdm(
+                progress_bar = None
+                if show_progress:
+                    progress_bar = tqdm(
                         total=100,
                         position=0,
                         leave=True,
                         bar_format="{l_bar}{bar:100}{r_bar}{bar:-100b}",
                     )
                 response_json = self._get_output(
-                    response_json.get("data", {}).get("output_url")
+                    response_json.get("data", {}).get("output_url"),
+                    show_progress=show_progress,
+                    poll_config=poll_config,
+                    progress_bar=progress_bar,
                 )
                 if response_json.get("success"):
                     return response_json.get("data")
@@ -228,31 +243,46 @@ class HttpClient:
             formatted_headers[f"x-{key}"] = value
         return formatted_headers
 
-    def _apply_poll_overrides(self, kwargs):
-        """Extract and apply per-call poll overrides from kwargs."""
-        self.max_poll_time = kwargs.pop(
-            "max_poll_time", HttpClientDefaultValues.max_poll_time
-        )
-        self.poll_interval = kwargs.pop(
-            "poll_interval", HttpClientDefaultValues.poll_interval
-        )
+    def _pop_poll_overrides(self, kwargs) -> dict:
+        """Pull per-call poll overrides out of kwargs.
+
+        Returned rather than stored on the client, so concurrent calls do
+        not overwrite each other's cadence.
+        """
+        return {
+            "max_poll_time": kwargs.pop("max_poll_time", None),
+            "interval": kwargs.pop("poll_interval", None),
+        }
 
     def get(
         self, path: str, show_progress: Optional[bool] = False, wait: bool = True, **kwargs
     ) -> requests.Response:
         """Make a get request"""
-        self.show_progress = show_progress
-        self._apply_poll_overrides(kwargs)
-        return self._make_request(method=self.session.get, path=path, wait=wait, **kwargs)
+        poll_config = self._pop_poll_overrides(kwargs)
+        return self._make_request(
+            method=self.session.get,
+            path=path,
+            wait=wait,
+            show_progress=show_progress,
+            poll_config=poll_config,
+            **kwargs,
+        )
 
     def post(
         self, path: str, data=None, show_progress: Optional[bool] = False,
         wait: bool = True, **kwargs,
     ) -> requests.Response:
         """Make a post request"""
-        self.show_progress = show_progress
-        self._apply_poll_overrides(kwargs)
-        return self._make_request(self.session.post, path, json=data, wait=wait, **kwargs)
+        poll_config = self._pop_poll_overrides(kwargs)
+        return self._make_request(
+            self.session.post,
+            path,
+            json=data,
+            wait=wait,
+            show_progress=show_progress,
+            poll_config=poll_config,
+            **kwargs,
+        )
 
     def put(self, path: str, data=None, **kwargs) -> requests.Response:
         """Make a put request"""
