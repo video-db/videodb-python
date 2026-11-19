@@ -14,7 +14,7 @@ class HeyGenConfig:
     """Options for ``generate_video(model="heygen", ...)``.
 
     :param str voice: Voice name, exact spelling (default ``"Warm Pro Narrator"``).
-        :attr:`voices` has a starter set; every voice is listed on the docs page.
+        :attr:`voices` has a starter set; every voice is at https://docs.videodb.io/api-reference/generation/models/heygen
     :param str audio_id: Your audio ID to lip-sync instead of speaking ``prompt``.
         Cannot be combined with ``voice``.
     :param str talking_style: One of :attr:`talking_styles` (default ``"stable"``).
