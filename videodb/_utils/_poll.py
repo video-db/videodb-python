@@ -5,9 +5,9 @@ Cadence precedence, highest first:
 1. an explicit ``poll_interval`` from the caller;
 2. the server's hint, ``retry_after`` in the response body or the
    ``Retry-After`` header, clamped to the configured band;
-3. local exponential backoff.
+3. the SDK's own flat cadence.
 
-Every delay carries jitter so concurrent waits do not poll in lockstep.
+Jitter is off by default and can be enabled per schedule.
 """
 
 import logging

@@ -193,14 +193,15 @@ class HttpClientDefaultValues:
 
 class PollDefaults:
     """Fallback poll cadence, used when the server sends no ``retry_after``
-    hint and the caller did not force an interval."""
+    hint and the caller did not force an interval: a flat 5 seconds, as the
+    SDK always polled. ``max_interval`` also clamps server hints."""
 
     min_interval = 0.5
-    first_interval = 2.0
-    factor = 1.5
+    first_interval = 5.0
+    factor = 1.0
     max_interval = 30.0
-    jitter = 0.2
-    max_poll_time = 1800
+    jitter = 0.0
+    max_poll_time = 500
 
 
 class MaxSupported:
