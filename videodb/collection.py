@@ -506,7 +506,7 @@ class Collection:
 
         Arguments shared by several models are parameters; options specific to one model go
         in ``config``, e.g. :class:`videodb.HeyGenConfig`, which also lists the allowed values.
-        https://docs.videodb.io/api-reference/generation/generate_video has every option.
+        https://docs.videodb.io/api-reference/generation/models/heygen has every option.
         If a callback URL is provided, the result is sent there asynchronously.
 
         :param str prompt: Text prompt. For ``heygen`` it is the exact script the avatar speaks.

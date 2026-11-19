@@ -6,7 +6,7 @@ works for options the service adds before the SDK lists them.
 from dataclasses import dataclass, fields
 from typing import ClassVar, Dict, Optional, Tuple
 
-DOCS_URL = "https://docs.videodb.io/api-reference/generation/generate_video"
+DOCS_URL = "https://docs.videodb.io/api-reference/generation/models/heygen"
 
 
 @dataclass
