@@ -174,6 +174,8 @@ scene_output = scene.get_output()
 
 Built-in analyzer types include `spoken_words`, `vlm`, `object_detection`, `ocr`, `brand_detection`, `activity_recognition`, and `location_detection`. An understanding run can be reopened with `video.get_understanding(id)`, listed with `video.list_understandings()`, or deleted independently of the video.
 
+If an understanding or analyzer wait times out, `JobTimeoutError` carries the parent understanding run ID in `job_id` and its status endpoint in `output_url`. The job continues running. Resume with `video.get_understanding(error.job_id)` or refresh the original understanding object; status requests still require authentication.
+
 ### Creating Indexes
 
 Create one or more retrieval-ready indexes from the stored analyzer artifacts without analyzing the video again:

@@ -81,6 +81,8 @@ class UnderstandingAnalyzer:
             schedule.raise_if_expired(
                 what=f"Analyzer {self.name or self.id}",
                 last_response=self.understanding._last_response,
+                job_id=self.understanding.id,
+                output_url=self.understanding._poll_output_url(),
             )
             schedule.sleep(self.understanding._last_response)
 
@@ -187,6 +189,12 @@ class Understanding:
             self.analyzers = [self.create_analyzer(item) for item in data.get("analyzers") or []]
         return self
 
+    def _poll_output_url(self) -> str:
+        return self.output_url or (
+            f"{self._connection.base_url.rstrip('/')}/"
+            f"{ApiPath.video}/{self.video_id}/{ApiPath.understand}/{self.id}"
+        )
+
     def refresh(self) -> "Understanding":
         """Refresh understanding and analyzer statuses from the API."""
         data = self._connection.get(
@@ -217,7 +225,10 @@ class Understanding:
             if self.is_complete:
                 return self
             schedule.raise_if_expired(
-                what=f"Understanding {self.id}", last_response=self._last_response
+                what=f"Understanding {self.id}",
+                last_response=self._last_response,
+                job_id=self.id,
+                output_url=self._poll_output_url(),
             )
             schedule.sleep(self._last_response)
 
