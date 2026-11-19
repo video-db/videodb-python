@@ -91,7 +91,9 @@ class Sandbox:
     def stop(self, grace=True):
         """Stop this sandbox.
 
-        :param bool grace: Wait for running jobs to finish before teardown (default True)
+        :param bool grace: Reserved. Sandbox teardown is currently always
+            graceful (running jobs finish before compute is released); this
+            flag has no effect yet and is kept for forward compatibility.
         :return: self
         """
         data = self._connection.post(
