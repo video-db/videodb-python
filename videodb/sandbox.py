@@ -66,10 +66,10 @@ class Sandbox:
     def wait_for_ready(self, timeout=600, interval=None):
         """Poll until the sandbox is active.
 
-        :param int timeout: Maximum seconds to wait (default 300)
-        :param int interval: Seconds between polls (default 5)
+        :param int timeout: Maximum seconds to wait (default 600)
+        :param int interval: Force a fixed number of seconds between polls (default: adaptive)
         :return: self
-        :raises RequestTimeoutError: If timeout is exceeded
+        :raises JobTimeoutError: If timeout is exceeded
         :raises InvalidRequestError: If sandbox enters a terminal state
         """
         schedule = PollSchedule(interval=interval, max_poll_time=timeout)
@@ -101,9 +101,9 @@ class Sandbox:
         """Poll until the sandbox is stopped.
 
         :param int timeout: Maximum seconds to wait (default 120)
-        :param int interval: Seconds between polls (default 5)
+        :param int interval: Force a fixed number of seconds between polls (default: adaptive)
         :return: self
-        :raises RequestTimeoutError: If timeout is exceeded
+        :raises JobTimeoutError: If timeout is exceeded
         """
         schedule = PollSchedule(interval=interval, max_poll_time=timeout)
         while True:

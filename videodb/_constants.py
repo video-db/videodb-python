@@ -189,22 +189,13 @@ class HttpClientDefaultValues:
     timeout = 30
     backoff_factor = 0.1
     status_forcelist = [502, 503, 504]
-    # How long the SDK waits for a job before handing the caller back the job
-    # handle. Long-running work (understanding, reframe) routinely runs for
-    # several minutes, so 500s used to abort jobs the server went on to
-    # finish successfully.
     max_poll_time = 1800
-    # None means adaptive: follow the server's retry_after hint, else back off
-    # locally. Pass poll_interval=<seconds> to force a fixed cadence.
     poll_interval = None
 
 
 class PollDefaults:
-    """Fallback cadence for every wait loop (see videodb/_utils/_poll.py).
-
-    Used when the server sends no ``retry_after`` hint and the caller did not
-    force an interval.
-    """
+    """Fallback poll cadence, used when the server sends no ``retry_after``
+    hint and the caller did not force an interval."""
 
     min_interval = 0.5
     first_interval = 2.0

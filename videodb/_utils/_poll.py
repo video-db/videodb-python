@@ -1,17 +1,13 @@
 """Polling helpers shared by every wait loop in the SDK.
 
-One place decides how long to wait before the next status check, so a
-server-side policy reaches every call site instead of one of seven.
-
 Cadence precedence, highest first:
 
-1. an explicit ``poll_interval=`` from the caller (user intent always wins);
-2. the server's hint -- ``retry_after`` in the response body, or the standard
-   ``Retry-After`` header -- clamped to a sane band;
+1. an explicit ``poll_interval`` from the caller;
+2. the server's hint, ``retry_after`` in the response body or the
+   ``Retry-After`` header, clamped to the configured band;
 3. local exponential backoff.
 
-Every delay carries +/-20% jitter: batch callers run these waits in thread
-pools and we do not want convoys of polls landing together.
+Every delay carries jitter so concurrent waits do not poll in lockstep.
 """
 
 import logging
@@ -155,7 +151,6 @@ class PollSchedule:
         delay = max(self.min_interval, min(delay, self.max_interval))
         if self.jitter:
             delay *= 1 + random.uniform(-self.jitter, self.jitter)
-        # Never sleep past the deadline we are willing to wait anyway.
         if self.remaining > 0:
             delay = min(delay, max(self.remaining, self.min_interval))
         return round(delay, 3)

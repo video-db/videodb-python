@@ -62,9 +62,6 @@ class HttpClient:
             }
         )
         self.base_url = base_url
-        # Poll settings are per call, never stored on the client: a single
-        # client is shared across threads, so one call's override must not
-        # leak into another call's wait loop.
         logger.debug(f"Initialized http client with base url: {self.base_url}")
 
     def _make_request(
@@ -152,8 +149,8 @@ class HttpClient:
     ):
         """Poll an output URL until the job completes or times out.
 
-        The cadence comes from the server when it sends a ``retry_after``
-        hint on the response, and from local backoff otherwise.
+        Follows the server's ``retry_after`` hint when present, otherwise
+        backs off locally.
         """
         schedule = PollSchedule(**(poll_config or {}))
         while True:
@@ -171,7 +168,6 @@ class HttpClient:
             schedule.raise_if_expired(
                 what="Job", output_url=url, last_response=response_json
             )
-            # Prefer the hint in the body; fall back to the Retry-After header.
             hint = (
                 response_json
                 if retry_after_from(response_json) is not None
@@ -248,8 +244,8 @@ class HttpClient:
     def _pop_poll_overrides(self, kwargs) -> dict:
         """Pull per-call poll overrides out of kwargs.
 
-        Returned rather than stored on the client, so concurrent calls on a
-        shared client cannot overwrite each other's cadence.
+        Returned rather than stored on the client, so concurrent calls do
+        not overwrite each other's cadence.
         """
         return {
             "max_poll_time": kwargs.pop(
