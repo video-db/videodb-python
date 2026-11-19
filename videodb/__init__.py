@@ -32,6 +32,7 @@ from videodb.client import Connection
 from videodb.search import AskResponse, SearchResponse, SearchResult
 from videodb.understanding import Understanding, UnderstandingAnalyzer
 from videodb.job import GenerationJob
+from videodb.export import ExportJob
 from videodb.sandbox import Sandbox
 from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
@@ -51,6 +52,7 @@ logger: logging.Logger = logging.getLogger("videodb")
 __all__ = [
     "connect",
     "CaptureSession",
+    "ExportJob",
     "GenerationJob",
     "Sandbox",
     "VoiceClone",
