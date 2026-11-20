@@ -506,7 +506,7 @@ stream_url = timeline.generate_stream()
 - **Position & Scale**: `position=Position.topRight`, `scale=0.5`, `offset=Offset(x=0.1, y=-0.2)`
 - **Visual Effects**: `opacity=0.8`, `fit=Fit.cover`, `filter=Filter.greyscale`
 - **Transitions**: `transition=Transition(in_="fade", out="fade", duration=1)`
-- **Colour Grading**: `lut=Lut.from_file(conn, "teal-orange.cube", intensity=0.8)` on a clip, or `timeline.lut = Lut(src=...)` for the whole frame
+- **Colour Grading**: `lut=Lut("teal-orange.cube", intensity=0.8)` on a clip (a local path or URL), or `timeline.lut = Lut(...)` for the whole frame
 - **Motion**: `motion=Motion(enter=MotionPreset("slide_up", duration=0.5), exit=MotionPreset("fade"))`, or keyframes `Motion(keyframes={KeyframeProperty.scale: [Keyframe(0, 0.8), Keyframe(0.5, 1, Easing.back_out)]})`
 - **Named Effects**: `effect=Effect.zoom_in` or `Effect.shake`
 
