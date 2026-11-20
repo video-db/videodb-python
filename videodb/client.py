@@ -159,7 +159,7 @@ class Connection(HttpClient):
     def get_generation_models(self) -> dict:
         """Get the generation models available to this account.
 
-        :return: ``{"image": [...], "video": [...]}``
+        :return: ``{"image": [...], "video": [...], "voices": [{"name", "description"}, ...]}``
         :rtype: dict
         """
         return self.get(path=f"{ApiPath.generate}/{ApiPath.models}")
