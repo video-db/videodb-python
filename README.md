@@ -735,6 +735,16 @@ video = coll.generate_video(
     duration=5
 )
 
+# Talking avatar from a face already in VideoDB (Pro plans)
+from videodb import HeyGenConfig
+face = coll.generate_image(prompt="Studio portrait of a presenter, plain background")
+avatar = coll.generate_video(
+    prompt="Welcome to VideoDB.",
+    model="heygen",
+    image_id=face.id,  # or image_url="https://..." for a public photo
+    config=HeyGenConfig(voice="Ivy"),
+)
+
 # Generate text using LLM
 response = coll.generate_text(
     prompt="Summarize this content",

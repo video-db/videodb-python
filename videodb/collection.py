@@ -517,6 +517,7 @@ class Collection:
         :param str model: Model name, e.g. ``"default"``, ``"seedance"`` or ``"heygen"``.
             :meth:`Connection.get_generation_models` lists the models your account can use.
         :param str image_url: Start frame, or the face photo for ``heygen`` (public URL).
+            For an image already in VideoDB, pass ``image_id`` instead.
         :param list[str] reference_images: Consistency images, where the model supports them.
         :param str aspect_ratio: Aspect ratio, e.g. ``"16:9"`` or ``"9:16"``.
         :param str resolution: Output resolution, e.g. ``"720p"``.
