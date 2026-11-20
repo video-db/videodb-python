@@ -174,6 +174,8 @@ scene_output = scene.get_output()
 
 Built-in analyzer types include `spoken_words`, `vlm`, `object_detection`, `ocr`, `brand_detection`, `activity_recognition`, and `location_detection`. An understanding run can be reopened with `video.get_understanding(id)`, listed with `video.list_understandings()`, or deleted independently of the video.
 
+Async waits honour the server's initial `retry_after` hint before their first status request, then use the hints returned by subsequent status responses. For example, upload hints of 20 seconds on acceptance and 5 seconds while processing produce those respective waits. Without an initial hint, the first check remains immediate. An explicit polling interval takes precedence; delays retain the SDK's 0.5–30 second bounds. The initial wait counts toward the caller's timeout. Understanding and generation handles consume the initial hint once and subtract time already elapsed since receiving it.
+
 If an understanding or analyzer wait times out, `JobTimeoutError` carries the parent understanding run ID in `job_id` and its status endpoint in `output_url`. The job continues running. Resume with `video.get_understanding(error.job_id)` or refresh the original understanding object; status requests still require authentication.
 
 ### Creating Indexes

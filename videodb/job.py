@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 
 from videodb.audio import Audio
@@ -30,6 +31,8 @@ class GenerationJob:
         self.status = status or "processing"
         self.result_type = result_type
         self.data = data or {}
+        self._initial_poll_response = self.data
+        self._initial_poll_received_at = time.monotonic()
 
     def __repr__(self) -> str:
         return (
@@ -64,6 +67,7 @@ class GenerationJob:
 
     def refresh(self):
         """Refresh this job's status from VideoDB."""
+        self._initial_poll_response = None
         job = self._connection.get_job_status(self.job_id)
         self.status = job.get("status", self.status)
         self.data = job.get("data") or {}
@@ -80,7 +84,7 @@ class GenerationJob:
         """Poll this job until it completes and return the generated asset.
 
         Cadence follows the server's ``retry_after`` hint when it sends one,
-        and local backoff otherwise.
+        and a flat local cadence otherwise. An accept hint delays the first poll.
 
         :param int timeout: Maximum seconds to wait (default 600, extended by the server's max_wait)
         :param int interval: Force a fixed number of seconds between polls (default: server hint, else 5)
@@ -92,6 +96,14 @@ class GenerationJob:
             interval=interval, max_poll_time=timeout,
             first_interval=5.0, default_max_poll_time=600.0,
         )
+        initial = self._initial_poll_response
+        self._initial_poll_response = None
+        if self.status == "processing":
+            schedule.wait_before_first_poll(
+                initial, received_at=self._initial_poll_received_at,
+                what=f"Generation job {self.job_id}",
+                output_url=self.output_url, job_id=self.job_id,
+            )
         while True:
             self.refresh()
             if self.status != "processing":
