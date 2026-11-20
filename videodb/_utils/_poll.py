@@ -11,6 +11,7 @@ Jitter is off by default and can be enabled per schedule.
 """
 
 import logging
+import math
 import random
 import time
 
@@ -27,7 +28,7 @@ def _coerce(value) -> Optional[float]:
         seconds = float(value)
     except (TypeError, ValueError):
         return None
-    if seconds < 0:
+    if not math.isfinite(seconds) or seconds < 0:
         return None
     return seconds
 
@@ -126,7 +127,7 @@ class PollSchedule:
 
     @property
     def remaining(self) -> float:
-        return self.max_poll_time - self.elapsed
+        return (self._start + self.max_poll_time) - time.monotonic()
 
     @property
     def expired(self) -> bool:
@@ -145,7 +146,7 @@ class PollSchedule:
             )
             self.max_poll_time = advertised
 
-    def next_delay(self, source: Any = None) -> float:
+    def next_delay(self, source: Any = None, elapsed_since_response: float = 0.0) -> float:
         """Seconds to wait before the next check."""
         self.observe(source)
 
@@ -162,6 +163,7 @@ class PollSchedule:
         if self.jitter:
             delay *= 1 + random.uniform(-self.jitter, self.jitter)
         delay = max(self.min_interval, min(delay, self.max_interval))
+        delay = max(0.0, delay - elapsed_since_response)
         if self.remaining > 0:
             delay = min(delay, max(self.remaining, self.min_interval))
         return round(delay, 3)
@@ -175,6 +177,23 @@ class PollSchedule:
         )
         time.sleep(delay)
         return delay
+
+    def wait_before_first_poll(self, source=None, headers=None, received_at=None, **handle):
+        """Wait out a supplied initial hint, counting the wait toward the deadline."""
+        self.observe(source)
+        hint = source if retry_after_from(source) is not None else headers
+        if retry_after_from(hint) is None:
+            return
+        handle["last_response"] = source
+        self.raise_if_expired(**handle)
+        age = max(0.0, time.monotonic() - received_at) if received_at is not None else 0.0
+        delay = min(
+            max(0.0, self.next_delay(hint, elapsed_since_response=age)),
+            max(0.0, self.remaining),
+        )
+        if delay:
+            time.sleep(delay)
+        self.raise_if_expired(**handle)
 
     def raise_if_expired(
         self,
