@@ -500,6 +500,7 @@ class Collection:
         aspect_ratio: Optional[str] = None,
         resolution: Optional[str] = None,
         config: Optional[Union["HeyGenConfig", Dict[str, Any]]] = None,
+        image_id: Optional[str] = None,
     ) -> Video:
         """
         Generate a video with any video model.
@@ -516,11 +517,14 @@ class Collection:
         :param str model: Model name, e.g. ``"default"``, ``"seedance"`` or ``"heygen"``.
             :meth:`Connection.get_generation_models` lists the models your account can use.
         :param str image_url: Start frame, or the face photo for ``heygen`` (public URL).
+            For an image already in VideoDB, pass ``image_id`` instead.
         :param list[str] reference_images: Consistency images, where the model supports them.
         :param str aspect_ratio: Aspect ratio, e.g. ``"16:9"`` or ``"9:16"``.
         :param str resolution: Output resolution, e.g. ``"720p"``.
         :param config: Model-specific options: a :class:`videodb.HeyGenConfig` for ``heygen``,
             or a plain dict with the same keys.
+        :param str image_id: ID of an image in VideoDB (``img-...``), used instead of
+            ``image_url`` so you don't have to host it. Pass one of the two, not both.
 
         :return:
             A `Video` object containing the generated video metadata and access details.
@@ -536,6 +540,7 @@ class Collection:
         optional = {
             "model": model,
             "image_url": image_url,
+            "image_id": image_id,
             "reference_images": reference_images,
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,
