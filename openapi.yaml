@@ -2082,11 +2082,15 @@ paths:
                   example: "Hello, welcome to VideoDB."
                 audio_type:
                   type: string
-                  enum: [voice, sound_effect, music]
+                  enum: [voice, sound_effect, music, voice_change]
                   example: "voice"
+                audio_id:
+                  type: string
+                  description: Source audio to re-voice when `audio_type` is `voice_change` (up to 30 minutes).
+                  example: "a-123abc"
                 voice_name:
                   type: string
-                  description: Voice name for hosted text-to-speech.
+                  description: Preset voice for hosted text-to-speech and `voice_change`. `GET /generate/models` lists them under `voices`.
                   example: "Default"
                 model_name:
                   type: string

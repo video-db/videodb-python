@@ -489,6 +489,37 @@ class Collection:
             return job.wait(timeout=timeout, interval=poll_interval) if wait else job
         return Audio(self._connection, **audio_data)
 
+    def change_voice(
+        self,
+        audio_id: str,
+        voice_name: str = "Default",
+        config: Optional[dict] = None,
+        callback_url: Optional[str] = None,
+    ) -> Audio:
+        """Re-voice an existing audio with a preset voice, keeping its words, timing and delivery.
+
+        Audio up to 30 minutes is supported. The result is saved as a new audio in this collection.
+
+        :param str audio_id: ID of the source audio (``a-...``)
+        :param str voice_name: Preset voice, e.g. ``"Aria"`` or ``"George"``. See ``conn.get_generation_models()["voices"]``.
+        :param dict config: Optional ``stability``, ``similarity_boost``, ``style`` (0-1), ``use_speaker_boost``, ``remove_background_noise``
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={
+                "audio_type": "voice_change",
+                "audio_id": audio_id,
+                "voice_name": voice_name,
+                "config": config or {},
+                "callback_url": callback_url,
+            },
+        )
+        if audio_data:
+            return Audio(self._connection, **audio_data)
+
     def generate_video(
         self,
         prompt: Optional[str] = None,
