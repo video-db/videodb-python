@@ -149,13 +149,18 @@ class HttpClient:
         show_progress: bool = False,
         poll_config: Optional[dict] = None,
         progress_bar=None,
+        initial_response=None,
     ):
         """Poll an output URL until the job completes or times out.
 
         Follows the server's ``retry_after`` hint when present, otherwise
-        backs off locally.
+        polls at the local cadence. The accept hint delays the first poll.
         """
         schedule = PollSchedule(**(poll_config or {}))
+        if initial_response is not None:
+            schedule.wait_before_first_poll(
+                initial_response.json(), headers=initial_response, output_url=url,
+            )
         while True:
             response = self.session.get(url, timeout=HttpClientDefaultValues.timeout)
             response_json = response.json()
@@ -215,6 +220,7 @@ class HttpClient:
                     show_progress=show_progress,
                     poll_config=poll_config,
                     progress_bar=progress_bar,
+                    initial_response=response,
                 )
                 if response_json.get("success"):
                     return response_json.get("data")
