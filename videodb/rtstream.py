@@ -700,12 +700,17 @@ class RTStream:
         )
 
     def start_transcript(
-        self, ws_connection_id: Optional[str] = None, engine: Optional[str] = None
+        self,
+        ws_connection_id: Optional[str] = None,
+        engine: Optional[str] = None,
+        language: Optional[str] = None,
     ) -> dict:
         """Start transcription for the rtstream.
 
         :param str ws_connection_id: WebSocket connection ID for real-time transcript updates (optional)
         :param str engine: Transcription engine (optional, server defaults to "assemblyai")
+        :param str language: Spoken language as an ISO 639-1 code, e.g. "es" (optional).
+            Without it the language is detected automatically.
         :return: Transcription status with start time
         :rtype: dict
         """
@@ -714,6 +719,8 @@ class RTStream:
             data["engine"] = engine
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
+        if language:
+            data["language_code"] = language
 
         return self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
