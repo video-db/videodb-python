@@ -25,6 +25,7 @@ class Sandbox:
         models=None,
         region=None,
         expires_at=None,
+        error=None,
         **kwargs,
     ):
         self._connection = _connection
@@ -39,6 +40,7 @@ class Sandbox:
         self.models = models or []
         self.region = region
         self.expires_at = expires_at
+        self.error = error
 
     def __repr__(self):
         return f"Sandbox(id={self.id}, tier={self.tier}, status={self.status}, name={self.name})"
@@ -57,6 +59,7 @@ class Sandbox:
         self.models = data.get("models", self.models)
         self.region = data.get("region", self.region)
         self.expires_at = data.get("expires_at", self.expires_at)
+        self.error = data.get("error", self.error)
 
     def refresh(self):
         """Fetch latest sandbox state from the server."""
@@ -66,6 +69,10 @@ class Sandbox:
 
     def wait_for_ready(self, timeout=300, interval=5):
         """Poll until the sandbox is active.
+
+        A timeout ends this wait only; startup may continue. Refresh or wait
+        again on this same sandbox to check its status. Terminal failures
+        include the server's error detail when available in ``self.error``.
 
         :param int timeout: Maximum seconds to wait (default 300)
         :param int interval: Seconds between polls (default 5)
@@ -79,12 +86,15 @@ class Sandbox:
             if self.status in READY_STATUSES:
                 return self
             if self.status in TERMINAL_STATUSES:
-                raise InvalidRequestError(
-                    f"Sandbox {self.id} entered terminal state: {self.status}"
-                )
+                message = f"Sandbox {self.id} entered terminal state: {self.status}"
+                if self.error:
+                    message += f". {self.error}"
+                raise InvalidRequestError(message)
             if time.time() >= deadline:
                 raise RequestTimeoutError(
-                    f"Sandbox {self.id} not ready within {timeout}s"
+                    f"Sandbox {self.id} not ready within {timeout}s. "
+                    "Startup may still be in progress. Check its status or "
+                    "continue waiting with the same sandbox ID."
                 )
             time.sleep(interval)
 
