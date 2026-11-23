@@ -704,6 +704,9 @@ class RTStream:
         ws_connection_id: Optional[str] = None,
         engine: Optional[str] = None,
         language: Optional[str] = None,
+        model: Optional[str] = None,
+        speaker_labels: Optional[bool] = None,
+        max_speakers: Optional[int] = None,
     ) -> dict:
         """Start transcription for the rtstream.
 
@@ -711,6 +714,11 @@ class RTStream:
         :param str engine: Transcription engine (optional, server defaults to "assemblyai")
         :param str language: Spoken language as an ISO 639-1 code, e.g. "es" (optional).
             Without it the language is detected automatically.
+        :param str model: "standard" (default) or "pro", the more accurate model (optional)
+        :param bool speaker_labels: Label who speaks on each transcript record. Requires
+            ``model="pro"`` (optional)
+        :param int max_speakers: Upper bound on distinct speakers, 1-10. Requires
+            ``speaker_labels=True`` (optional)
         :return: Transcription status with start time
         :rtype: dict
         """
@@ -721,6 +729,12 @@ class RTStream:
             data["ws_connection_id"] = ws_connection_id
         if language:
             data["language_code"] = language
+        if model:
+            data["model"] = model
+        if speaker_labels is not None:
+            data["speaker_labels"] = speaker_labels
+        if max_speakers is not None:
+            data["max_speakers"] = max_speakers
 
         return self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
