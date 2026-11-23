@@ -41,8 +41,22 @@
 
 VideoDB Python SDK provides programmatic access to VideoDB's serverless video infrastructure. Build AI applications that understand and process video as structured data with support for semantic search, scene extraction, transcript generation, and multimodal content generation.
 
+## Use VideoDB in your agent
+
+VideoDB lets an AI agent watch, search and clip video.
+
+- **Claude**: [Add VideoDB from the plugin directory](https://videodb.io/claude)
+- **ChatGPT**: [Add VideoDB from the plugin directory](https://chatgpt.com/plugins/videodb)
+- **Claude Code**: `claude mcp add --transport http videodb https://mcp.videodb.io/mcp`
+- **Cursor or any MCP client**: Add the remote MCP server and log in once: `https://mcp.videodb.io/mcp`
+
+Free to start: $20 of credits, no credit card. [Steps for every client](https://docs.videodb.io/pages/mcp/connect).
+
+The Python SDK below is for writing code against VideoDB yourself.
+
 ## 📑 Table of Contents
 
+- [Use VideoDB in your agent](#use-videodb-in-your-agent)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
     - [Establishing a Connection](#establishing-a-connection)
@@ -95,7 +109,7 @@ pip install videodb
 
 ### Establishing a Connection
 
-Get your API key from [VideoDB Console](https://console.videodb.io). Free for first 50 uploads (no credit card required).
+Get your API key from [VideoDB Console](https://console.videodb.io). Free to start: $20 of credits, no credit card.
 
 ```python
 import videodb
@@ -511,7 +525,7 @@ stream_url = timeline.generate_stream()
 - **Position & Scale**: `position=Position.topRight`, `scale=0.5`, `offset=Offset(x=0.1, y=-0.2)`
 - **Visual Effects**: `opacity=0.8`, `fit=Fit.cover`, `filter=Filter.greyscale`
 - **Transitions**: `transition=Transition(in_="fade", out="fade", duration=1)`
-- **Colour Grading**: `lut=Lut.from_file(conn, "teal-orange.cube", intensity=0.8)` on a clip, or `timeline.lut = Lut(src=...)` for the whole frame
+- **Colour Grading**: `lut=Lut("teal-orange.cube", intensity=0.8)` on a clip (a local path or URL), or `timeline.lut = Lut(...)` for the whole frame
 - **Motion**: `motion=Motion(enter=MotionPreset("slide_up", duration=0.5), exit=MotionPreset("fade"))`, or keyframes `Motion(keyframes={KeyframeProperty.scale: [Keyframe(0, 0.8), Keyframe(0.5, 1, Easing.back_out)]})`
 - **Named Effects**: `effect=Effect.zoom_in` or `Effect.shake`
 
@@ -700,6 +714,12 @@ sandbox.stop(grace=True)
 sandbox.wait_for_stop(timeout=300, interval=5)
 ```
 
+If `wait_for_ready()` raises `RequestTimeoutError`, startup may still be in
+progress. Call `refresh()` or `wait_for_ready()` again on the same sandbox;
+there is no need to create another one. A terminal failure raises
+`InvalidRequestError` with the server's error detail when available. That detail
+is also available as `sandbox.error` after retrieving or refreshing the sandbox.
+
 ### Generative Media
 
 Generate images, audio, and videos using AI:
@@ -733,6 +753,16 @@ audio = coll.generate_voice(
 video = coll.generate_video(
     prompt="A cat playing with a ball",
     duration=5
+)
+
+# Talking avatar from a face already in VideoDB (Pro plans)
+from videodb import HeyGenConfig
+face = coll.generate_image(prompt="Studio portrait of a presenter, plain background")
+avatar = coll.generate_video(
+    prompt="Welcome to VideoDB.",
+    model="heygen",
+    image_id=face.id,  # or image_url="https://..." for a public photo
+    config=HeyGenConfig(voice="Ivy"),
 )
 
 # Generate text using LLM

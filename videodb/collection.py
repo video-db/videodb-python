@@ -489,6 +489,37 @@ class Collection:
             return job.wait(timeout=timeout, interval=poll_interval) if wait else job
         return Audio(self._connection, **audio_data)
 
+    def change_voice(
+        self,
+        audio_id: str,
+        voice_name: str = "Default",
+        config: Optional[dict] = None,
+        callback_url: Optional[str] = None,
+    ) -> Audio:
+        """Re-voice an existing audio with a preset voice, keeping its words, timing and delivery.
+
+        Audio up to 30 minutes is supported. The result is saved as a new audio in this collection.
+
+        :param str audio_id: ID of the source audio (``a-...``)
+        :param str voice_name: Preset voice, e.g. ``"Aria"`` or ``"George"``. See ``conn.get_generation_models()["voices"]``.
+        :param dict config: Optional ``stability``, ``similarity_boost``, ``style`` (0-1), ``use_speaker_boost``, ``remove_background_noise``
+        :param str callback_url: URL to receive the callback (optional)
+        :return: :class:`Audio <Audio>` object
+        :rtype: :class:`videodb.audio.Audio`
+        """
+        audio_data = self._connection.post(
+            path=f"{ApiPath.collection}/{self.id}/{ApiPath.generate}/{ApiPath.audio}",
+            data={
+                "audio_type": "voice_change",
+                "audio_id": audio_id,
+                "voice_name": voice_name,
+                "config": config or {},
+                "callback_url": callback_url,
+            },
+        )
+        if audio_data:
+            return Audio(self._connection, **audio_data)
+
     def generate_video(
         self,
         prompt: Optional[str] = None,
@@ -500,6 +531,7 @@ class Collection:
         aspect_ratio: Optional[str] = None,
         resolution: Optional[str] = None,
         config: Optional[Union["HeyGenConfig", Dict[str, Any]]] = None,
+        image_id: Optional[str] = None,
     ) -> Video:
         """
         Generate a video with any video model.
@@ -516,11 +548,14 @@ class Collection:
         :param str model: Model name, e.g. ``"default"``, ``"seedance"`` or ``"heygen"``.
             :meth:`Connection.get_generation_models` lists the models your account can use.
         :param str image_url: Start frame, or the face photo for ``heygen`` (public URL).
+            For an image already in VideoDB, pass ``image_id`` instead.
         :param list[str] reference_images: Consistency images, where the model supports them.
         :param str aspect_ratio: Aspect ratio, e.g. ``"16:9"`` or ``"9:16"``.
         :param str resolution: Output resolution, e.g. ``"720p"``.
         :param config: Model-specific options: a :class:`videodb.HeyGenConfig` for ``heygen``,
             or a plain dict with the same keys.
+        :param str image_id: ID of an image in VideoDB (``img-...``), used instead of
+            ``image_url`` so you don't have to host it. Pass one of the two, not both.
 
         :return:
             A `Video` object containing the generated video metadata and access details.
@@ -536,6 +571,7 @@ class Collection:
         optional = {
             "model": model,
             "image_url": image_url,
+            "image_id": image_id,
             "reference_images": reference_images,
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,

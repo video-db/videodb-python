@@ -420,7 +420,8 @@ class Lut:
     Only 3D ``.cube`` files with the default 0-1 domain and a ``LUT_3D_SIZE``
     between 2 and 65 are accepted.
 
-    :ivar str src: URL of the ``.cube`` file; use :meth:`from_file` to upload a local one
+    :ivar str src: URL or local path of the ``.cube`` file; a local file is uploaded
+        when the timeline is generated
     :ivar float intensity: 0 leaves the picture untouched, 1 applies the full grade,
         values in between blend the two linearly (default: 1)
     """
@@ -428,7 +429,7 @@ class Lut:
     def __init__(self, src: str, intensity: float = 1.0):
         """Initialize a Lut instance.
 
-        :param str src: URL of the ``.cube`` file
+        :param str src: URL or local path of the ``.cube`` file
         :param float intensity: Grade strength between 0 and 1 (default: 1)
         :raises ValueError: If intensity not in [0, 1]
         """
@@ -437,34 +438,44 @@ class Lut:
         self.src = src
         self.intensity = intensity
 
-    @classmethod
-    def from_file(cls, connection, path: str, intensity: float = 1.0) -> "Lut":
-        """Upload a local ``.cube`` file and return a Lut pointing at it.
+    def is_local(self) -> bool:
+        """Whether ``src`` is a local file path rather than a URL.
+
+        :return: True for a local path
+        :rtype: bool
+        """
+        return not self.src.startswith(("http://", "https://"))
+
+    def upload(self, connection) -> str:
+        """Upload a local ``.cube`` file and point ``src`` at the uploaded URL.
+
+        Called by :meth:`Timeline.generate_stream`; a ``src`` that is already a URL
+        is left unchanged.
 
         :param connection: API connection instance used for the upload
-        :param str path: Path to the ``.cube`` file
-        :param float intensity: Grade strength between 0 and 1 (default: 1)
-        :return: A Lut referencing the uploaded file
-        :rtype: Lut
+        :return: The URL now held in ``src``
+        :rtype: str
         :raises InvalidRequestError: If the file cannot be read or the upload fails
         """
+        if not self.is_local():
+            return self.src
         try:
-            with open(path, "rb") as fh:
+            with open(self.src, "rb") as fh:
                 content = fh.read()
         except OSError as e:
             raise InvalidRequestError(f"Failed to read LUT file: {e}") from None
         try:
-            src = upload_bytes(
+            self.src = upload_bytes(
                 _connection=connection,
                 content=content,
-                name=os.path.basename(path),
+                name=os.path.basename(self.src),
                 content_type="text/plain",
             )
         except Exception as e:
             raise InvalidRequestError(
                 f"Failed to upload LUT: {str(e)}", getattr(e, "response", None)
             ) from None
-        return cls(src=src, intensity=intensity)
+        return self.src
 
     def to_json(self) -> dict:
         """Convert the LUT settings to a JSON-serializable dictionary.
@@ -1387,6 +1398,7 @@ class Timeline:
         :return: The stream URL of the generated video
         :rtype: str
         """
+        self._upload_local_luts()
         timeline_data = self.to_json()
         json_str = json.dumps(timeline_data)
         payload_size = len(json_str.encode("utf-8"))
@@ -1407,6 +1419,13 @@ class Timeline:
         self.stream_url = stream_data.get("stream_url")
         self.player_url = stream_data.get("player_url")
         return stream_data.get("stream_url", None)
+
+    def _upload_local_luts(self) -> None:
+        """Upload every LUT given as a local path so the timeline only references URLs."""
+        luts = [self.lut] if self.lut else []
+        luts += [item.clip.lut for track in self.tracks for item in track.clips if item.clip.lut]
+        for lut in luts:
+            lut.upload(self.connection)
 
     def _upload_timeline_data(self, json_str: str) -> str:
         """Upload timeline JSON data as a file and return the URL.
