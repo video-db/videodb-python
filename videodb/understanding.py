@@ -1,4 +1,3 @@
-import time
 from typing import Any, Dict, List, Optional
 
 from videodb._constants import (
@@ -75,8 +74,6 @@ class UnderstandingAnalyzer:
             interval=poll_interval, max_poll_time=timeout,
             first_interval=10.0, default_max_poll_time=1800.0,
         )
-        if not self.is_complete:
-            self.understanding._wait_before_first_poll(schedule, f"Analyzer {self.name or self.id}")
         while True:
             self.refresh()
             if self.is_complete:
@@ -148,9 +145,7 @@ class Understanding:
         self.status = status
         self.output_url = output_url
         self.extra = kwargs
-        self._last_response = {"status": status, **kwargs}
-        self._initial_poll_response = self._last_response
-        self._initial_poll_received_at = time.monotonic()
+        self._last_response = None
         self.analyzers = [self.create_analyzer(item) for item in (analyzers or [])]
 
     def __repr__(self) -> str:
@@ -180,7 +175,6 @@ class Understanding:
 
     def update_from_response(self, data: Dict[str, Any]) -> "Understanding":
         data = data or {}
-        self._initial_poll_response = None
         self._last_response = data
         self.status = data.get("status", self.status)
         if data.get("understanding_id") or data.get("id"):
@@ -194,15 +188,6 @@ class Understanding:
         if "analyzers" in data:
             self.analyzers = [self.create_analyzer(item) for item in data.get("analyzers") or []]
         return self
-
-    def _wait_before_first_poll(self, schedule, what):
-        initial = self._initial_poll_response
-        self._initial_poll_response = None
-        if not self.is_complete:
-            schedule.wait_before_first_poll(
-                initial, received_at=self._initial_poll_received_at,
-                what=what, job_id=self.id, output_url=self._poll_output_url(),
-            )
 
     def _poll_output_url(self) -> str:
         return self.output_url or (
@@ -235,7 +220,6 @@ class Understanding:
             interval=poll_interval, max_poll_time=timeout,
             first_interval=10.0, default_max_poll_time=1800.0,
         )
-        self._wait_before_first_poll(schedule, f"Understanding {self.id}")
         while True:
             self.refresh()
             if self.is_complete:
@@ -265,7 +249,6 @@ class Understanding:
                 path=f"{ApiPath.video}/{self.video_id}/{ApiPath.understand}/{self.id}",
                 params={"analyzer": name_or_id},
             ) or {}
-            self._initial_poll_response = None
             self._last_response = data
             self.status = data.get("status", self.status)
             analyzer_data = (data.get("analyzers") or [None])[0]
