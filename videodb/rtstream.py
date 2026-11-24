@@ -721,11 +721,11 @@ class RTStream:
         :param int max_speakers: Upper bound on distinct speakers, 1-10. Requires
             ``speaker_labels=True`` (optional)
         :param str language: Older name for ``language_code`` (optional)
-        :raises ValueError: If ``language`` and ``language_code`` are both given
+        :raises ValueError: If ``language`` and ``language_code`` are both given and differ
         :return: Transcription status with start time
         :rtype: dict
         """
-        if language and language_code:
+        if language and language_code and language != language_code:
             raise ValueError("Pass language_code only; language is its older name")
         language_code = language_code or language
         data = {"action": "start"}
