@@ -703,24 +703,44 @@ class RTStream:
         self,
         ws_connection_id: Optional[str] = None,
         engine: Optional[str] = None,
+        language_code: Optional[str] = None,
+        model_name: Optional[str] = None,
+        speaker_labels: Optional[bool] = None,
+        max_speakers: Optional[int] = None,
         language: Optional[str] = None,
     ) -> dict:
         """Start transcription for the rtstream.
 
         :param str ws_connection_id: WebSocket connection ID for real-time transcript updates (optional)
         :param str engine: Transcription engine (optional, server defaults to "assemblyai")
-        :param str language: Spoken language as an ISO 639-1 code, e.g. "es" (optional).
+        :param str language_code: Spoken language as an ISO 639-1 code, e.g. "es" (optional).
             Without it the language is detected automatically.
+        :param str model_name: "standard" (default) or "pro", the more accurate model (optional)
+        :param bool speaker_labels: Label who speaks on each transcript record and word (optional).
+            With "standard", supported for en, es, fr, de, pt, it or no language.
+        :param int max_speakers: Upper bound on distinct speakers, 1-10. Requires
+            ``speaker_labels=True`` (optional)
+        :param str language: Older name for ``language_code`` (optional)
+        :raises ValueError: If ``language`` and ``language_code`` are both given and differ
         :return: Transcription status with start time
         :rtype: dict
         """
+        if language and language_code and language != language_code:
+            raise ValueError("Pass language_code only; language is its older name")
+        language_code = language_code or language
         data = {"action": "start"}
         if engine:
             data["engine"] = engine
         if ws_connection_id:
             data["ws_connection_id"] = ws_connection_id
-        if language:
-            data["language_code"] = language
+        if language_code:
+            data["language_code"] = language_code
+        if model_name:
+            data["model_name"] = model_name
+        if speaker_labels is not None:
+            data["speaker_labels"] = speaker_labels
+        if max_speakers is not None:
+            data["max_speakers"] = max_speakers
 
         return self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
