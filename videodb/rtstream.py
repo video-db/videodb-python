@@ -708,6 +708,7 @@ class RTStream:
         speaker_labels: Optional[bool] = None,
         max_speakers: Optional[int] = None,
         language: Optional[str] = None,
+        keyterms: Optional[List[str]] = None,
     ) -> dict:
         """Start transcription for the rtstream.
 
@@ -721,6 +722,9 @@ class RTStream:
         :param int max_speakers: Upper bound on distinct speakers, 1-10. Requires
             ``speaker_labels=True`` (optional)
         :param str language: Older name for ``language_code`` (optional)
+        :param list keyterms: Names, acronyms or terms the transcriber should recognise and
+            spell as given: up to 100 strings of at most 50 characters. Requires
+            ``model_name="pro"`` (optional)
         :raises ValueError: If ``language`` and ``language_code`` are both given and differ
         :return: Transcription status with start time
         :rtype: dict
@@ -741,6 +745,8 @@ class RTStream:
             data["speaker_labels"] = speaker_labels
         if max_speakers is not None:
             data["max_speakers"] = max_speakers
+        if keyterms:
+            data["keyterms"] = list(keyterms)
 
         return self._connection.post(
             f"{ApiPath.rtstream}/{self.id}/{ApiPath.transcription}",
