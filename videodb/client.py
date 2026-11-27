@@ -670,18 +670,46 @@ class Connection(HttpClient):
         websocket_url = response.get("websocket_url")
         return WebSocketConnection(url=websocket_url)
 
-    def generate_client_token(self, expires_in: int = 86400) -> str:
+    def generate_client_token(
+        self, expires_in: int = 86400, user_id: Optional[str] = None
+    ) -> str:
         """Generate a client token for capture operations.
 
         :param int expires_in: Expiration time in seconds (default: 86400)
+        :param str user_id: Owning user identity for capture and recovery.
         :return: Client token string
         :rtype: str
         """
         response = self.post(
             path=f"{ApiPath.capture}/{ApiPath.session}/{ApiPath.token}",
-            data={"expires_in": expires_in},
+            data={
+                "expires_in": expires_in,
+                **({"user_id": user_id} if user_id else {}),
+            },
         )
         return response.get("token")
+
+    def generate_recorder_token(
+        self, collection_id: str, user_id: str, expires_in: int = 3600
+    ) -> dict:
+        """Issue fresh collection-bound authorization from a trusted backend.
+
+        Returns native keys ``token`` and ``collectionId``. Do not cache recovery
+        tokens or expose an API key to desktop clients.
+        """
+        if not collection_id or not collection_id.strip() or not user_id or not user_id.strip():
+            raise ValueError("collection_id and user_id are required")
+        response = self.post(
+            path=f"{ApiPath.capture}/{ApiPath.session}/{ApiPath.token}",
+            data={
+                "collection_id": collection_id,
+                "user_id": user_id,
+                "expires_in": expires_in,
+            },
+        )
+        if not response.get("token") or not response.get("collectionId"):
+            raise RuntimeError("Recorder authorization did not return a resolved collection")
+        return {"token": response["token"], "collectionId": response["collectionId"]}
 
     def get_async_response(self, id: str) -> dict:
         """Get the details of an async response.

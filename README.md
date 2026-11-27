@@ -597,52 +597,36 @@ streams = coll.list_rtstreams()
 
 ### Capture Sessions (Desktop Recording)
 
-Record screen, microphone, and system audio from desktop applications using native capture binaries:
-
-```bash
-# Install capture dependencies
-pip install 'videodb[capture]'
-```
+Record screen, microphone and system audio with the native capture runtime.
+The 0.5.5 branch prepares capture 0.3.6; install its local platform wheel before
+installing this checkout with `pip install -e '.[capture]'`. These changes are
+not yet published. See [capture APIs, installation and recovery](docs/capture.md).
 
 ```python
 from videodb.capture import CaptureClient
 
-# Backend: Create a capture session
-cap = coll.create_capture_session(
-    end_user_id="user_abc",
-    callback_url="https://example.com/webhook"
-)
+# Backend: create a session and issue a token for its owning user.
+cap = coll.create_capture_session(end_user_id="user_abc")
+token = conn.generate_client_token(expires_in=86400, user_id="user_abc")
 
-# Generate a client token for secure desktop auth
-token = conn.generate_client_token(expires_in=86400)
-
-# Desktop client: Start capture
-client = CaptureClient(session_token=token)
-
-# Request permissions
+# Desktop: run within an async function. Keep API keys on your backend.
+client = CaptureClient(client_token=token)
 await client.request_permission("microphone")
-await client.request_permission("screen")
-
-# Configure channels and start recording
-await client.start_capture_session(
-    session_id=cap.id,
-    channels=[
-        {"type": "mic", "name": "mic:default"},
-        {"type": "system_audio", "name": "system_audio:default"},
-        {"type": "display", "name": "display:1"},
-    ]
-)
-
-# Stop capture
-await client.stop_capture_session()
-
-# Get session details and export
-cap = coll.get_capture_session(cap.id)
-export_result = cap.export()
-
-# List all capture sessions
-sessions = coll.list_capture_sessions()
+await client.request_permission("screen_capture")
+channels = await client.list_channels()
+selected = [channel for channel in
+            (channels.displays.default, channels.mics.default) if channel]
+started = await client.start_session(cap.id, selected, resolution="720p")
+# Consume client.events() concurrently; recording-live announces live readiness.
+# Later, when the user stops:
+await client.stop_session()
+# Delivery may require a fresh token; configure a provider or relay explicitly.
+await client.wait_for_processing(session_id=cap.id)
+await client.shutdown()
 ```
+
+Authorized deferred recording, audio-only capture, window controls, notices,
+meeting events, and fresh-token recovery are documented in the [capture guide](docs/capture.md).
 
 ### WebSocket Events
 
