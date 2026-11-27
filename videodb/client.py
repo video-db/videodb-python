@@ -707,9 +707,10 @@ class Connection(HttpClient):
                 "expires_in": expires_in,
             },
         )
-        if not response.get("token") or not response.get("collectionId"):
+        collection = response.get("collection_id")
+        if not response.get("token") or not collection:
             raise RuntimeError("Recorder authorization did not return a resolved collection")
-        return {"token": response["token"], "collectionId": response["collectionId"]}
+        return {"token": response["token"], "collectionId": collection}
 
     def get_async_response(self, id: str) -> dict:
         """Get the details of an async response.

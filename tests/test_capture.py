@@ -422,7 +422,7 @@ async def test_ipc_timeout_and_process_exit_reject_pending_commands():
 
 def test_token_endpoints_preserve_existing_signature():
     c = Connection.__new__(Connection)
-    c.post = Mock(return_value={"token": "fresh", "collectionId": "resolved"})
+    c.post = Mock(return_value={"token": "fresh", "collection_id": "resolved"})
     assert c.generate_client_token(60) == "fresh"
     assert c.post.call_args.kwargs["data"] == {"expires_in": 60}
     c.generate_client_token(60, "alice")
