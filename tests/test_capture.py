@@ -206,6 +206,39 @@ async def test_failure_and_timeout_preserve_recorder():
 
 
 @run
+async def test_shutdown_kills_a_recorder_that_never_acknowledges():
+    c = client()
+    proc = c._proc
+
+    def kill():
+        proc.returncode = -9
+
+    proc.kill = Mock(side_effect=kill)
+    c._write_command = AsyncMock(side_effect=asyncio.TimeoutError)
+    with pytest.raises(asyncio.TimeoutError):
+        await c.shutdown(wait_for_processing=False)
+    proc.kill.assert_called_once()
+    assert not c.initialized
+
+
+def test_client_built_outside_the_loop_and_events_wait_for_start():
+    c = client()  # no running loop here, as in `client = CaptureClient(); asyncio.run(main())`
+    c._proc = None
+
+    async def main():
+        waiting = asyncio.ensure_future(c.events().__anext__())
+        await asyncio.sleep(1.2)
+        assert not waiting.done()  # still waiting before the recorder has started
+        event(c, "recording-live", sessionId="s")
+        assert (await waiting)["event"] == "recording-live"
+        async with c._capture_lock, c._listing_lock:
+            c._changed.set()
+            await c._changed.wait()
+
+    asyncio.run(main())
+
+
+@run
 async def test_shutdown_waits_then_exits_and_releases_delayed_retry():
     for retrying in (False, True):
         c = client()

@@ -201,10 +201,7 @@ class CaptureClient:
         self._initialization = None
         self._readers = []
         self._futures = {}
-        self._event_queue = asyncio.Queue()
-        self._changed = asyncio.Event()
-        self._capture_lock = asyncio.Lock()
-        self._listing_lock = asyncio.Lock()
+        self._spawned = False
         self._session_id = None
         self._managed_id = None
         self._managed_started_at = 0
@@ -229,6 +226,22 @@ class CaptureClient:
 
     def __repr__(self):
         return f"CaptureClient(base_url={self.base_url})"
+
+    def _loop_bound(name, factory):
+        # Python 3.8/3.9 bind these to the loop at construction, so build them on first use.
+        def get(self):
+            value = self.__dict__.get(name)
+            if value is None:
+                value = self.__dict__[name] = factory()
+            return value
+
+        return property(get)
+
+    _event_queue = _loop_bound("_event_queue_", asyncio.Queue)
+    _changed = _loop_bound("_changed_", asyncio.Event)
+    _capture_lock = _loop_bound("_capture_lock_", asyncio.Lock)
+    _listing_lock = _loop_bound("_listing_lock_", asyncio.Lock)
+    del _loop_bound
 
     @property
     def initialized(self):
@@ -276,6 +289,7 @@ class CaptureClient:
             stderr=asyncio.subprocess.PIPE,
         )
         self._proc = proc
+        self._spawned = True
         self._readers = [
             asyncio.create_task(self._read_stdout_loop(proc)),
             asyncio.create_task(self._read_stderr_loop(proc)),
@@ -1060,9 +1074,17 @@ class CaptureClient:
             self._suspending = True
             self._generation += 1
             proc = self._proc
-            await self._write_command("shutdown", timeout=155)
-            # Acknowledgement precedes process exit. Do not terminate finalization.
-            await asyncio.wait_for(proc.wait(), 155)
+            try:
+                await self._write_command("shutdown", timeout=155)
+                # Acknowledgement precedes process exit. Do not terminate finalization.
+                await asyncio.wait_for(proc.wait(), 155)
+            except Exception:
+                # No acknowledgement or no exit in time: kill it so it is not leaked.
+                if proc.returncode is None:
+                    proc.kill()
+                    await proc.wait()
+                await asyncio.gather(*self._readers, return_exceptions=True)
+                raise
             await asyncio.gather(*self._readers, return_exceptions=True)
             self._proc = None
             self._session_id = self._managed_id = None
@@ -1077,5 +1099,5 @@ class CaptureClient:
             try:
                 yield await asyncio.wait_for(self._event_queue.get(), timeout=1)
             except asyncio.TimeoutError:
-                if not self.initialized:
+                if self._spawned and not self.initialized and self._initialization is None:
                     break
