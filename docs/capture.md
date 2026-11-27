@@ -1,20 +1,15 @@
-# Capture 0.3.6 preparation
+# Capture
 
-Python `release-0-5-5` (SDK 0.5.5) and Node `release-0.4.3` (SDK 0.4.3)
-select capture binary 0.3.6. These are local release preparations, not published
-SDK releases. The Python capture extra now requires `videodb-capture-bin>=0.3.6`;
-install the locally prepared platform wheel before testing this branch.
+Python SDK 0.5.5 and Node SDK 0.4.3 use capture binary 0.3.6. The Python capture
+extra installs it.
 
 ```bash
-python -m pip install /path/to/videodb_capture_bin-0.3.6-py3-none-PLATFORM.whl
-python -m pip install -e '.[capture]'
+pip install 'videodb[capture]'
 ```
 
-Supported artifacts: macOS 13+ ARM64/x64, Windows x64, and Linux x64 on Ubuntu
-22.04+ with PipeWire and xdg-desktop-portal plus a ScreenCast backend. Linux uses
-an explicit `linux_x86_64` wheel, not a manylinux wheel; it must be distributed
-separately from PyPI. No Linux ARM64 artifact is provided. Hardware recording,
-OS permissions, and real server delivery require separate live validation.
+Supported: macOS 13+ on Apple Silicon and Intel, Windows x64, and Linux x64 on
+Ubuntu 22.04+ with PipeWire and xdg-desktop-portal plus a ScreenCast backend.
+There is no Linux ARM64 binary.
 
 ## API correspondence
 

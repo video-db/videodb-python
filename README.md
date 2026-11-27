@@ -598,9 +598,11 @@ streams = coll.list_rtstreams()
 ### Capture Sessions (Desktop Recording)
 
 Record screen, microphone and system audio with the native capture runtime.
-The 0.5.5 branch prepares capture 0.3.6; install its local platform wheel before
-installing this checkout with `pip install -e '.[capture]'`. These changes are
-not yet published. See [capture APIs, installation and recovery](docs/capture.md).
+See [capture APIs, installation and recovery](https://github.com/video-db/videodb-python/blob/main/docs/capture.md).
+
+```bash
+pip install 'videodb[capture]'
+```
 
 ```python
 from videodb.capture import CaptureClient
@@ -626,7 +628,7 @@ await client.shutdown()
 ```
 
 Authorized deferred recording, audio-only capture, window controls, notices,
-meeting events, and fresh-token recovery are documented in the [capture guide](docs/capture.md).
+meeting events, and fresh-token recovery are documented in the [capture guide](https://github.com/video-db/videodb-python/blob/main/docs/capture.md).
 
 ### WebSocket Events
 
