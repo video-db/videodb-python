@@ -37,7 +37,7 @@ from videodb.sandbox import Sandbox
 from videodb.voice_clone import VoiceClone
 from videodb.capture_session import CaptureSession
 from videodb.websocket_client import WebSocketConnection
-from videodb.capture import CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
+from videodb.capture import CaptureCommandError, CaptureClient, Channel, AudioChannel, VideoChannel, Channels, ChannelList
 
 from videodb.exceptions import (
     VideodbError,
@@ -58,6 +58,7 @@ __all__ = [
     "VoiceClone",
     "WebSocketConnection",
     "CaptureClient",
+    "CaptureCommandError",
     "Channel",
     "AudioChannel",
     "VideoChannel",

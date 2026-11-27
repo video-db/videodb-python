@@ -39,7 +39,7 @@ setup(
         "websockets>=11.0.3",
     ],
     extras_require={
-        "capture": ["videodb-capture-bin>=0.3.1"],
+        "capture": ["videodb-capture-bin>=0.3.6"],
     },
     classifiers=[
         "Intended Audience :: Developers",
